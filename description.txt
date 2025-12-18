@@ -1,0 +1,268 @@
+Campus Second-Hand Trading Application
+Enhanced Database Design Documentation
+1. Overview
+This document presents an enhanced, production-grade database design for a Campus Second-Hand Trading Application. It incorporates advanced marketplace features, security best practices, and scalability considerations suitable for a thesis or real-world deployment.
+2. Core Design Principles
+- Security-first and privacy-aware design
+- Fully normalized relational schema (3NF)
+- Role-based access control (RBAC)
+- Soft deletes and auditability
+- API- and mobile-first architecture
+- Scalable for multi-campus environments
+3. User, Authentication & Security
+
+Users Table:
+id, full_name, username, email, phone_number, password_hash, campus_id, status, failed_login_attempts, locked_until, deleted_at, created_at, updated_at, last_login_at
+
+Roles Table:
+id, name, permissions
+
+User_Roles Table:
+id, user_id, role_id
+
+Authentication_Providers Table:
+id, user_id, provider, provider_user_id, created_at
+
+Sessions Table:
+id, user_id, token, ip_address, device_info, expires_at, created_at
+
+Verification & Password Reset:
+verification_tokens(id, user_id, type, token, expires_at, verified_at)
+password_resets(id, user_id, token, expires_at, used_at)
+4. Campus & Locations
+
+Campus Table:
+id, campus_name, domain, location, is_active
+
+Meetup_Locations Table:
+id, campus_id, name, description, is_active, created_at
+5. Products & Listings
+
+Products Table:
+id, seller_id, campus_id, category_id, condition_level_id, title, description, price, status, deleted_at, modified_by, modification_reason, created_at, updated_at
+
+Condition_Levels Table:
+id, name, description, sort_order
+
+Categories Table:
+id, name, parent_id
+
+Product_Images Table:
+id, product_id, image_url, image_thumbnail_url, is_primary
+
+Tags Table:
+id, name
+
+Product_Tags Table:
+id, product_id, tag_id
+6. Offers & Negotiation
+
+Offers Table:
+id, product_id, buyer_id, offer_price, status, expires_at, created_at, updated_at
+7. Messaging & Notifications
+
+Conversations Table:
+id, product_id, buyer_id, seller_id, created_at
+
+Messages Table:
+id, conversation_id, sender_id, message_text, is_read, created_at
+
+Notifications Table:
+id, user_id, type, related_entity_type, related_entity_id, title, content, is_read, created_at
+8. Transactions & Delivery
+
+Transactions Table:
+id, product_id, buyer_id, seller_id, transaction_status_id, meetup_location_id, delivery_option_id, final_price, completed_at
+
+Transaction_Statuses Table:
+id, status_name, description, is_active
+
+Delivery_Options Table:
+id, name, description, fee, is_active
+9. Reviews & Trust System
+
+Reviews Table:
+id, transaction_id, reviewer_id, reviewed_user_id, rating, comment, seller_response, created_at
+
+Review_Votes Table:
+id, review_id, user_id, is_helpful
+
+Review_Flags Table:
+id, review_id, reason, created_at
+10. Favorites & Promotions
+
+Favorites Table:
+id, user_id, product_id, created_at
+
+Promoted_Listings Table:
+id, product_id, start_date, end_date, priority, created_at
+11. Moderation, Audit & Compliance
+
+Reports Table:
+id, reported_by, reported_user_id, product_id, reason, status, created_at
+
+Activity_Logs Table:
+id, user_id, action, entity_type, entity_id, created_at
+
+Login_History Table:
+id, user_id, ip_address, device_info, login_at
+12. Fees & Platform Monetization
+
+Commission_Rates Table:
+id, category_id, rate, effective_from, effective_to
+13. Performance & Indexing Strategy
+
+Recommended Indexes:
+- Products(campus_id, status, created_at)
+- Products(category_id, status)
+- Messages(conversation_id, created_at)
+- Transactions(buyer_id, seller_id, transaction_status_id)
+
+Validation Constraints:
+- price > 0
+- valid email and phone format
+- soft deletes using deleted_at
+14. Data Retention & Scalability
+
+- Archive old messages
+- Purge expired tokens
+- Anonymize deleted users
+- Ready for analytics and search engine integration
+
+This enhanced schema is suitable for enterprise-grade deployment and academic thesis submission.
+
+
+
+CORE ENTITY RELATIONSHIPS
+1. USER MANAGEMENT SYSTEM
+text
+Users ┬───┐ Campus (campus_id → Campus.id)
+      │   ├── Roles (via User_Roles)
+      │   ├── Authentication_Providers
+      │   ├── Sessions
+      │   ├── Verification_Tokens
+      │   ├── Password_Resets
+      │   ├── Login_History
+      │   └── Activity_Logs
+2. CAMPUS & LOCATION STRUCTURE
+text
+Campus ┬─── Users (1:M)
+       └── Meetup_Locations (1:M)
+3. PRODUCT CATALOG SYSTEM
+text
+Products ┬─── Users (seller_id → Users.id)
+         ├── Campus (campus_id → Campus.id)
+         ├── Categories (category_id → Categories.id)
+         ├── Condition_Levels (condition_level_id → Condition_Levels.id)
+         ├── Product_Images (1:M)
+         └── Product_Tags (M:M via Tags table)
+4. TRADING & TRANSACTION FLOW
+text
+Products ┬─── Offers (1:M) ──┐ Users (buyer_id)
+         │                   └── Users (seller_id, via Products)
+         └── Conversations (1:M) ┬── Users (buyer_id, seller_id)
+                                 └── Messages (1:M) ── Users (sender_id)
+5. TRANSACTION COMPLETION
+text
+Transactions ┬── Products (product_id)
+             ├── Users (buyer_id, seller_id)
+             ├── Transaction_Statuses (transaction_status_id)
+             ├── Meetup_Locations (meetup_location_id)
+             └── Delivery_Options (delivery_option_id)
+6. REPUTATION & TRUST SYSTEM
+text
+Reviews ┬── Transactions (transaction_id)
+        ├── Users (reviewer_id, reviewed_user_id)
+        ├── Review_Votes (1:M) ── Users (user_id)
+        └── Review_Flags (1:M)
+7. AUXILIARY FEATURES
+text
+Users ┬── Favorites (1:M) ── Products (product_id)
+      └── Notifications (1:M) [Polymorphic: related_entity_type/id]
+
+Products ┬── Promoted_Listings (1:M)
+         └── Reports (M:1)
+8. MODERATION & COMPLIANCE
+text
+Reports ┬── Users (reported_by, reported_user_id)
+        └── Products (product_id)
+
+Activity_Logs ── Users (user_id) [Polymorphic: entity_type/id]
+9. FINANCIAL STRUCTURE
+text
+Commission_Rates ── Categories (category_id)
+
+
+
+
+
+
+
+KEY RELATIONSHIP PATTERNS
+One-to-Many (1:M)
+Campus → Users
+
+Campus → Meetup_Locations
+
+Users → Products (as seller)
+
+Products → Product_Images
+
+Categories → Products
+
+Conversations → Messages
+
+Transactions → Reviews
+
+Many-to-Many (M:M)
+Users ↔ Roles (via User_Roles)
+
+Products ↔ Tags (via Product_Tags)
+
+Users ↔ Products (via Favorites)
+
+Users ↔ Reviews (via Review_Votes)
+
+Self-Referencing
+Categories (parent_id → Categories.id)
+
+Polymorphic Relations
+Notifications (related_entity_type/id)
+
+Activity_Logs (entity_type/id)
+
+
+
+CROSS-REFERENCE MATRIX
+Users	15+ tables	User_Roles, Product_Tags, Review_Votes
+Products	10+ tables	Product_Tags, Offers, Favorites
+Categories	Products, Commission_Rates	None
+Transactions	Reviews, Users, Products	None
+
+
+
+CRITICAL FOREIGN KEY PATHS
+User Activity Chain:
+
+text
+Users → Products → Offers/Conversations → Transactions → Reviews
+Moderation Chain:
+
+text
+Users → Reports/Activity_Logs → Products/Other Entities
+Discovery Chain:
+
+text
+Campus → Categories → Products → Tags
+UNIQUE DESIGN ELEMENTS
+Audit Trail: All major tables have created_at, updated_at, deleted_at
+
+Soft Deletes: Implemented via deleted_at columns
+
+Role-Based Access: Via Users→User_Roles→Roles hierarchy
+
+Multi-Provider Auth: Users can have multiple Authentication_Providers
+
+Condition Tracking: Products reference Condition_Levels with sort_order
+
+Price Negotiation: Offers table enables bidding system
