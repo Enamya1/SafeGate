@@ -15,4 +15,6 @@ Route::prefix('admin')->group(function () {
     Route::post('/login', [AdminController::class, 'login']);
     Route::post('/set_university', [AdminController::class, 'set_university']);
     Route::post('/set_dormitory', [AdminController::class, 'set_dormitory']);
+    Route::get('/universities', [AdminController::class, 'listUniversities']);
+    Route::get('/universities/{university_name}/dormitories', [AdminController::class, 'listDormitoriesByUniversity']);
 }); 

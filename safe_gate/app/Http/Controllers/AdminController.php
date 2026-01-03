@@ -122,4 +122,32 @@ class AdminController extends Controller
             'dormitory' => $dormitory,
         ], 201);
     }
+
+    public function listUniversities()
+    {
+        $universities = University::all();
+        return response()->json([
+            'message' => 'Universities retrieved successfully',
+            'universities' => $universities,
+        ], 200);
+    }
+
+    public function listDormitoriesByUniversity(string $university_name)
+    {
+        $university = University::where('name', $university_name)->first();
+
+        if (!$university) {
+            return response()->json([
+                'message' => 'University not found.'
+            ], 404);
+        }
+
+        $dormitories = Dormitory::where('university_id', $university->id)->get();
+
+        return response()->json([
+            'message' => 'Dormitories retrieved successfully',
+            'university' => $university->name,
+            'dormitories' => $dormitories,
+        ], 200);
+    }
 }
