@@ -11,13 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('dormitories', function (Blueprint $table) {
-            $table->id();
-            $table->string('dormitory_name');
-            $table->string('domain')->unique();
+        Schema::table('universities', function (Blueprint $table) {
             $table->string('location')->nullable();
-            $table->boolean('is_active')->default(true);
-            $table->timestamps();
+            $table->string('pic')->nullable();
         });
     }
 
@@ -26,6 +22,9 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('dormitories');
+        Schema::table('universities', function (Blueprint $table) {
+            $table->dropColumn('location');
+            $table->dropColumn('pic');
+        });
     }
 };

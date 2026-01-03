@@ -8,7 +8,7 @@ CREATE TABLE Users (
     email VARCHAR(255) UNIQUE NOT NULL,
     phone_number VARCHAR(20),
     password_hash VARCHAR(255) NOT NULL,
-    campus_id INT NOT NULL,
+    dormitory_id INT NOT NULL,
     status VARCHAR(50) DEFAULT 'active',
     failed_login_attempts INT DEFAULT 0,
     locked_until DATETIME,
@@ -79,10 +79,10 @@ CREATE TABLE Password_Resets (
     FOREIGN KEY (user_id) REFERENCES Users(id)
 );
 
--- 8. Campus Table
-CREATE TABLE Campus (
+-- 8. Dormitories Table
+CREATE TABLE Dormitories (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    campus_name VARCHAR(255) UNIQUE NOT NULL,
+    dormitory_name VARCHAR(255) UNIQUE NOT NULL,
     domain VARCHAR(255) UNIQUE,
     location VARCHAR(255),
     is_active BOOLEAN DEFAULT TRUE
@@ -90,18 +90,18 @@ CREATE TABLE Campus (
 
 -- Add foreign key to Users table after Campus table is created
 ALTER TABLE Users
-ADD CONSTRAINT fk_users_campus
-FOREIGN KEY (campus_id) REFERENCES Campus(id);
+ADD CONSTRAINT fk_users_dormitories
+FOREIGN KEY (dormitory_id) REFERENCES Dormitories(id);
 
 -- 9. Meetup_Locations Table
 CREATE TABLE Meetup_Locations (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    campus_id INT NOT NULL,
+    dormitory_id INT NOT NULL,
     name VARCHAR(255) NOT NULL,
     description TEXT,
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (campus_id) REFERENCES Campus(id)
+    FOREIGN KEY (dormitory_id) REFERENCES Dormitories(id)
 );
 
 -- 10. Categories Table (Self-referencing for parent categories)
@@ -137,7 +137,7 @@ CREATE TABLE Products (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (seller_id) REFERENCES Users(id),
-    FOREIGN KEY (campus_id) REFERENCES Campus(id),
+    FOREIGN KEY (dormitory_id) REFERENCES Dormitories(id),
     FOREIGN KEY (category_id) REFERENCES Categories(id),
     FOREIGN KEY (condition_level_id) REFERENCES Condition_Levels(id),
     FOREIGN KEY (modified_by) REFERENCES Users(id)

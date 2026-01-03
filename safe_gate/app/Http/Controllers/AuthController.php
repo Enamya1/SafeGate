@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
@@ -18,7 +19,7 @@ class AuthController extends Controller
                 'email' => 'required|string|email|max:255|unique:users',
                 'phone_number' => 'nullable|string|max:20',
                 'password' => 'required|string|min:8',
-                'campus_id' => 'nullable|exists:campus,id',
+                'dormitory_id' => 'nullable|exists:dormitories,id',
             ]);
         } catch (ValidationException $e) {
             return response()->json([
@@ -31,9 +32,9 @@ class AuthController extends Controller
             'full_name' => $validatedData['full_name'],
             'username' => $validatedData['username'],
             'email' => $validatedData['email'],
-            'phone_number' => $validatedData['phone_number'],
-            'password_hash' => Hash::make($validatedData['password']),
-            'campus_id' => $validatedData['campus_id'],
+            'phone_number' => data_get($validatedData, 'phone_number', null),
+            'password' => Hash::make($validatedData['password']),
+            'dormitory_id' => data_get($validatedData, 'dormitory_id', null),
         ]);
 
         // You might want to generate a token here for immediate login
@@ -44,5 +45,36 @@ class AuthController extends Controller
             'user' => $user,
             // 'token' => $token,
         ], 201);
+    }
+
+    public function login(Request $request)
+    {
+        try {
+            $request->validate([
+                'email' => 'required|string|email',
+                'password' => 'required|string',
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation Error',
+                'errors' => $e->errors()
+            ], 422);
+        }
+
+        if (!Auth::attempt($request->only('email', 'password'))) {
+            return response()->json([
+                'message' => 'Invalid login details'
+            ], 401);
+        }
+
+        $user = User::where('email', $request->email)->firstOrFail();
+
+        $token = $user->createToken('auth_token')->plainTextToken;
+
+        return response()->json([
+            'message' => 'Login successful',
+            'access_token' => $token,
+            'token_type' => 'Bearer',
+        ]);
     }
 }

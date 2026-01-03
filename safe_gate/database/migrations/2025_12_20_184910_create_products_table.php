@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('products', function (Blueprint $table) {
             $table->id();
             $table->foreignId('seller_id')->constrained('users')->onDelete('cascade');
-            $table->foreignId('campus_id')->constrained('campus')->onDelete('cascade');
+            $table->foreignId('dormitory_id')->constrained('dormitories')->onDelete('cascade');
             $table->foreignId('category_id')->constrained('categories')->onDelete('cascade');
             $table->foreignId('condition_level_id')->constrained('condition_levels')->onDelete('cascade');
             $table->string('title');
@@ -25,7 +25,7 @@ return new class extends Migration
             $table->foreignId('modified_by')->nullable()->constrained('users')->onDelete('set null');
             $table->text('modification_reason')->nullable();
             $table->timestamps();
-            $table->index(['campus_id', 'status', 'created_at']);
+            $table->index(['dormitory_id', 'status', 'created_at']);
             $table->index(['category_id', 'status']);
         });
     }

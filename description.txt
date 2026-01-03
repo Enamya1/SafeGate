@@ -1,18 +1,18 @@
-Campus Second-Hand Trading Application
+Dormitory Second-Hand Trading Application
 Enhanced Database Design Documentation
 1. Overview
-This document presents an enhanced, production-grade database design for a Campus Second-Hand Trading Application. It incorporates advanced marketplace features, security best practices, and scalability considerations suitable for a thesis or real-world deployment.
+This document presents an enhanced, production-grade database design for a Dormitory Second-Hand Trading Application. It incorporates advanced marketplace features, security best practices, and scalability considerations suitable for a thesis or real-world deployment.
 2. Core Design Principles
 - Security-first and privacy-aware design
 - Fully normalized relational schema (3NF)
 - Role-based access control (RBAC)
 - Soft deletes and auditability
 - API- and mobile-first architecture
-- Scalable for multi-campus environments
+- Scalable for multi-dormitory environments
 3. User, Authentication & Security
 
 Users Table:
-id, full_name, username, email, phone_number, password_hash, campus_id, status, failed_login_attempts, locked_until, deleted_at, created_at, updated_at, last_login_at
+id, full_name, username, email, phone_number, password_hash, dormitory_id, status, failed_login_attempts, locked_until, deleted_at, created_at, updated_at, last_login_at
 
 Roles Table:
 id, name, permissions
@@ -29,17 +29,17 @@ id, user_id, token, ip_address, device_info, expires_at, created_at
 Verification & Password Reset:
 verification_tokens(id, user_id, type, token, expires_at, verified_at)
 password_resets(id, user_id, token, expires_at, used_at)
-4. Campus & Locations
+4. Dormitory & Locations
 
-Campus Table:
-id, campus_name, domain, location, is_active
+Dormitories Table:
+id, dormitory_name, domain, location, is_active
 
 Meetup_Locations Table:
-id, campus_id, name, description, is_active, created_at
+id, dormitory_id, name, description, is_active, created_at
 5. Products & Listings
 
 Products Table:
-id, seller_id, campus_id, category_id, condition_level_id, title, description, price, status, deleted_at, modified_by, modification_reason, created_at, updated_at
+id, seller_id, dormitory_id, category_id, condition_level_id, title, description, price, status, deleted_at, modified_by, modification_reason, created_at, updated_at
 
 Condition_Levels Table:
 id, name, description, sort_order
@@ -113,7 +113,7 @@ id, category_id, rate, effective_from, effective_to
 13. Performance & Indexing Strategy
 
 Recommended Indexes:
-- Products(campus_id, status, created_at)
+- Products(dormitory_id, status, created_at)
 - Products(category_id, status)
 - Messages(conversation_id, created_at)
 - Transactions(buyer_id, seller_id, transaction_status_id)
@@ -136,7 +136,7 @@ This enhanced schema is suitable for enterprise-grade deployment and academic th
 CORE ENTITY RELATIONSHIPS
 1. USER MANAGEMENT SYSTEM
 text
-Users ┬───┐ Campus (campus_id → Campus.id)
+Users ┬───┐ Dormitories (dormitory_id → Dormitories.id)
       │   ├── Roles (via User_Roles)
       │   ├── Authentication_Providers
       │   ├── Sessions
@@ -144,14 +144,14 @@ Users ┬───┐ Campus (campus_id → Campus.id)
       │   ├── Password_Resets
       │   ├── Login_History
       │   └── Activity_Logs
-2. CAMPUS & LOCATION STRUCTURE
+2. DORMITORY & LOCATION STRUCTURE
 text
-Campus ┬─── Users (1:M)
+Dormitories ┬─── Users (1:M)
        └── Meetup_Locations (1:M)
 3. PRODUCT CATALOG SYSTEM
 text
 Products ┬─── Users (seller_id → Users.id)
-         ├── Campus (campus_id → Campus.id)
+         ├── Dormitories (dormitory_id → Dormitories.id)
          ├── Categories (category_id → Categories.id)
          ├── Condition_Levels (condition_level_id → Condition_Levels.id)
          ├── Product_Images (1:M)

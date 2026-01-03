@@ -8,7 +8,7 @@ class Product extends Model
 {
     protected $fillable = [
         'seller_id',
-        'campus_id',
+        'dormitory_id',
         'category_id',
         'condition_level_id',
         'title',
@@ -23,4 +23,9 @@ class Product extends Model
     protected $casts = [
         'deleted_at' => 'datetime',
     ];
+
+    public function dormitory()
+    {
+        return $this->belongsTo(Dormitory::class);
+    }
 }

@@ -16,9 +16,11 @@ return new class extends Migration
             $table->string('full_name');
             $table->string('username')->unique();
             $table->string('email')->unique();
+            $table->timestamp('email_verified_at')->nullable();
             $table->string('phone_number')->nullable();
-            $table->string('password_hash');
-            $table->foreignId('campus_id')->nullable()->constrained('campus')->onDelete('set null');
+            $table->string('password');
+            $table->rememberToken();
+            $table->foreignId('dormitory_id')->nullable()->constrained('dormitories')->onDelete('set null');
             $table->string('status')->default('active');
             $table->integer('failed_login_attempts')->default(0);
             $table->timestamp('locked_until')->nullable();

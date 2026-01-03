@@ -4,12 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Campus extends Model
+class University extends Model
 {
     protected $fillable = [
-        'campus_name',
+        'name',
         'domain',
         'location',
-        'is_active',
+        'pic',
     ];
 }
