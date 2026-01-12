@@ -1,10 +1,9 @@
 <?php
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\HealthCheckController;
-use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\HealthCheckController;
+use Illuminate\Support\Facades\Route;
 
 Route::middleware('api')->get('/health-check', HealthCheckController::class);
 Route::post('/user/signup', [AuthController::class, 'signup']);
@@ -17,4 +16,4 @@ Route::prefix('admin')->group(function () {
     Route::post('/set_dormitory', [AdminController::class, 'set_dormitory']);
     Route::get('/universities', [AdminController::class, 'listUniversities']);
     Route::get('/universities/{university_name}/dormitories', [AdminController::class, 'listDormitoriesByUniversity']);
-}); 
+});

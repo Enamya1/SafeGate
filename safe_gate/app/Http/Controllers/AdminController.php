@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Dormitory;
+use App\Models\University;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
-use App\Models\User;
-use App\Models\Dormitory;
-use App\Models\University;
 
 class AdminController extends Controller
 {
@@ -26,23 +26,23 @@ class AdminController extends Controller
         } catch (ValidationException $e) {
             return response()->json([
                 'message' => 'Validation Error',
-                'errors' => $e->errors()
+                'errors' => $e->errors(),
             ], 422);
         }
 
-        if (!Auth::attempt($request->only('email', 'password'))) {
+        if (! Auth::attempt($request->only('email', 'password'))) {
             return response()->json([
-                'message' => 'Invalid login details'
+                'message' => 'Invalid login details',
             ], 401);
         }
 
         $user = User::where('email', $request->email)->firstOrFail();
 
-        // Check if the user has the 'admin' role
         if ($user->role !== 'admin') {
-            Auth::logout(); // Log out the user if they are not an admin
+            Auth::logout();
+
             return response()->json([
-                'message' => 'Unauthorized: Only administrators can log in here.'
+                'message' => 'Unauthorized: Only administrators can log in here.',
             ], 403);
         }
 
@@ -67,7 +67,7 @@ class AdminController extends Controller
         } catch (ValidationException $e) {
             return response()->json([
                 'message' => 'Validation Error',
-                'errors' => $e->errors()
+                'errors' => $e->errors(),
             ], 422);
         }
 
@@ -92,20 +92,20 @@ class AdminController extends Controller
                 'domain' => 'required|string|max:255|unique:dormitories',
                 'location' => 'nullable|url|max:255',
                 'is_active' => 'boolean',
-                'university_name' => 'required|string|max:255|exists:universities,name', // Validate university_name
+                'university_name' => 'required|string|max:255|exists:universities,name',
             ]);
         } catch (ValidationException $e) {
             return response()->json([
                 'message' => 'Validation Error',
-                'errors' => $e->errors()
+                'errors' => $e->errors(),
             ], 422);
         }
 
         $university = University::where('name', $validatedData['university_name'])->first();
 
-        if (!$university) {
+        if (! $university) {
             return response()->json([
-                'message' => 'University not found.'
+                'message' => 'University not found.',
             ], 404);
         }
 
@@ -114,7 +114,7 @@ class AdminController extends Controller
             'domain' => $validatedData['domain'],
             'location' => $validatedData['location'] ?? null,
             'is_active' => $validatedData['is_active'] ?? true,
-            'university_id' => $university->id, // Assign university_id from found university
+            'university_id' => $university->id,
         ]);
 
         return response()->json([
@@ -126,6 +126,7 @@ class AdminController extends Controller
     public function listUniversities()
     {
         $universities = University::all();
+
         return response()->json([
             'message' => 'Universities retrieved successfully',
             'universities' => $universities,
@@ -136,9 +137,9 @@ class AdminController extends Controller
     {
         $university = University::where('name', $university_name)->first();
 
-        if (!$university) {
+        if (! $university) {
             return response()->json([
-                'message' => 'University not found.'
+                'message' => 'University not found.',
             ], 404);
         }
 

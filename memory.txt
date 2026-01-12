@@ -1,0 +1,380 @@
+SafeGate / Dormitory Second‑Hand Trading (Laravel) — Project Memory
+
+1) What this project is
+SafeGate is a Laravel 12 API-only backend intended to support a campus/dormitory second‑hand marketplace. The repository includes:
+- A working Laravel application in: d:\ty_now\SafeGate\safe_gate\
+- A thesis-style database design document in: d:\ty_now\SafeGate\description.txt
+- A MySQL DDL script in: d:\ty_now\SafeGate\mysql_ddl.sql
+- A Word document database design file in: d:\ty_now\SafeGate\Campus_Second_Hand_Trading_Enhanced_Database_Design.docx
+
+The implemented API currently covers authentication, admin bootstrap (creating universities and dormitories), and health checks. The database schema in Laravel migrations already includes many marketplace tables (products, offers, messaging, reviews, reports, etc.), but there are not yet controllers/routes for those features.
+
+
+2) Tech stack and runtime
+Backend
+- PHP: ^8.2
+- Framework: Laravel Framework ^12.0
+- Auth tokens: Laravel Sanctum ^4.0 (personal access tokens)
+- ORM: Eloquent (Active Record)
+- Migrations/Schema Builder: Laravel migrations in safe_gate/database/migrations
+- Testing: PHPUnit ^11.5.3 via Laravel test runner
+
+Frontend
+- No UI/frontend is included in this repository (API-only). A separate frontend can be connected later.
+
+Key entrypoints and bootstrapping
+- HTTP entry: safe_gate/public/index.php
+- App bootstrap: safe_gate/bootstrap/app.php
+- Route files:
+  - safe_gate/routes/api.php
+  - safe_gate/routes/web.php
+  - safe_gate/routes/console.php
+
+Local configuration defaults (safe_gate/.env.example)
+- DB_CONNECTION=sqlite (default)
+- SESSION_DRIVER=database
+- CACHE_STORE=database
+- QUEUE_CONNECTION=database
+- MAIL_MAILER=log
+
+Composer scripts (safe_gate/composer.json)
+- setup: composer install + copy .env + key:generate + migrate
+- dev: php artisan serve
+- test: php artisan config:clear + php artisan test
+
+
+3) High-level architecture
+Laravel MVC (with only Controllers and Models currently used)
+- Controllers (safe_gate/app/Http/Controllers)
+  - AuthController: user signup/login
+  - AdminController: admin login + create/list universities/dormitories
+  - HealthCheckController: JSON health status
+- Models (safe_gate/app/Models)
+  - Eloquent models represent tables and provide a data access layer
+  - Current codebase has very light relationship definitions (only a few belongsTo)
+
+Important note about “design vs implementation”
+- description.txt and mysql_ddl.sql describe an “enhanced production-grade” schema (including some fields/tables and constraints).
+- Laravel migrations implement a similar but not identical schema. There are mismatches in naming and columns (examples in section 7).
+In practice, the authoritative runtime schema is the Laravel migrations (because that’s what artisan migrate applies).
+
+
+4) HTTP API (endpoints, methods, payloads)
+
+4.1 API base
+- API routes are defined in safe_gate/routes/api.php.
+- In Laravel, these routes typically resolve under the /api prefix (default framework behavior).
+So an entry like Route::post('/user/login', ...) is usually reachable at: POST /api/user/login
+
+4.2 Implemented endpoints (exact list)
+
+Health
+- GET /api/health-check
+  - Controller: HealthCheckController::__invoke
+  - Response: {"status":"ok","message":"Application is running smoothly!"}
+
+User auth
+- POST /api/user/signup
+  - Controller: AuthController::signup
+  - Validation:
+    - full_name: required string max 255
+    - username: required string max 255 unique users.username
+    - email: required email max 255 unique users.email
+    - phone_number: nullable string max 20
+    - password: required string min 8
+    - dormitory_id: nullable exists dormitories.id
+  - Behavior:
+    - Creates a new user row (password is hashed)
+    - Does not auto-issue a token (token creation is commented out)
+  - Response (201): {"message":"User registered successfully","user":{...}}
+
+- POST /api/user/login
+  - Controller: AuthController::login
+  - Validation:
+    - email: required email
+    - password: required string
+  - Behavior:
+    - Uses Auth::attempt() (session guard) to verify credentials
+    - If ok, creates a Sanctum token: $user->createToken('auth_token')->plainTextToken
+  - Response (200): {"message":"Login successful","access_token":"...","token_type":"Bearer"}
+  - Failure response:
+    - 401 if credentials invalid
+    - 422 if validation fails
+
+Admin endpoints (bootstrap + listing)
+- POST /api/admin/test
+  - Controller: AdminController::index
+  - Response: {"message":"Admin endpoint reached!"}
+
+- POST /api/admin/login
+  - Controller: AdminController::login
+  - Validation: email + password
+  - Behavior:
+    - Auth::attempt() then checks $user->role === 'admin'
+    - If not admin, logs out and returns 403
+    - If admin, creates Sanctum token: createToken('admin_auth_token')
+  - Response: {"message":"Admin login successful","access_token":"...","token_type":"Bearer"}
+
+- POST /api/admin/set_university
+  - Controller: AdminController::set_university
+  - Validation:
+    - name: required unique universities.name
+    - domain: required unique universities.domain
+    - location: nullable string
+    - pic: nullable string
+  - Creates a University row
+
+- POST /api/admin/set_dormitory
+  - Controller: AdminController::set_dormitory
+  - Validation:
+    - dormitory_name: required unique dormitories.dormitory_name
+    - domain: required unique dormitories.domain
+    - location: nullable url
+    - is_active: boolean
+    - university_name: required exists universities.name
+  - Behavior:
+    - Looks up University by name
+    - Writes dormitories.university_id = university.id
+  - Returns created dormitory
+
+- GET /api/admin/universities
+  - Controller: AdminController::listUniversities
+  - Returns all universities
+
+- GET /api/admin/universities/{university_name}/dormitories
+  - Controller: AdminController::listDormitoriesByUniversity
+  - Finds university by universities.name then filters dormitories by university_id
+
+4.3 Web endpoints
+Routes are defined in safe_gate/routes/web.php.
+- No web/UI routes are used (API-only). The web route file is empty.
+
+4.4 Authentication model used by the API
+- Token issuance is done with Laravel Sanctum personal access tokens.
+- There is no route protection currently applied to admin create/list endpoints (no auth:sanctum middleware groups in routes/api.php).
+- Sanctum is configured in safe_gate/config/sanctum.php and uses guard ['web'] by default.
+
+Implication:
+- Tokens are generated, but the routes do not yet enforce them.
+- If you want admin/user endpoints protected, the codebase needs middleware like auth:sanctum applied to route groups.
+
+
+5) Database layer (what is actually in migrations)
+The runtime schema is defined by the Laravel migrations in safe_gate/database/migrations.
+Below is the table inventory based on migration filenames and contents.
+
+5.1 Framework/infra tables
+- cache
+- jobs
+- sessions
+- personal_access_tokens (Sanctum)
+
+5.2 Core domain tables
+Identity/authn/authz
+- users
+  - full_name, username, email, phone_number, password, dormitory_id, status, failed_login_attempts, locked_until, deleted_at, last_login_at, role (added by later migration)
+- roles (name, permissions JSON)
+- user_roles (user_id, role_id)
+- authentication_providers (user_id, provider, provider_user_id)
+- verification_tokens (user_id, type, token, expires_at, verified_at)
+- password_resets (user_id, token, expires_at, used_at)
+- login_history (user_id, ip_address, user_agent, login_at, success)
+
+Locations/tenancy
+- universities (name, domain, location, pic)
+- dormitories (dormitory_name, domain, location, is_active, university_id)
+- meetup_locations (dormitory_id, name, description, is_active)
+
+Catalog / listings
+- condition_levels (name, description, sort_order)
+- categories (name, parent_id)
+- products
+  - seller_id, dormitory_id, category_id, condition_level_id, title, description, price, status, deleted_at, modified_by, modification_reason
+  - indexes:
+    - (dormitory_id, status, created_at)
+    - (category_id, status)
+- product_images (product_id, image_url, image_thumbnail_url, is_primary)
+- tags (name unique)
+- product_tags (product_id, tag_id)
+
+Offers and trading
+- offers (product_id, buyer_id, offer_price, status, expires_at)
+- transactions (product_id, buyer_id, seller_id, amount, currency, payment_method, transaction_status, transaction_id)
+- transaction_statuses (name, description)
+- delivery_options (name, description, cost, is_available)
+
+Messaging and notifications
+- conversations (product_id, buyer_id, seller_id)
+- messages (conversation_id, sender_id, message_text, read_at)
+  - index: (conversation_id, created_at)
+- notifications (uuid id, type, notifiable_type/id morph, data, read_at)
+
+Trust, moderation, monetization
+- reviews (product_id, reviewer_id, reviewee_id, rating, comment)
+- review_votes (review_id, user_id, is_helpful)
+- review_flags (review_id, user_id, reason, details)
+- favorites (user_id, product_id)
+- promoted_listings (product_id, promoted_until)
+- reports (reporter_id, reportable_type/id morph, reason, details, status)
+- activity_logs (user_id, activity_type, description, subject_type/id morph, old_data, new_data, ip_address, user_agent)
+- commission_rates (name, rate, is_active)
+
+5.3 Data access and ORM
+- Eloquent is used directly inside controllers (no repositories/services yet).
+- Creates are done via Model::create([...]) with $fillable configured on models.
+- Reads are done via Model::where(...)->first(), Model::all(), etc.
+
+
+6) Domain models present in code (safe_gate/app/Models)
+These classes exist and are intended to map to database tables:
+- ActivityLog
+- AuthenticationProvider
+- Category
+- CommissionRate
+- ConditionLevel
+- DeliveryOption
+- Dormitory
+- Favorite
+- LoginHistory
+- MeetupLocation
+- Message
+- Notification
+- Offer
+- Product
+- ProductImage
+- ProductTag
+- PromotedListing
+- Report
+- Review
+- ReviewFlag
+- ReviewVote
+- Role
+- Tag
+- Transaction
+- TransactionStatus
+- University
+- User
+- UserRole
+
+Relationship methods currently implemented (not exhaustive; many models have none yet)
+- User belongsTo Dormitory
+- Dormitory belongsTo University
+- Product belongsTo Dormitory
+- MeetupLocation belongsTo Dormitory
+
+Note:
+- Even when relationship methods are missing, foreign keys still exist at the database layer (migrations). Adding relationships later improves developer ergonomics (eager loading, constraints in code, etc.).
+
+
+7) Known mismatches and inconsistencies (important “small details”)
+Because the repo includes multiple “sources of truth” (design doc + MySQL DDL + Laravel migrations + Eloquent models), a few inconsistencies exist.
+
+7.1 MySQL DDL script issues vs migrations
+In mysql_ddl.sql (design-side), Products table references campus_id but also has a FOREIGN KEY (dormitory_id) that doesn’t exist in that DDL section. This indicates the DDL is illustrative and not guaranteed runnable as-is.
+
+7.2 Design doc (description.txt) vs migrations
+Examples:
+- Transactions:
+  - description.txt uses: transaction_status_id, meetup_location_id, delivery_option_id, final_price, completed_at
+  - migrations implement: amount, currency, payment_method, transaction_status (string), transaction_id (string)
+- Commission rates:
+  - description.txt uses: category_id, effective_from/effective_to
+  - migrations implement: name, rate, is_active
+- Promoted listings:
+  - description.txt uses: start_date/end_date/priority
+  - migrations implement: promoted_until
+- Reviews:
+  - description.txt links reviews to transactions
+  - migrations link reviews to products and reviewer/reviewee
+
+7.3 Models vs migrations (implementation drift)
+- Offer model contains accepted_at / rejected_at / cancelled_at casts and fillable, but offers migration does not define these timestamp columns.
+- Report model uses user_id and resolved_at, but reports migration uses reporter_id and does not include resolved_at.
+- ActivityLog model expects subject_type/subject_id which matches migration’s morphs('subject'), but the naming differs from description.txt (entity_type/id).
+
+Impact:
+- If these fields are used in code now, it will error at runtime due to missing columns.
+- For “memory” purposes: consider migrations as the current actual schema.
+
+
+8) Security and auth details
+Authentication
+- Uses Laravel’s Auth::attempt (session guard) for credential verification.
+- Uses bcrypt/hashed passwords:
+  - User model casts password => 'hashed', and signup uses Hash::make explicitly.
+- Uses Sanctum personal access tokens:
+  - personal_access_tokens table exists (migration 2026_01_03_055300...)
+  - token generation is done on login endpoints
+
+RBAC
+- There is a roles/user_roles schema in migrations.
+- The implemented admin check currently uses a simple users.role string column (role === 'admin') rather than the roles/user_roles tables.
+
+Security logging/audit tables (present but not yet wired)
+- activity_logs table + ActivityLog model
+- login_history table + LoginHistory model
+- reports table + Report model
+
+Missing enforcement today (important)
+- No middleware protection is applied to admin endpoints (or any endpoints) to require a Sanctum token.
+- No rate limiting, lockout enforcement, or login_history/activity_logs writes are implemented yet, even though schema supports it.
+
+
+9) Deployment/runtime flow
+Request lifecycle
+- Incoming HTTP request hits public/index.php
+- Laravel bootstraps via bootstrap/app.php and routes request to controller
+- Controllers validate requests using $request->validate(...) and return JSON
+
+Persistence flow
+- Controllers call Eloquent Model::create(...) which:
+  - mass assigns based on $fillable
+  - writes to configured DB connection (sqlite by default)
+- Migrations define DB schema
+- Sessions/caches/queues use database drivers by default (meaning additional tables are used/created by migrations)
+
+
+10) Testing
+Test scaffolding exists:
+- safe_gate/tests/Feature/ExampleTest.php
+- safe_gate/tests/Unit/ExampleTest.php
+- safe_gate/tests/TestCase.php
+Primary command is composer script "test" (php artisan test).
+
+
+11) Files and directories map (quick reference)
+Repository root: d:\ty_now\SafeGate\
+- safe_gate\                      Laravel app
+  - app\Http\Controllers\          Controllers (Auth/Admin/Health)
+  - app\Models\                    Domain models
+  - bootstrap\                     Laravel bootstrap
+  - config\                        App/auth/db/session/queue/sanctum configs
+  - database\migrations\           Schema migrations (authoritative)
+  - routes\                        web/api/console routes
+  - public\                        Web server root
+  - resources\                     not used for UI (frontend removed)
+  - tests\                         PHPUnit tests
+- description.txt                  Enhanced DB design doc (thesis-style)
+- mysql_ddl.sql                    MySQL DDL draft (design-side)
+
+
+12) Current state summary (what exists vs what’s planned)
+Implemented and working today
+- Health check endpoints (web + api)
+- User registration (signup) with validation + hashed password
+- User login that issues Sanctum bearer token
+- Admin login that issues Sanctum token if users.role == 'admin'
+- University and dormitory creation + listing endpoints
+- A large set of marketplace tables created by migrations
+
+Removed in API-only cleanup
+- Blade welcome page and frontend scaffolding (Vite/Tailwind resources and npm tooling)
+
+Planned by schema/design docs but not yet implemented as API/features
+- Full product CRUD and browsing endpoints
+- Offers negotiation flows (accept/reject/cancel) and timestamps
+- Conversations/messages APIs + read receipts handling
+- Transactions lifecycle using transaction_statuses + delivery options + meetup locations integration
+- Reviews/reputation endpoints, votes/flags moderation endpoints
+- Favorites, promoted listings, commission rates monetization flows
+- Reporting and moderation workflows with resolution timestamps and audit trails

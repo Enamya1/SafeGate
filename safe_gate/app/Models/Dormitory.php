@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Dormitory extends Model
 {
     protected $table = 'dormitories';
+
     protected $fillable = [
         'dormitory_name',
         'domain',
