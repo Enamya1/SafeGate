@@ -27,6 +27,7 @@ class User extends Authenticatable
         'password',
         'dormitory_id',
         'role',
+        'status',
     ];
 
     /**

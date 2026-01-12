@@ -166,6 +166,40 @@ Admin endpoints (bootstrap + listing)
   - Fields returned per user:
     - id, full_name, email, role, phone_number, dormitory_id, status, profile_picture
 
+- PATCH /api/admin/users/{id}
+  - Middleware: token_auth
+  - Controller: AdminController::updateUser
+  - Validation:
+    - full_name: sometimes string max 255
+    - username: sometimes string max 255 unique users.username,{id}
+    - email: sometimes string email max 255 unique users.email,{id}
+    - phone_number: nullable string max 20
+    - role: sometimes string in:admin,user
+    - dormitory_id: nullable exists dormitories.id
+    - status: sometimes string in:active,inactive,suspended
+    - profile_picture: nullable string max 255
+    - locked_until: nullable date
+  - Behavior:
+    - Requires authenticated user with role === 'admin' (403 otherwise)
+    - Updates a single user's data by ID
+  - Response (200): {"message":"User updated successfully","user":{...}}
+
+- PATCH /api/admin/users/{id}/activate
+  - Middleware: token_auth
+  - Controller: AdminController::activateUser
+  - Behavior:
+    - Requires authenticated user with role === 'admin' (403 otherwise)
+    - Activates a user by setting their status to 'active'.
+  - Response (200): {"message":"User activated successfully","user":{...}}
+
+- PATCH /api/admin/users/{id}/deactivate
+  - Middleware: token_auth
+  - Controller: AdminController::deactivateUser
+  - Behavior:
+    - Requires authenticated user with role === 'admin' (403 otherwise)
+    - Deactivates a user by setting their status to 'inactive'.
+  - Response (200): {"message":"User deactivated successfully","user":{...}}
+
 4.3 Web endpoints
 Routes are defined in safe_gate/routes/web.php.
 - No web/UI routes are used (API-only). The web route file is empty.

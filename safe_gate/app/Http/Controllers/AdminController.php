@@ -7,6 +7,7 @@ use App\Models\University;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 
 class AdminController extends Controller
@@ -30,19 +31,23 @@ class AdminController extends Controller
             ], 422);
         }
 
-        if (! Auth::attempt($request->only('email', 'password'))) {
+        $user = User::where('email', $request->email)->first();
+
+        if (! $user || ! Hash::check($request->password, $user->password)) {
             return response()->json([
                 'message' => 'Invalid login details',
             ], 401);
         }
 
-        $user = User::where('email', $request->email)->firstOrFail();
-
         if ($user->role !== 'admin') {
-            Auth::logout();
-
             return response()->json([
                 'message' => 'Unauthorized: Only administrators can log in here.',
+            ], 403);
+        }
+
+        if ($user->status === 'inactive') {
+            return response()->json([
+                'message' => 'Your admin account is deactivated. Please contact support.',
             ], 403);
         }
 
@@ -215,6 +220,105 @@ class AdminController extends Controller
 
         return response()->json([
             'message' => 'User retrieved successfully',
+            'user' => $user,
+        ], 200);
+    }
+
+    public function updateUser(Request $request, string $id)
+    {
+        $admin = $request->user();
+
+        if (! $admin || $admin->role !== 'admin') {
+            return response()->json([
+                'message' => 'Unauthorized: Only administrators can access this endpoint.',
+            ], 403);
+        }
+
+        $user = User::find($id);
+
+        if (! $user) {
+            return response()->json([
+                'message' => 'User not found.',
+            ], 404);
+        }
+
+        try {
+            $validatedData = $request->validate([
+                'full_name' => 'sometimes|string|max:255',
+                'username' => 'sometimes|string|max:255|unique:users,username,'.$id,
+                'email' => 'sometimes|string|email|max:255|unique:users,email,'.$id,
+                'phone_number' => 'nullable|string|max:20',
+                'role' => 'sometimes|string|in:admin,user',
+                'dormitory_id' => 'nullable|exists:dormitories,id',
+                'status' => 'sometimes|string|in:active,inactive,suspended',
+                'profile_picture' => 'nullable|string|max:255',
+                'locked_until' => 'nullable|date',
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation Error',
+                'errors' => $e->errors(),
+            ], 422);
+        }
+
+        $user->update($validatedData);
+
+        return response()->json([
+            'message' => 'User updated successfully',
+            'user' => $user,
+        ], 200);
+    }
+
+    public function activateUser(Request $request, string $id)
+    {
+        $admin = $request->user();
+
+        if (! $admin || $admin->role !== 'admin') {
+            return response()->json([
+                'message' => 'Unauthorized: Only administrators can access this endpoint.',
+            ], 403);
+        }
+
+        $user = User::find($id);
+
+        if (! $user) {
+            return response()->json([
+                'message' => 'User not found.',
+            ], 404);
+        }
+
+        $user->status = 'active';
+        $user->save();
+
+        return response()->json([
+            'message' => 'User activated successfully',
+            'user' => $user,
+        ], 200);
+    }
+
+    public function deactivateUser(Request $request, string $id)
+    {
+        $admin = $request->user();
+
+        if (! $admin || $admin->role !== 'admin') {
+            return response()->json([
+                'message' => 'Unauthorized: Only administrators can access this endpoint.',
+            ], 403);
+        }
+
+        $user = User::find($id);
+
+        if (! $user) {
+            return response()->json([
+                'message' => 'User not found.',
+            ], 404);
+        }
+
+        $user->status = 'inactive';
+        $user->save();
+
+        return response()->json([
+            'message' => 'User deactivated successfully',
             'user' => $user,
         ], 200);
     }

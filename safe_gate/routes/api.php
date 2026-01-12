@@ -18,4 +18,7 @@ Route::prefix('admin')->group(function () {
     Route::get('/universities/{university_name}/dormitories', [AdminController::class, 'listDormitoriesByUniversity']);
     Route::middleware('token_auth')->get('/users', [AdminController::class, 'listUsers']);
     Route::middleware('token_auth')->get('/users/{id}', [AdminController::class, 'showUser']);
+    Route::middleware('token_auth')->patch('/users/{id}', [AdminController::class, 'updateUser']);
+    Route::middleware('token_auth')->patch('/users/{id}/activate', [AdminController::class, 'activateUser']);
+    Route::middleware('token_auth')->patch('/users/{id}/deactivate', [AdminController::class, 'deactivateUser']);
 });

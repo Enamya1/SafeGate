@@ -57,13 +57,19 @@ class AuthController extends Controller
             ], 422);
         }
 
-        if (! Auth::attempt($request->only('email', 'password'))) {
+        $user = User::where('email', $request->email)->first();
+
+        if (! $user || ! Hash::check($request->password, $user->password)) {
             return response()->json([
                 'message' => 'Invalid login details',
             ], 401);
         }
 
-        $user = User::where('email', $request->email)->firstOrFail();
+        if ($user->status === 'inactive') {
+            return response()->json([
+                'message' => 'Your account is deactivated. Please contact support.',
+            ], 403);
+        }
 
         $token = $user->createToken('auth_token')->plainTextToken;
 
