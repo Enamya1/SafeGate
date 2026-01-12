@@ -145,18 +145,39 @@ Admin endpoints (bootstrap + listing)
   - Controller: AdminController::listDormitoriesByUniversity
   - Finds university by universities.name then filters dormitories by university_id
 
+- GET /api/admin/users
+  - Middleware: token_auth (custom Sanctum token auth that also accepts query/header tokens)
+  - Controller: AdminController::listUsers
+  - Query:
+    - per_page: nullable integer (1..100), default 50 
+    - access_token: optional (fallback when Authorization header is unavailable)
+  - Behavior:
+    - Requires authenticated user with role === 'admin' (403 otherwise)
+    - Returns paginated users with limited fields only
+  - Fields returned per user:
+    - id, full_name, email, role, phone_number, dormitory_id, status, profile_picture
+
+- GET /api/admin/users/{id}
+  - Middleware: token_auth
+  - Controller: AdminController::showUser
+  - Behavior:
+    - Requires authenticated user with role === 'admin' (403 otherwise)
+    - Returns a single user's data by ID
+  - Fields returned per user:
+    - id, full_name, email, role, phone_number, dormitory_id, status, profile_picture
+
 4.3 Web endpoints
 Routes are defined in safe_gate/routes/web.php.
 - No web/UI routes are used (API-only). The web route file is empty.
 
 4.4 Authentication model used by the API
 - Token issuance is done with Laravel Sanctum personal access tokens.
-- There is no route protection currently applied to admin create/list endpoints (no auth:sanctum middleware groups in routes/api.php).
+- Route protection is only partially applied today (currently: /api/admin/users uses token_auth; other admin endpoints are still unprotected).
 - Sanctum is configured in safe_gate/config/sanctum.php and uses guard ['web'] by default.
 
 Implication:
-- Tokens are generated, but the routes do not yet enforce them.
-- If you want admin/user endpoints protected, the codebase needs middleware like auth:sanctum applied to route groups.
+- Tokens are generated, but only some routes enforce them.
+- If you want admin/user endpoints protected broadly, the codebase needs auth:sanctum middleware applied to route groups.
 
 
 5) Database layer (what is actually in migrations)
@@ -172,7 +193,7 @@ Below is the table inventory based on migration filenames and contents.
 5.2 Core domain tables
 Identity/authn/authz
 - users
-  - full_name, username, email, phone_number, password, dormitory_id, status, failed_login_attempts, locked_until, deleted_at, last_login_at, role (added by later migration)
+  - full_name, username, email, phone_number, profile_picture, password, dormitory_id, status, failed_login_attempts, locked_until, deleted_at, last_login_at, role (added by later migration)
 - roles (name, permissions JSON)
 - user_roles (user_id, role_id)
 - authentication_providers (user_id, provider, provider_user_id)

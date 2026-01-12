@@ -16,4 +16,6 @@ Route::prefix('admin')->group(function () {
     Route::post('/set_dormitory', [AdminController::class, 'set_dormitory']);
     Route::get('/universities', [AdminController::class, 'listUniversities']);
     Route::get('/universities/{university_name}/dormitories', [AdminController::class, 'listDormitoriesByUniversity']);
+    Route::middleware('token_auth')->get('/users', [AdminController::class, 'listUsers']);
+    Route::middleware('token_auth')->get('/users/{id}', [AdminController::class, 'showUser']);
 });

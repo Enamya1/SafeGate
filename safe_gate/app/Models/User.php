@@ -23,6 +23,7 @@ class User extends Authenticatable
         'username',
         'email',
         'phone_number',
+        'profile_picture',
         'password',
         'dormitory_id',
         'role',

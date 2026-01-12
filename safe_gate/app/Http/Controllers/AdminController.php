@@ -151,4 +151,71 @@ class AdminController extends Controller
             'dormitories' => $dormitories,
         ], 200);
     }
+
+    public function listUsers(Request $request)
+    {
+        $admin = $request->user();
+
+        if (! $admin || $admin->role !== 'admin') {
+            return response()->json([
+                'message' => 'Unauthorized: Only administrators can access this endpoint.',
+            ], 403);
+        }
+
+        try {
+            $validated = $request->validate([
+                'per_page' => 'nullable|integer|min:1|max:100',
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation Error',
+                'errors' => $e->errors(),
+            ], 422);
+        }
+
+        $perPage = (int) ($validated['per_page'] ?? 50);
+
+        $users = User::query()
+            ->select([
+                'id',
+                'full_name',
+                'email',
+                'role',
+                'phone_number',
+                'dormitory_id',
+                'status',
+                'profile_picture',
+            ])
+            ->orderBy('id')
+            ->paginate($perPage);
+
+        return response()->json([
+            'message' => 'Users retrieved successfully',
+            'users' => $users,
+        ], 200);
+    }
+
+    public function showUser(Request $request, string $id)
+    {
+        $admin = $request->user();
+
+        if (! $admin || $admin->role !== 'admin') {
+            return response()->json([
+                'message' => 'Unauthorized: Only administrators can access this endpoint.',
+            ], 403);
+        }
+
+        $user = User::find($id);
+
+        if (! $user) {
+            return response()->json([
+                'message' => 'User not found.',
+            ], 404);
+        }
+
+        return response()->json([
+            'message' => 'User retrieved successfully',
+            'user' => $user,
+        ], 200);
+    }
 }
