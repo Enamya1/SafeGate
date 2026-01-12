@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('api')->get('/health-check', HealthCheckController::class);
 Route::post('/user/signup', [AuthController::class, 'signup']);
 Route::post('/user/login', [AuthController::class, 'login']);
+Route::middleware('auth:sanctum')->patch('/user/settings', [AuthController::class, 'updateProfile']);
 
 Route::prefix('admin')->group(function () {
     Route::post('/test', [AdminController::class, 'index']);

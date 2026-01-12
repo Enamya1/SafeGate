@@ -200,6 +200,21 @@ Admin endpoints (bootstrap + listing)
     - Deactivates a user by setting their status to 'inactive'.
   - Response (200): {"message":"User deactivated successfully","user":{...}}
 
+- PATCH /api/user/settings
+  - Middleware: auth:sanctum
+  - Controller: AuthController::updateProfile
+  - Validation:
+    - full_name: sometimes string max 255
+    - username: sometimes string max 255 unique users.username,{id}
+    - email: sometimes string email max 255 unique users.email,{id}
+    - phone_number: nullable string max 20
+    - dormitory_id: nullable exists dormitories.id
+    - profile_picture: nullable string max 255
+  - Behavior:
+    - Requires authenticated user (401 otherwise)
+    - Updates the authenticated user's profile data by ID
+  - Response (200): {"message":"Profile updated successfully","user":{...}}
+
 4.3 Web endpoints
 Routes are defined in safe_gate/routes/web.php.
 - No web/UI routes are used (API-only). The web route file is empty.
@@ -227,7 +242,7 @@ Below is the table inventory based on migration filenames and contents.
 5.2 Core domain tables
 Identity/authn/authz
 - users
-  - full_name, username, email, phone_number, profile_picture, password, dormitory_id, status, failed_login_attempts, locked_until, deleted_at, last_login_at, role (added by later migration)
+  - full_name, username, email, phone_number, profile_picture, student_id, bio, date_of_birth, gender, language, timezone, password, dormitory_id, status, failed_login_attempts, locked_until, deleted_at, last_login_at, role (added by later migration)
 - roles (name, permissions JSON)
 - user_roles (user_id, role_id)
 - authentication_providers (user_id, provider, provider_user_id)
@@ -418,6 +433,7 @@ Implemented and working today
 - Health check endpoints (web + api)
 - User registration (signup) with validation + hashed password
 - User login that issues Sanctum bearer token
+- User profile update (full_name, username, email, phone_number, dormitory_id, profile_picture)
 - Admin login that issues Sanctum token if users.role == 'admin'
 - University and dormitory creation + listing endpoints
 - A large set of marketplace tables created by migrations

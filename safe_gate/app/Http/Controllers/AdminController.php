@@ -292,7 +292,7 @@ class AdminController extends Controller
 
         return response()->json([
             'message' => 'User activated successfully',
-            'user' => $user,
+            'user_id' => $user->id,
         ], 200);
     }
 
@@ -319,7 +319,7 @@ class AdminController extends Controller
 
         return response()->json([
             'message' => 'User deactivated successfully',
-            'user' => $user,
+            'user_id' => $user->id,
         ], 200);
     }
 }

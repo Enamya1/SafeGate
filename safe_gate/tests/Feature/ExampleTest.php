@@ -253,7 +253,7 @@ class ExampleTest extends TestCase
         $response
             ->assertStatus(200)
             ->assertJsonPath('message', 'User activated successfully')
-            ->assertJsonPath('user.status', 'active');
+            ->assertJsonPath('user_id', $user->id);
 
         $this->assertDatabaseHas('users', [
             'id' => $user->id,
@@ -289,7 +289,7 @@ class ExampleTest extends TestCase
         $response
             ->assertStatus(200)
             ->assertJsonPath('message', 'User deactivated successfully')
-            ->assertJsonPath('user.status', 'inactive');
+            ->assertJsonPath('user_id', $user->id);
 
         $this->assertDatabaseHas('users', [
             'id' => $user->id,

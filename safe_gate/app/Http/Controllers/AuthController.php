@@ -79,4 +79,39 @@ class AuthController extends Controller
             'token_type' => 'Bearer',
         ]);
     }
+
+    public function updateProfile(Request $request)
+    {
+        try {
+            $user = Auth::user();
+
+            $validatedData = $request->validate([
+                'full_name' => 'sometimes|string|max:255',
+                'username' => 'sometimes|string|max:255|unique:users,username,' . $user->id,
+                'email' => 'sometimes|string|email|max:255|unique:users,email,' . $user->id,
+                'phone_number' => 'nullable|string|max:20',
+                'dormitory_id' => 'nullable|exists:dormitories,id',
+                    'profile_picture' => 'nullable|string|max:255',
+                    'student_id' => 'nullable|string|max:255|unique:users,student_id,' . $user->id,
+                    'bio' => 'nullable|string',
+                    'date_of_birth' => 'nullable|date',
+                    'gender' => 'nullable|string|max:255',
+                    'language' => 'nullable|string|max:255',
+                    'timezone' => 'nullable|string|max:255',
+                ]);
+
+            $user->fill($validatedData);
+            $user->save();
+
+            return response()->json([
+                'message' => 'Profile updated successfully',
+                'user' => $user,
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation Error',
+                'errors' => $e->errors(),
+            ], 422);
+        }
+    }
 }
