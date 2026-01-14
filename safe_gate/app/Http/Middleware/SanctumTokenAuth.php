@@ -61,4 +61,3 @@ class SanctumTokenAuth
         return $token;
     }
 }
-

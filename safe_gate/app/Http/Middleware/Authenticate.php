@@ -15,4 +15,3 @@ class Authenticate extends Middleware
         return parent::redirectTo($request);
     }
 }
-

@@ -137,6 +137,31 @@ Admin endpoints (bootstrap + listing)
     - Writes dormitories.university_id = university.id
   - Returns created dormitory
 
+- POST /api/admin/categories
+  - Middleware: token_auth
+  - Controller: AdminController::createCategory
+  - Access:
+    - Requires authenticated user with role === 'admin' (401/403 otherwise)
+  - Validation:
+    - name: required string max 255
+    - parent_id: nullable exists categories.id
+  - Behavior:
+    - Creates a categories row
+  - Response (201): {"message":"Category created successfully","category":{...}}
+
+- POST /api/admin/condition-levels
+  - Middleware: token_auth
+  - Controller: AdminController::createConditionLevel
+  - Access:
+    - Requires authenticated user with role === 'admin' (401/403 otherwise)
+  - Validation:
+    - name: required unique condition_levels.name
+    - description: nullable string
+    - sort_order: nullable integer min 0 (defaults to 0)
+  - Behavior:
+    - Creates a condition_levels row
+  - Response (201): {"message":"Condition level created successfully","condition_level":{...}}
+
 - GET /api/admin/universities
   - Controller: AdminController::listUniversities
   - Returns all universities
@@ -214,6 +239,78 @@ Admin endpoints (bootstrap + listing)
     - Requires authenticated user (401 otherwise)
     - Updates the authenticated user's profile data by ID
   - Response (200): {"message":"Profile updated successfully","user":{...}}
+
+- POST /api/user/products
+  - Middleware: auth:sanctum
+  - Controller: ProductController::store
+  - Access:
+    - Requires authenticated user (401 otherwise)
+    - Requires user role === 'user' (403 otherwise)
+  - Request formats:
+    - application/json (no images)
+    - multipart/form-data (when uploading images[])
+  - Validation:
+    - category_id: required exists categories.id
+    - condition_level_id: required exists condition_levels.id
+    - title: required string max 255
+    - description: nullable string
+    - price: required numeric min 0.01
+    - dormitory_id: nullable exists dormitories.id
+      - Required only if authenticated user has dormitory_id = null
+      - If authenticated user has dormitory_id, it is used and any provided dormitory_id is ignored
+    - tag_ids: nullable array of existing tags.id
+    - images:
+      - Accepts either a single image file OR an array of images (max 6)
+      - When sending multiple images use multipart keys: images[0], images[1], ...
+      - Allowed: jpg/jpeg/png/webp, max 5MB per image
+    - thumbnail_images:
+      - Optional single thumbnail file OR array matching images count
+      - When sending multiple thumbnails use keys: thumbnail_images[0], ...
+    - image_urls:
+      - Optional array of URLs/paths (http(s):// or /local/path) max 6
+      - Cannot be combined with file uploads in images
+    - image_thumbnail_urls:
+      - Optional array of URLs/paths matching image_urls count
+      - Cannot be combined with file uploads in thumbnail_images
+    - primary_image_index: nullable integer min 0 (defaults to 0; out-of-range falls back to 0)
+  - Behavior:
+    - Creates a products row with seller_id = authenticated user id and status = 'available'
+    - Optionally stores uploaded images on the public disk and creates product_images rows
+    - Optionally creates product_tags rows for provided tag_ids
+  - Response (201): {"message":"Product created successfully","product":{...},"images":[...],"tag_ids":[...]}
+
+- POST /api/user/products/{product_id}/images
+  - Middleware: auth:sanctum
+  - Controller: ProductController::uploadImages
+  - Access:
+    - Requires authenticated user (401 otherwise)
+    - Requires user role === 'user' (403 otherwise)
+    - Requires ownership of product (seller_id == auth user id)
+  - Request format:
+    - multipart/form-data
+  - Validation:
+    - images: required for file upload (single image file OR array max 6)
+    - thumbnail_images: optional, single file OR array matching images count
+    - image_urls: optional array of URLs/paths (http(s):// or /local/path) max 6
+      - If image_urls is used, images is not required
+    - image_thumbnail_urls: optional array matching image_urls count
+    - primary_image_index: nullable integer min 0 (defaults 0, out-of-range → 0)
+  - Behavior:
+    - Clears previous primary flag, sets new primary based on index
+    - Saves images to public disk and creates product_images rows
+  - Response (201): {"message":"Product images uploaded successfully","product_id":..., "images":[...]}
+
+- POST /api/user/tags
+  - Middleware: auth:sanctum
+  - Controller: ProductController::createTag
+  - Access:
+    - Requires authenticated user (401 otherwise)
+    - Requires user role === 'user' (403 otherwise)
+  - Validation:
+    - name: required unique tags.name
+  - Behavior:
+    - Creates a tags row
+  - Response (201): {"message":"Tag created successfully","tag":{...}}
 
 4.3 Web endpoints
 Routes are defined in safe_gate/routes/web.php.

@@ -87,18 +87,18 @@ class AuthController extends Controller
 
             $validatedData = $request->validate([
                 'full_name' => 'sometimes|string|max:255',
-                'username' => 'sometimes|string|max:255|unique:users,username,' . $user->id,
-                'email' => 'sometimes|string|email|max:255|unique:users,email,' . $user->id,
+                'username' => 'sometimes|string|max:255|unique:users,username,'.$user->id,
+                'email' => 'sometimes|string|email|max:255|unique:users,email,'.$user->id,
                 'phone_number' => 'nullable|string|max:20',
                 'dormitory_id' => 'nullable|exists:dormitories,id',
-                    'profile_picture' => 'nullable|string|max:255',
-                    'student_id' => 'nullable|string|max:255|unique:users,student_id,' . $user->id,
-                    'bio' => 'nullable|string',
-                    'date_of_birth' => 'nullable|date',
-                    'gender' => 'nullable|string|max:255',
-                    'language' => 'nullable|string|max:255',
-                    'timezone' => 'nullable|string|max:255',
-                ]);
+                'profile_picture' => 'nullable|string|max:255',
+                'student_id' => 'nullable|string|max:255|unique:users,student_id,'.$user->id,
+                'bio' => 'nullable|string',
+                'date_of_birth' => 'nullable|date',
+                'gender' => 'nullable|string|max:255',
+                'language' => 'nullable|string|max:255',
+                'timezone' => 'nullable|string|max:255',
+            ]);
 
             $user->fill($validatedData);
             $user->save();

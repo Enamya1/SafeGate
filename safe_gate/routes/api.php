@@ -3,12 +3,21 @@
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\HealthCheckController;
+use App\Http\Controllers\ProductController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('api')->get('/health-check', HealthCheckController::class);
 Route::post('/user/signup', [AuthController::class, 'signup']);
 Route::post('/user/login', [AuthController::class, 'login']);
 Route::middleware('auth:sanctum')->patch('/user/settings', [AuthController::class, 'updateProfile']);
+Route::middleware('auth:sanctum')->post('/user/products', [ProductController::class, 'store']);
+Route::middleware('auth:sanctum')->get('/user/products', [ProductController::class, 'myProducts']);
+Route::middleware('auth:sanctum')->post('/user/products/{product_id}/images', [ProductController::class, 'uploadImages']);
+Route::middleware('auth:sanctum')->get('/user/meta/categories', [ProductController::class, 'categories']);
+Route::middleware('auth:sanctum')->get('/user/meta/condition-levels', [ProductController::class, 'conditionLevels']);
+Route::middleware('auth:sanctum')->get('/user/meta/tags', [ProductController::class, 'tags']);
+Route::middleware('auth:sanctum')->get('/user/meta/dormitories', [ProductController::class, 'dormitories']);
+Route::middleware('auth:sanctum')->post('/user/tags', [ProductController::class, 'createTag']);
 
 Route::prefix('admin')->group(function () {
     Route::post('/test', [AdminController::class, 'index']);
@@ -17,6 +26,8 @@ Route::prefix('admin')->group(function () {
     Route::post('/set_dormitory', [AdminController::class, 'set_dormitory']);
     Route::get('/universities', [AdminController::class, 'listUniversities']);
     Route::get('/universities/{university_name}/dormitories', [AdminController::class, 'listDormitoriesByUniversity']);
+    Route::middleware('token_auth')->post('/categories', [AdminController::class, 'createCategory']);
+    Route::middleware('token_auth')->post('/condition-levels', [AdminController::class, 'createConditionLevel']);
     Route::middleware('token_auth')->get('/users', [AdminController::class, 'listUsers']);
     Route::middleware('token_auth')->get('/users/{id}', [AdminController::class, 'showUser']);
     Route::middleware('token_auth')->patch('/users/{id}', [AdminController::class, 'updateUser']);

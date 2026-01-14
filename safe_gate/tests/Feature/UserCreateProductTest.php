@@ -1,0 +1,387 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\Category;
+use App\Models\ConditionLevel;
+use App\Models\Dormitory;
+use App\Models\Product;
+use App\Models\ProductImage;
+use App\Models\ProductTag;
+use App\Models\Tag;
+use App\Models\University;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
+use Laravel\Sanctum\Sanctum;
+use Tests\TestCase;
+
+class UserCreateProductTest extends TestCase
+{
+    use RefreshDatabase;
+
+    public function test_user_can_create_product_with_image_and_tags(): void
+    {
+        Storage::fake('public');
+
+        $university = University::create([
+            'name' => 'Test University',
+            'domain' => 'test.edu',
+            'location' => null,
+            'pic' => null,
+        ]);
+
+        $dormitory = Dormitory::create([
+            'dormitory_name' => 'Dorm A',
+            'domain' => 'dorm-a.test.edu',
+            'location' => null,
+            'is_active' => true,
+            'university_id' => $university->id,
+        ]);
+
+        $category = Category::create([
+            'name' => 'Electronics',
+            'parent_id' => null,
+        ]);
+
+        $conditionLevel = ConditionLevel::create([
+            'name' => 'Good',
+            'description' => null,
+            'sort_order' => 1,
+        ]);
+
+        $tag1 = Tag::create(['name' => 'Phone']);
+        $tag2 = Tag::create(['name' => 'Android']);
+
+        $user = User::factory()->create([
+            'dormitory_id' => $dormitory->id,
+            'role' => 'user',
+            'status' => 'active',
+        ]);
+
+        Sanctum::actingAs($user);
+
+        $payload = [
+            'category_id' => $category->id,
+            'condition_level_id' => $conditionLevel->id,
+            'title' => 'Used Phone',
+            'description' => 'Works fine',
+            'price' => 99.99,
+            'tag_ids' => [$tag1->id, $tag2->id],
+            'images' => [
+                UploadedFile::fake()->createWithContent(
+                    'phone.png',
+                    base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQI12P4//8/AwAI/AL+X9x2AAAAAElFTkSuQmCC')
+                ),
+                UploadedFile::fake()->createWithContent(
+                    'phone2.png',
+                    base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQI12P4//8/AwAI/AL+X9x2AAAAAElFTkSuQmCC')
+                ),
+            ],
+        ];
+
+        $response = $this
+            ->withHeader('Accept', 'application/json')
+            ->post('/api/user/products', $payload);
+
+        $response->assertStatus(201);
+
+        $this->assertDatabaseHas('products', [
+            'seller_id' => $user->id,
+            'dormitory_id' => $dormitory->id,
+            'category_id' => $category->id,
+            'condition_level_id' => $conditionLevel->id,
+            'title' => 'Used Phone',
+            'status' => 'available',
+        ]);
+
+        $product = Product::query()->firstOrFail();
+
+        $this->assertDatabaseHas('product_images', [
+            'product_id' => $product->id,
+            'is_primary' => 1,
+        ]);
+
+        $this->assertDatabaseHas('product_tags', [
+            'product_id' => $product->id,
+            'tag_id' => $tag1->id,
+        ]);
+
+        $this->assertDatabaseHas('product_tags', [
+            'product_id' => $product->id,
+            'tag_id' => $tag2->id,
+        ]);
+
+        $this->assertSame(2, ProductImage::query()->count());
+        $this->assertSame(2, ProductTag::query()->count());
+    }
+
+    public function test_user_can_create_product_with_image_urls_and_thumbnail_urls(): void
+    {
+        $university = University::create([
+            'name' => 'Test University',
+            'domain' => 'test.edu',
+            'location' => null,
+            'pic' => null,
+        ]);
+
+        $dormitory = Dormitory::create([
+            'dormitory_name' => 'Dorm A',
+            'domain' => 'dorm-a.test.edu',
+            'location' => null,
+            'is_active' => true,
+            'university_id' => $university->id,
+        ]);
+
+        $category = Category::create([
+            'name' => 'Electronics',
+            'parent_id' => null,
+        ]);
+
+        $conditionLevel = ConditionLevel::create([
+            'name' => 'Good',
+            'description' => null,
+            'sort_order' => 1,
+        ]);
+
+        $user = User::factory()->create([
+            'dormitory_id' => $dormitory->id,
+            'role' => 'user',
+            'status' => 'active',
+        ]);
+
+        Sanctum::actingAs($user);
+
+        $payload = [
+            'category_id' => $category->id,
+            'condition_level_id' => $conditionLevel->id,
+            'title' => 'Used Laptop',
+            'description' => 'Great condition',
+            'price' => 250.00,
+            'primary_image_index' => 1,
+            'image_urls' => [
+                '/img1.png',
+                'https://example.com/img2.png',
+            ],
+            'image_thumbnail_urls' => [
+                '/thumb1.png',
+                'https://example.com/thumb2.png',
+            ],
+        ];
+
+        $response = $this
+            ->withHeader('Accept', 'application/json')
+            ->postJson('/api/user/products', $payload);
+
+        $response->assertStatus(201);
+
+        $product = Product::query()->firstOrFail();
+
+        $this->assertDatabaseHas('product_images', [
+            'product_id' => $product->id,
+            'image_url' => '/img1.png',
+            'image_thumbnail_url' => '/thumb1.png',
+            'is_primary' => 0,
+        ]);
+
+        $this->assertDatabaseHas('product_images', [
+            'product_id' => $product->id,
+            'image_url' => 'https://example.com/img2.png',
+            'image_thumbnail_url' => 'https://example.com/thumb2.png',
+            'is_primary' => 1,
+        ]);
+    }
+
+    public function test_create_product_with_mismatched_thumbnail_urls_count_returns_422(): void
+    {
+        $university = University::create([
+            'name' => 'Test University',
+            'domain' => 'test.edu',
+            'location' => null,
+            'pic' => null,
+        ]);
+
+        $dormitory = Dormitory::create([
+            'dormitory_name' => 'Dorm A',
+            'domain' => 'dorm-a.test.edu',
+            'location' => null,
+            'is_active' => true,
+            'university_id' => $university->id,
+        ]);
+
+        $category = Category::create([
+            'name' => 'Electronics',
+            'parent_id' => null,
+        ]);
+
+        $conditionLevel = ConditionLevel::create([
+            'name' => 'Good',
+            'description' => null,
+            'sort_order' => 1,
+        ]);
+
+        $user = User::factory()->create([
+            'dormitory_id' => $dormitory->id,
+            'role' => 'user',
+            'status' => 'active',
+        ]);
+
+        Sanctum::actingAs($user);
+
+        $payload = [
+            'category_id' => $category->id,
+            'condition_level_id' => $conditionLevel->id,
+            'title' => 'Used Laptop',
+            'price' => 250.00,
+            'image_urls' => [
+                '/img1.png',
+                '/img2.png',
+            ],
+            'image_thumbnail_urls' => [
+                '/thumb1.png',
+            ],
+        ];
+
+        $response = $this
+            ->withHeader('Accept', 'application/json')
+            ->postJson('/api/user/products', $payload);
+
+        $response
+            ->assertStatus(422)
+            ->assertJsonPath('errors.image_thumbnail_urls.0', 'The image_thumbnail_urls count must match image_urls count.');
+    }
+
+    public function test_user_can_list_only_their_uploaded_products(): void
+    {
+        $university = University::create([
+            'name' => 'Test University',
+            'domain' => 'test.edu',
+            'location' => null,
+            'pic' => null,
+        ]);
+
+        $dormitory = Dormitory::create([
+            'dormitory_name' => 'Dorm A',
+            'domain' => 'dorm-a.test.edu',
+            'location' => null,
+            'is_active' => true,
+            'university_id' => $university->id,
+        ]);
+
+        $category = Category::create([
+            'name' => 'Electronics',
+            'parent_id' => null,
+        ]);
+
+        $conditionLevel = ConditionLevel::create([
+            'name' => 'Good',
+            'description' => null,
+            'sort_order' => 1,
+        ]);
+
+        $tag = Tag::create(['name' => 'MyTag']);
+
+        $user = User::factory()->create([
+            'dormitory_id' => $dormitory->id,
+            'role' => 'user',
+            'status' => 'active',
+        ]);
+
+        $otherUser = User::factory()->create([
+            'dormitory_id' => $dormitory->id,
+            'role' => 'user',
+            'status' => 'active',
+        ]);
+
+        $product1 = Product::create([
+            'seller_id' => $user->id,
+            'dormitory_id' => $dormitory->id,
+            'category_id' => $category->id,
+            'condition_level_id' => $conditionLevel->id,
+            'title' => 'My Product 1',
+            'description' => null,
+            'price' => 10.00,
+            'status' => 'available',
+        ]);
+
+        $product2 = Product::create([
+            'seller_id' => $user->id,
+            'dormitory_id' => $dormitory->id,
+            'category_id' => $category->id,
+            'condition_level_id' => $conditionLevel->id,
+            'title' => 'My Product 2',
+            'description' => null,
+            'price' => 20.00,
+            'status' => 'available',
+        ]);
+
+        $otherProduct = Product::create([
+            'seller_id' => $otherUser->id,
+            'dormitory_id' => $dormitory->id,
+            'category_id' => $category->id,
+            'condition_level_id' => $conditionLevel->id,
+            'title' => 'Other Product',
+            'description' => null,
+            'price' => 30.00,
+            'status' => 'available',
+        ]);
+
+        ProductImage::create([
+            'product_id' => $product1->id,
+            'image_url' => '/p1.png',
+            'image_thumbnail_url' => '/p1_thumb.png',
+            'is_primary' => true,
+        ]);
+
+        ProductImage::create([
+            'product_id' => $product2->id,
+            'image_url' => '/p2.png',
+            'image_thumbnail_url' => null,
+            'is_primary' => true,
+        ]);
+
+        ProductTag::create([
+            'product_id' => $product1->id,
+            'tag_id' => $tag->id,
+        ]);
+
+        Sanctum::actingAs($user);
+
+        $response = $this
+            ->withHeader('Accept', 'application/json')
+            ->get('/api/user/products');
+
+        $response->assertStatus(200)->assertJsonCount(2, 'products');
+
+        $products = $response->json('products');
+        $productIds = array_column($products, 'id');
+
+        $this->assertContains($product1->id, $productIds);
+        $this->assertContains($product2->id, $productIds);
+        $this->assertNotContains($otherProduct->id, $productIds);
+
+        $product1Payload = collect($products)->firstWhere('id', $product1->id);
+        $this->assertNotNull($product1Payload);
+        $this->assertCount(1, $product1Payload['images'] ?? []);
+        $this->assertCount(1, $product1Payload['tags'] ?? []);
+        $this->assertSame($tag->id, $product1Payload['tags'][0]['id']);
+        $this->assertSame($tag->name, $product1Payload['tags'][0]['name']);
+    }
+
+    public function test_non_user_role_cannot_list_products(): void
+    {
+        $admin = User::factory()->create([
+            'role' => 'admin',
+            'status' => 'active',
+        ]);
+
+        Sanctum::actingAs($admin);
+
+        $response = $this
+            ->withHeader('Accept', 'application/json')
+            ->get('/api/user/products');
+
+        $response->assertStatus(403);
+    }
+}

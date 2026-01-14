@@ -2,11 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Category;
+use App\Models\ConditionLevel;
 use App\Models\Dormitory;
 use App\Models\University;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 
@@ -125,6 +126,74 @@ class AdminController extends Controller
         return response()->json([
             'message' => 'Dormitory created successfully',
             'dormitory' => $dormitory,
+        ], 201);
+    }
+
+    public function createCategory(Request $request)
+    {
+        $admin = $request->user();
+
+        if (! $admin || $admin->role !== 'admin') {
+            return response()->json([
+                'message' => 'Unauthorized: Only administrators can access this endpoint.',
+            ], 403);
+        }
+
+        try {
+            $validatedData = $request->validate([
+                'name' => 'required|string|max:255',
+                'parent_id' => 'nullable|integer|exists:categories,id',
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation Error',
+                'errors' => $e->errors(),
+            ], 422);
+        }
+
+        $category = Category::create([
+            'name' => $validatedData['name'],
+            'parent_id' => $validatedData['parent_id'] ?? null,
+        ]);
+
+        return response()->json([
+            'message' => 'Category created successfully',
+            'category' => $category,
+        ], 201);
+    }
+
+    public function createConditionLevel(Request $request)
+    {
+        $admin = $request->user();
+
+        if (! $admin || $admin->role !== 'admin') {
+            return response()->json([
+                'message' => 'Unauthorized: Only administrators can access this endpoint.',
+            ], 403);
+        }
+
+        try {
+            $validatedData = $request->validate([
+                'name' => 'required|string|max:255|unique:condition_levels,name',
+                'description' => 'nullable|string',
+                'sort_order' => 'nullable|integer|min:0',
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation Error',
+                'errors' => $e->errors(),
+            ], 422);
+        }
+
+        $conditionLevel = ConditionLevel::create([
+            'name' => $validatedData['name'],
+            'description' => $validatedData['description'] ?? null,
+            'sort_order' => $validatedData['sort_order'] ?? 0,
+        ]);
+
+        return response()->json([
+            'message' => 'Condition level created successfully',
+            'condition_level' => $conditionLevel,
         ], 201);
     }
 
