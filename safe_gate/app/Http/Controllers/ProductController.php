@@ -210,6 +210,206 @@ class ProductController extends Controller
         ], 200);
     }
 
+    public function listProductsByTagName(Request $request, string $tag_name)
+    {
+        $user = $request->user();
+
+        if (($user->role ?? 'user') !== 'user') {
+            return response()->json([
+                'message' => 'Unauthorized: Only users can access this endpoint.',
+            ], 403);
+        }
+
+        $tagName = trim($tag_name);
+
+        try {
+            $validated = validator(['tag_name' => $tagName], [
+                'tag_name' => 'required|string|max:255',
+            ])->validate();
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation Error',
+                'errors' => $e->errors(),
+            ], 422);
+        }
+
+        $tag = Tag::query()
+            ->where('name', $validated['tag_name'])
+            ->first();
+
+        if (! $tag) {
+            return response()->json([
+                'message' => 'Tag not found.',
+            ], 404);
+        }
+
+        $productIds = ProductTag::query()
+            ->where('tag_id', $tag->id)
+            ->select('product_id')
+            ->distinct()
+            ->pluck('product_id')
+            ->all();
+
+        $products = collect();
+
+        if (count($productIds) > 0) {
+            $products = Product::query()
+                ->with(['dormitory'])
+                ->whereIn('id', $productIds)
+                ->whereNull('deleted_at')
+                ->orderByDesc('id')
+                ->get();
+        }
+
+        $matchedProductIds = $products->pluck('id')->all();
+
+        $imagesByProductId = [];
+        $tagsByProductId = [];
+
+        if (count($matchedProductIds) > 0) {
+            $imagesByProductId = ProductImage::query()
+                ->whereIn('product_id', $matchedProductIds)
+                ->orderByDesc('is_primary')
+                ->orderBy('id')
+                ->get()
+                ->groupBy('product_id')
+                ->all();
+
+            $tagRows = DB::table('product_tags')
+                ->join('tags', 'product_tags.tag_id', '=', 'tags.id')
+                ->whereIn('product_tags.product_id', $matchedProductIds)
+                ->select([
+                    'product_tags.product_id',
+                    'tags.id',
+                    'tags.name',
+                ])
+                ->orderBy('tags.id')
+                ->get();
+
+            foreach ($tagRows as $row) {
+                $tagsByProductId[$row->product_id][] = [
+                    'id' => $row->id,
+                    'name' => $row->name,
+                ];
+            }
+        }
+
+        $payload = $products
+            ->map(function (Product $product) use ($imagesByProductId, $tagsByProductId) {
+                $data = $product->toArray();
+                $images = $imagesByProductId[$product->id] ?? collect();
+                $data['images'] = $images->values();
+                $data['tags'] = $tagsByProductId[$product->id] ?? [];
+
+                return $data;
+            })
+            ->values();
+
+        return response()->json([
+            'message' => 'Products retrieved successfully',
+            'tag' => [
+                'id' => $tag->id,
+                'name' => $tag->name,
+            ],
+            'products' => $payload,
+        ], 200);
+    }
+
+    public function listProductsByCategoryName(Request $request, string $category_name)
+    {
+        $user = $request->user();
+
+        if (($user->role ?? 'user') !== 'user') {
+            return response()->json([
+                'message' => 'Unauthorized: Only users can access this endpoint.',
+            ], 403);
+        }
+
+        $categoryName = trim($category_name);
+
+        try {
+            $validated = validator(['category_name' => $categoryName], [
+                'category_name' => 'required|string|max:255',
+            ])->validate();
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation Error',
+                'errors' => $e->errors(),
+            ], 422);
+        }
+
+        $category = Category::query()
+            ->where('name', $validated['category_name'])
+            ->first();
+
+        if (! $category) {
+            return response()->json([
+                'message' => 'Category not found.',
+            ], 404);
+        }
+
+        $products = Product::query()
+            ->with(['dormitory'])
+            ->where('category_id', $category->id)
+            ->whereNull('deleted_at')
+            ->orderByDesc('id')
+            ->get();
+
+        $productIds = $products->pluck('id')->all();
+
+        $imagesByProductId = [];
+        $tagsByProductId = [];
+
+        if (count($productIds) > 0) {
+            $imagesByProductId = ProductImage::query()
+                ->whereIn('product_id', $productIds)
+                ->orderByDesc('is_primary')
+                ->orderBy('id')
+                ->get()
+                ->groupBy('product_id')
+                ->all();
+
+            $tagRows = DB::table('product_tags')
+                ->join('tags', 'product_tags.tag_id', '=', 'tags.id')
+                ->whereIn('product_tags.product_id', $productIds)
+                ->select([
+                    'product_tags.product_id',
+                    'tags.id',
+                    'tags.name',
+                ])
+                ->orderBy('tags.id')
+                ->get();
+
+            foreach ($tagRows as $row) {
+                $tagsByProductId[$row->product_id][] = [
+                    'id' => $row->id,
+                    'name' => $row->name,
+                ];
+            }
+        }
+
+        $payload = $products
+            ->map(function (Product $product) use ($imagesByProductId, $tagsByProductId) {
+                $data = $product->toArray();
+                $images = $imagesByProductId[$product->id] ?? collect();
+                $data['images'] = $images->values();
+                $data['tags'] = $tagsByProductId[$product->id] ?? [];
+
+                return $data;
+            })
+            ->values();
+
+        return response()->json([
+            'message' => 'Products retrieved successfully',
+            'category' => [
+                'id' => $category->id,
+                'name' => $category->name,
+                'parent_id' => $category->parent_id,
+            ],
+            'products' => $payload,
+        ], 200);
+    }
+
     public function store(Request $request)
     {
         $user = $request->user();

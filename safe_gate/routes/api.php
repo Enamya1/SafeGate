@@ -12,6 +12,8 @@ Route::post('/user/login', [AuthController::class, 'login']);
 Route::middleware('auth:sanctum')->patch('/user/settings', [AuthController::class, 'updateProfile']);
 Route::middleware('auth:sanctum')->post('/user/products', [ProductController::class, 'store']);
 Route::middleware('auth:sanctum')->get('/user/products', [ProductController::class, 'myProducts']);
+Route::middleware('auth:sanctum')->get('/user/products/by-tag/{tag_name}', [ProductController::class, 'listProductsByTagName']);
+Route::middleware('auth:sanctum')->get('/user/products/by-category/{category_name}', [ProductController::class, 'listProductsByCategoryName']);
 Route::middleware('auth:sanctum')->post('/user/products/{product_id}/images', [ProductController::class, 'uploadImages']);
 Route::middleware('auth:sanctum')->get('/user/meta/categories', [ProductController::class, 'categories']);
 Route::middleware('auth:sanctum')->get('/user/meta/condition-levels', [ProductController::class, 'conditionLevels']);

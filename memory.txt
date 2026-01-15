@@ -279,6 +279,34 @@ Admin endpoints (bootstrap + listing)
     - Optionally creates product_tags rows for provided tag_ids
   - Response (201): {"message":"Product created successfully","product":{...},"images":[...],"tag_ids":[...]}
 
+- GET /api/user/products/by-tag/{tag_name}
+  - Middleware: auth:sanctum
+  - Controller: ProductController::listProductsByTagName
+  - Access:
+    - Requires authenticated user (401 otherwise)
+    - Requires user role === 'user' (403 otherwise)
+  - Path params:
+    - tag_name: required string max 255
+  - Behavior:
+    - Finds the tag by exact name match
+    - Returns all products connected to that tag (deleted_at must be null)
+    - Includes product images[] and tags[] arrays in each product
+  - Response (200): {"message":"Products retrieved successfully","tag":{...},"products":[...]}
+
+- GET /api/user/products/by-category/{category_name}
+  - Middleware: auth:sanctum
+  - Controller: ProductController::listProductsByCategoryName
+  - Access:
+    - Requires authenticated user (401 otherwise)
+    - Requires user role === 'user' (403 otherwise)
+  - Path params:
+    - category_name: required string max 255
+  - Behavior:
+    - Finds the category by exact name match
+    - Returns all products in that category (deleted_at must be null)
+    - Includes product images[] and tags[] arrays in each product
+  - Response (200): {"message":"Products retrieved successfully","category":{...},"products":[...]}
+
 - POST /api/user/products/{product_id}/images
   - Middleware: auth:sanctum
   - Controller: ProductController::uploadImages
