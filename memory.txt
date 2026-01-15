@@ -307,6 +307,33 @@ Admin endpoints (bootstrap + listing)
     - Includes product images[] and tags[] arrays in each product
   - Response (200): {"message":"Products retrieved successfully","category":{...},"products":[...]}
 
+- POST /api/user/favorites
+  - Middleware: auth:sanctum
+  - Controller: ProductController::addProductToFavorites
+  - Access:
+    - Requires authenticated user (401 otherwise)
+    - Requires user role === 'user' (403 otherwise)
+  - Body (JSON):
+    - product_id: required integer
+  - Behavior:
+    - Validates product exists and is not soft-deleted (deleted_at must be null)
+    - Creates favorites row if not already present (idempotent)
+  - Response:
+    - 201: {"message":"Product added to favorites successfully","favorite":{...}}
+    - 200: {"message":"Product is already in favorites","favorite":{...}}
+
+- GET /api/user/get_favorites
+  - Middleware: auth:sanctum
+  - Controller: ProductController::myFavorites
+  - Access:
+    - Requires authenticated user (401 otherwise)
+    - Requires user role === 'user' (403 otherwise)
+  - Behavior:
+    - Returns all products favorited by the authenticated user
+    - Excludes soft-deleted products (deleted_at must be null)
+    - Includes product images[] and tags[] arrays in each product
+  - Response (200): {"message":"Favorite products retrieved successfully","products":[...]}
+
 - POST /api/user/products/{product_id}/images
   - Middleware: auth:sanctum
   - Controller: ProductController::uploadImages

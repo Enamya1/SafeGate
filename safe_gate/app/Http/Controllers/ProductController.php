@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Category;
 use App\Models\ConditionLevel;
 use App\Models\Dormitory;
+use App\Models\Favorite;
 use App\Models\Product;
 use App\Models\ProductImage;
 use App\Models\ProductTag;
@@ -406,6 +407,134 @@ class ProductController extends Controller
                 'name' => $category->name,
                 'parent_id' => $category->parent_id,
             ],
+            'products' => $payload,
+        ], 200);
+    }
+
+    public function addProductToFavorites(Request $request)
+    {
+        $user = $request->user();
+
+        if (($user->role ?? 'user') !== 'user') {
+            return response()->json([
+                'message' => 'Unauthorized: Only users can access this endpoint.',
+            ], 403);
+        }
+
+        try {
+            $validated = $request->validate([
+                'product_id' => 'required|integer',
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation Error',
+                'errors' => $e->errors(),
+            ], 422);
+        }
+
+        $productId = (int) $validated['product_id'];
+        $product = Product::query()
+            ->whereKey($productId)
+            ->whereNull('deleted_at')
+            ->first();
+
+        if (! $product) {
+            return response()->json([
+                'message' => 'Product not found.',
+            ], 404);
+        }
+
+        $favorite = Favorite::firstOrCreate([
+            'user_id' => $user->id,
+            'product_id' => $productId,
+        ]);
+
+        $status = $favorite->wasRecentlyCreated ? 201 : 200;
+        $message = $favorite->wasRecentlyCreated
+            ? 'Product added to favorites successfully'
+            : 'Product is already in favorites';
+
+        return response()->json([
+            'message' => $message,
+            'favorite' => $favorite,
+        ], $status);
+    }
+
+    public function myFavorites(Request $request)
+    {
+        $user = $request->user();
+
+        if (($user->role ?? 'user') !== 'user') {
+            return response()->json([
+                'message' => 'Unauthorized: Only users can access this endpoint.',
+            ], 403);
+        }
+
+        $favoriteProductIds = Favorite::query()
+            ->where('user_id', $user->id)
+            ->orderByDesc('id')
+            ->pluck('product_id')
+            ->unique()
+            ->values()
+            ->all();
+
+        $products = collect();
+
+        if (count($favoriteProductIds) > 0) {
+            $products = Product::query()
+                ->with(['dormitory'])
+                ->whereIn('id', $favoriteProductIds)
+                ->whereNull('deleted_at')
+                ->orderByDesc('id')
+                ->get();
+        }
+
+        $productIds = $products->pluck('id')->all();
+
+        $imagesByProductId = [];
+        $tagsByProductId = [];
+
+        if (count($productIds) > 0) {
+            $imagesByProductId = ProductImage::query()
+                ->whereIn('product_id', $productIds)
+                ->orderByDesc('is_primary')
+                ->orderBy('id')
+                ->get()
+                ->groupBy('product_id')
+                ->all();
+
+            $tagRows = DB::table('product_tags')
+                ->join('tags', 'product_tags.tag_id', '=', 'tags.id')
+                ->whereIn('product_tags.product_id', $productIds)
+                ->select([
+                    'product_tags.product_id',
+                    'tags.id',
+                    'tags.name',
+                ])
+                ->orderBy('tags.id')
+                ->get();
+
+            foreach ($tagRows as $row) {
+                $tagsByProductId[$row->product_id][] = [
+                    'id' => $row->id,
+                    'name' => $row->name,
+                ];
+            }
+        }
+
+        $payload = $products
+            ->map(function (Product $product) use ($imagesByProductId, $tagsByProductId) {
+                $data = $product->toArray();
+                $images = $imagesByProductId[$product->id] ?? collect();
+                $data['images'] = $images->values();
+                $data['tags'] = $tagsByProductId[$product->id] ?? [];
+
+                return $data;
+            })
+            ->values();
+
+        return response()->json([
+            'message' => 'Favorite products retrieved successfully',
             'products' => $payload,
         ], 200);
     }

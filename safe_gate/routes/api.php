@@ -14,6 +14,8 @@ Route::middleware('auth:sanctum')->post('/user/products', [ProductController::cl
 Route::middleware('auth:sanctum')->get('/user/products', [ProductController::class, 'myProducts']);
 Route::middleware('auth:sanctum')->get('/user/products/by-tag/{tag_name}', [ProductController::class, 'listProductsByTagName']);
 Route::middleware('auth:sanctum')->get('/user/products/by-category/{category_name}', [ProductController::class, 'listProductsByCategoryName']);
+Route::middleware('auth:sanctum')->get('/user/get_favorites', [ProductController::class, 'myFavorites']);
+Route::middleware('auth:sanctum')->post('/user/favorites', [ProductController::class, 'addProductToFavorites']);
 Route::middleware('auth:sanctum')->post('/user/products/{product_id}/images', [ProductController::class, 'uploadImages']);
 Route::middleware('auth:sanctum')->get('/user/meta/categories', [ProductController::class, 'categories']);
 Route::middleware('auth:sanctum')->get('/user/meta/condition-levels', [ProductController::class, 'conditionLevels']);

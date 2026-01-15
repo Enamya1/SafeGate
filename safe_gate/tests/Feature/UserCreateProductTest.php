@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Category;
 use App\Models\ConditionLevel;
 use App\Models\Dormitory;
+use App\Models\Favorite;
 use App\Models\Product;
 use App\Models\ProductImage;
 use App\Models\ProductTag;
@@ -705,6 +706,391 @@ class UserCreateProductTest extends TestCase
             ->get('/api/user/products/by-category/UnknownCategory');
 
         $response->assertStatus(404);
+    }
+
+    public function test_user_can_add_product_to_favorites(): void
+    {
+        $university = University::create([
+            'name' => 'Test University',
+            'domain' => 'test.edu',
+            'location' => null,
+            'pic' => null,
+        ]);
+
+        $dormitory = Dormitory::create([
+            'dormitory_name' => 'Dorm A',
+            'domain' => 'dorm-a.test.edu',
+            'location' => null,
+            'is_active' => true,
+            'university_id' => $university->id,
+        ]);
+
+        $category = Category::create([
+            'name' => 'Electronics',
+            'parent_id' => null,
+        ]);
+
+        $conditionLevel = ConditionLevel::create([
+            'name' => 'Good',
+            'description' => null,
+            'sort_order' => 1,
+        ]);
+
+        $user = User::factory()->create([
+            'dormitory_id' => $dormitory->id,
+            'role' => 'user',
+            'status' => 'active',
+        ]);
+
+        $product = Product::create([
+            'seller_id' => $user->id,
+            'dormitory_id' => $dormitory->id,
+            'category_id' => $category->id,
+            'condition_level_id' => $conditionLevel->id,
+            'title' => 'Keyboard',
+            'description' => null,
+            'price' => 20.00,
+            'status' => 'available',
+        ]);
+
+        Sanctum::actingAs($user);
+
+        $response = $this
+            ->withHeader('Accept', 'application/json')
+            ->postJson('/api/user/favorites', [
+                'product_id' => $product->id,
+            ]);
+
+        $response
+            ->assertStatus(201)
+            ->assertJsonPath('favorite.user_id', $user->id)
+            ->assertJsonPath('favorite.product_id', $product->id);
+
+        $this->assertDatabaseHas('favorites', [
+            'user_id' => $user->id,
+            'product_id' => $product->id,
+        ]);
+    }
+
+    public function test_add_product_to_favorites_is_idempotent(): void
+    {
+        $university = University::create([
+            'name' => 'Test University',
+            'domain' => 'test.edu',
+            'location' => null,
+            'pic' => null,
+        ]);
+
+        $dormitory = Dormitory::create([
+            'dormitory_name' => 'Dorm A',
+            'domain' => 'dorm-a.test.edu',
+            'location' => null,
+            'is_active' => true,
+            'university_id' => $university->id,
+        ]);
+
+        $category = Category::create([
+            'name' => 'Electronics',
+            'parent_id' => null,
+        ]);
+
+        $conditionLevel = ConditionLevel::create([
+            'name' => 'Good',
+            'description' => null,
+            'sort_order' => 1,
+        ]);
+
+        $user = User::factory()->create([
+            'dormitory_id' => $dormitory->id,
+            'role' => 'user',
+            'status' => 'active',
+        ]);
+
+        $product = Product::create([
+            'seller_id' => $user->id,
+            'dormitory_id' => $dormitory->id,
+            'category_id' => $category->id,
+            'condition_level_id' => $conditionLevel->id,
+            'title' => 'Mouse',
+            'description' => null,
+            'price' => 10.00,
+            'status' => 'available',
+        ]);
+
+        Sanctum::actingAs($user);
+
+        $this
+            ->withHeader('Accept', 'application/json')
+            ->postJson('/api/user/favorites', [
+                'product_id' => $product->id,
+            ])
+            ->assertStatus(201);
+
+        $this
+            ->withHeader('Accept', 'application/json')
+            ->postJson('/api/user/favorites', [
+                'product_id' => $product->id,
+            ])
+            ->assertStatus(200);
+
+        $this->assertSame(1, Favorite::query()->count());
+    }
+
+    public function test_user_can_list_favorite_products(): void
+    {
+        $university = University::create([
+            'name' => 'Test University',
+            'domain' => 'test.edu',
+            'location' => null,
+            'pic' => null,
+        ]);
+
+        $dormitory = Dormitory::create([
+            'dormitory_name' => 'Dorm A',
+            'domain' => 'dorm-a.test.edu',
+            'location' => null,
+            'is_active' => true,
+            'university_id' => $university->id,
+        ]);
+
+        $category = Category::create([
+            'name' => 'Electronics',
+            'parent_id' => null,
+        ]);
+
+        $conditionLevel = ConditionLevel::create([
+            'name' => 'Good',
+            'description' => null,
+            'sort_order' => 1,
+        ]);
+
+        $tag = Tag::create(['name' => 'FavoriteTag']);
+
+        $user = User::factory()->create([
+            'dormitory_id' => $dormitory->id,
+            'role' => 'user',
+            'status' => 'active',
+        ]);
+
+        $otherUser = User::factory()->create([
+            'dormitory_id' => $dormitory->id,
+            'role' => 'user',
+            'status' => 'active',
+        ]);
+
+        $product1 = Product::create([
+            'seller_id' => $otherUser->id,
+            'dormitory_id' => $dormitory->id,
+            'category_id' => $category->id,
+            'condition_level_id' => $conditionLevel->id,
+            'title' => 'Favorite Product 1',
+            'description' => null,
+            'price' => 10.00,
+            'status' => 'available',
+        ]);
+
+        $product2 = Product::create([
+            'seller_id' => $otherUser->id,
+            'dormitory_id' => $dormitory->id,
+            'category_id' => $category->id,
+            'condition_level_id' => $conditionLevel->id,
+            'title' => 'Favorite Product 2',
+            'description' => null,
+            'price' => 20.00,
+            'status' => 'sold',
+        ]);
+
+        $deletedProduct = Product::create([
+            'seller_id' => $otherUser->id,
+            'dormitory_id' => $dormitory->id,
+            'category_id' => $category->id,
+            'condition_level_id' => $conditionLevel->id,
+            'title' => 'Deleted Favorite Product',
+            'description' => null,
+            'price' => 30.00,
+            'status' => 'available',
+            'deleted_at' => now(),
+        ]);
+
+        $otherUsersProduct = Product::create([
+            'seller_id' => $user->id,
+            'dormitory_id' => $dormitory->id,
+            'category_id' => $category->id,
+            'condition_level_id' => $conditionLevel->id,
+            'title' => 'Other User Favorite Product',
+            'description' => null,
+            'price' => 40.00,
+            'status' => 'available',
+        ]);
+
+        Favorite::create([
+            'user_id' => $user->id,
+            'product_id' => $product1->id,
+        ]);
+
+        Favorite::create([
+            'user_id' => $user->id,
+            'product_id' => $product2->id,
+        ]);
+
+        Favorite::create([
+            'user_id' => $user->id,
+            'product_id' => $deletedProduct->id,
+        ]);
+
+        Favorite::create([
+            'user_id' => $otherUser->id,
+            'product_id' => $otherUsersProduct->id,
+        ]);
+
+        ProductImage::create([
+            'product_id' => $product1->id,
+            'image_url' => '/fav1.png',
+            'image_thumbnail_url' => '/fav1_thumb.png',
+            'is_primary' => true,
+        ]);
+
+        ProductTag::create([
+            'product_id' => $product1->id,
+            'tag_id' => $tag->id,
+        ]);
+
+        Sanctum::actingAs($user);
+
+        $response = $this
+            ->withHeader('Accept', 'application/json')
+            ->get('/api/user/get_favorites');
+
+        $response
+            ->assertStatus(200)
+            ->assertJsonCount(2, 'products');
+
+        $products = $response->json('products');
+        $productIds = array_column($products, 'id');
+
+        $this->assertContains($product1->id, $productIds);
+        $this->assertContains($product2->id, $productIds);
+        $this->assertNotContains($deletedProduct->id, $productIds);
+        $this->assertNotContains($otherUsersProduct->id, $productIds);
+
+        $product1Payload = collect($products)->firstWhere('id', $product1->id);
+        $this->assertNotNull($product1Payload);
+        $this->assertCount(1, $product1Payload['images'] ?? []);
+        $this->assertCount(1, $product1Payload['tags'] ?? []);
+        $this->assertSame($tag->id, $product1Payload['tags'][0]['id']);
+        $this->assertSame($tag->name, $product1Payload['tags'][0]['name']);
+    }
+
+    public function test_add_product_to_favorites_with_unknown_product_returns_404(): void
+    {
+        $university = University::create([
+            'name' => 'Test University',
+            'domain' => 'test.edu',
+            'location' => null,
+            'pic' => null,
+        ]);
+
+        $dormitory = Dormitory::create([
+            'dormitory_name' => 'Dorm A',
+            'domain' => 'dorm-a.test.edu',
+            'location' => null,
+            'is_active' => true,
+            'university_id' => $university->id,
+        ]);
+
+        $user = User::factory()->create([
+            'dormitory_id' => $dormitory->id,
+            'role' => 'user',
+            'status' => 'active',
+        ]);
+
+        Sanctum::actingAs($user);
+
+        $response = $this
+            ->withHeader('Accept', 'application/json')
+            ->postJson('/api/user/favorites', [
+                'product_id' => 999999,
+            ]);
+
+        $response->assertStatus(404);
+    }
+
+    public function test_non_user_role_cannot_list_favorites(): void
+    {
+        $admin = User::factory()->create([
+            'role' => 'admin',
+            'status' => 'active',
+        ]);
+
+        Sanctum::actingAs($admin);
+
+        $response = $this
+            ->withHeader('Accept', 'application/json')
+            ->get('/api/user/get_favorites');
+
+        $response->assertStatus(403);
+    }
+
+    public function test_non_user_role_cannot_add_product_to_favorites(): void
+    {
+        $university = University::create([
+            'name' => 'Test University',
+            'domain' => 'test.edu',
+            'location' => null,
+            'pic' => null,
+        ]);
+
+        $dormitory = Dormitory::create([
+            'dormitory_name' => 'Dorm A',
+            'domain' => 'dorm-a.test.edu',
+            'location' => null,
+            'is_active' => true,
+            'university_id' => $university->id,
+        ]);
+
+        $category = Category::create([
+            'name' => 'Electronics',
+            'parent_id' => null,
+        ]);
+
+        $conditionLevel = ConditionLevel::create([
+            'name' => 'Good',
+            'description' => null,
+            'sort_order' => 1,
+        ]);
+
+        $admin = User::factory()->create([
+            'role' => 'admin',
+            'status' => 'active',
+            'dormitory_id' => $dormitory->id,
+        ]);
+
+        $seller = User::factory()->create([
+            'role' => 'user',
+            'status' => 'active',
+            'dormitory_id' => $dormitory->id,
+        ]);
+
+        $product = Product::create([
+            'seller_id' => $seller->id,
+            'dormitory_id' => $dormitory->id,
+            'category_id' => $category->id,
+            'condition_level_id' => $conditionLevel->id,
+            'title' => 'Keyboard',
+            'description' => null,
+            'price' => 20.00,
+            'status' => 'available',
+        ]);
+
+        Sanctum::actingAs($admin);
+
+        $response = $this
+            ->withHeader('Accept', 'application/json')
+            ->postJson('/api/user/favorites', [
+                'product_id' => $product->id,
+            ]);
+
+        $response->assertStatus(403);
     }
 
     public function test_non_user_role_cannot_list_products(): void
