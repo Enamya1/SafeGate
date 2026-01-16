@@ -981,6 +981,107 @@ class UserCreateProductTest extends TestCase
         $this->assertSame($tag->name, $product1Payload['tags'][0]['name']);
     }
 
+    public function test_user_can_get_product_details_by_id(): void
+    {
+        $university = University::create([
+            'name' => 'Test University',
+            'domain' => 'test.edu',
+            'location' => null,
+            'pic' => null,
+        ]);
+
+        $dormitory = Dormitory::create([
+            'dormitory_name' => 'Dorm A',
+            'domain' => 'dorm-a.test.edu',
+            'location' => null,
+            'is_active' => true,
+            'university_id' => $university->id,
+        ]);
+
+        $category = Category::create([
+            'name' => 'Electronics',
+            'parent_id' => null,
+        ]);
+
+        $conditionLevel = ConditionLevel::create([
+            'name' => 'Good',
+            'description' => null,
+            'sort_order' => 1,
+        ]);
+
+        $tag = Tag::create(['name' => 'DetailTag']);
+
+        $seller = User::factory()->create([
+            'dormitory_id' => $dormitory->id,
+            'role' => 'user',
+            'status' => 'active',
+            'username' => 'selleruser',
+        ]);
+
+        $viewer = User::factory()->create([
+            'dormitory_id' => $dormitory->id,
+            'role' => 'user',
+            'status' => 'active',
+            'username' => 'vieweruser',
+        ]);
+
+        $product = Product::create([
+            'seller_id' => $seller->id,
+            'dormitory_id' => $dormitory->id,
+            'category_id' => $category->id,
+            'condition_level_id' => $conditionLevel->id,
+            'title' => 'Keyboard',
+            'description' => 'Nice keyboard',
+            'price' => 20.00,
+            'status' => 'available',
+        ]);
+
+        ProductImage::create([
+            'product_id' => $product->id,
+            'image_url' => '/p1.png',
+            'image_thumbnail_url' => '/p1_thumb.png',
+            'is_primary' => true,
+        ]);
+
+        ProductTag::create([
+            'product_id' => $product->id,
+            'tag_id' => $tag->id,
+        ]);
+
+        Sanctum::actingAs($viewer);
+
+        $response = $this
+            ->withHeader('Accept', 'application/json')
+            ->get('/api/user/get_product/'.$product->id);
+
+        $response
+            ->assertStatus(200)
+            ->assertJsonPath('product.id', $product->id)
+            ->assertJsonPath('product.title', $product->title)
+            ->assertJsonPath('product.category.id', $category->id)
+            ->assertJsonPath('product.condition_level.id', $conditionLevel->id)
+            ->assertJsonPath('product.seller.id', $seller->id)
+            ->assertJsonPath('product.seller.username', $seller->username)
+            ->assertJsonCount(1, 'product.images')
+            ->assertJsonCount(1, 'product.tags');
+    }
+
+    public function test_get_product_with_unknown_product_returns_404(): void
+    {
+        $user = User::factory()->create([
+            'role' => 'user',
+            'status' => 'active',
+        ]);
+
+        Sanctum::actingAs($user);
+
+        $response = $this
+            ->withHeader('Accept', 'application/json')
+            ->get('/api/user/get_product/999999');
+
+        $response->assertStatus(404);
+    }
+
     public function test_add_product_to_favorites_with_unknown_product_returns_404(): void
     {
         $university = University::create([
@@ -1105,6 +1206,22 @@ class UserCreateProductTest extends TestCase
         $response = $this
             ->withHeader('Accept', 'application/json')
             ->get('/api/user/products');
+
+        $response->assertStatus(403);
+    }
+
+    public function test_non_user_role_cannot_get_product_details(): void
+    {
+        $admin = User::factory()->create([
+            'role' => 'admin',
+            'status' => 'active',
+        ]);
+
+        Sanctum::actingAs($admin);
+
+        $response = $this
+            ->withHeader('Accept', 'application/json')
+            ->get('/api/user/get_product/1');
 
         $response->assertStatus(403);
     }

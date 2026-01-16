@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\BehavioralEventController;
 use App\Http\Controllers\HealthCheckController;
 use App\Http\Controllers\ProductController;
 use Illuminate\Support\Facades\Route;
@@ -9,13 +10,16 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('api')->get('/health-check', HealthCheckController::class);
 Route::post('/user/signup', [AuthController::class, 'signup']);
 Route::post('/user/login', [AuthController::class, 'login']);
+Route::middleware('auth:sanctum')->get('/user/me', [AuthController::class, 'me']);
 Route::middleware('auth:sanctum')->patch('/user/settings', [AuthController::class, 'updateProfile']);
 Route::middleware('auth:sanctum')->post('/user/products', [ProductController::class, 'store']);
 Route::middleware('auth:sanctum')->get('/user/products', [ProductController::class, 'myProducts']);
+Route::middleware('auth:sanctum')->get('/user/get_product/{product_id}', [ProductController::class, 'getProduct']);
 Route::middleware('auth:sanctum')->get('/user/products/by-tag/{tag_name}', [ProductController::class, 'listProductsByTagName']);
 Route::middleware('auth:sanctum')->get('/user/products/by-category/{category_name}', [ProductController::class, 'listProductsByCategoryName']);
 Route::middleware('auth:sanctum')->get('/user/get_favorites', [ProductController::class, 'myFavorites']);
 Route::middleware('auth:sanctum')->post('/user/favorites', [ProductController::class, 'addProductToFavorites']);
+Route::middleware('auth:sanctum')->post('/user/behavioral_events', [BehavioralEventController::class, 'store']);
 Route::middleware('auth:sanctum')->post('/user/products/{product_id}/images', [ProductController::class, 'uploadImages']);
 Route::middleware('auth:sanctum')->get('/user/meta/categories', [ProductController::class, 'categories']);
 Route::middleware('auth:sanctum')->get('/user/meta/condition-levels', [ProductController::class, 'conditionLevels']);

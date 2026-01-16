@@ -338,4 +338,37 @@ class ExampleTest extends TestCase
             ->assertStatus(403)
             ->assertJsonPath('message', 'Your admin account is deactivated. Please contact support.');
     }
+
+    public function test_user_me_endpoint_returns_unauthenticated_without_token(): void
+    {
+        $response = $this->getJson('/api/user/me');
+
+        $response->assertStatus(401);
+    }
+
+    public function test_user_me_endpoint_returns_user_data_for_bearer_token(): void
+    {
+        $user = User::create([
+            'full_name' => 'Regular User',
+            'username' => 'regularuser',
+            'email' => 'user@example.com',
+            'phone_number' => null,
+            'password' => Hash::make('password123'),
+            'dormitory_id' => null,
+            'role' => 'user',
+            'status' => 'active',
+        ]);
+
+        $token = $user->createToken('auth_token')->plainTextToken;
+
+        $response = $this
+            ->withHeader('Authorization', 'Bearer '.$token)
+            ->getJson('/api/user/me');
+
+        $response
+            ->assertStatus(200)
+            ->assertJsonPath('message', 'User retrieved successfully')
+            ->assertJsonPath('user.id', $user->id)
+            ->assertJsonPath('user.username', $user->username);
+    }
 }

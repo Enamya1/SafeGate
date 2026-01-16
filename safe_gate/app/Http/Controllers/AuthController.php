@@ -114,4 +114,26 @@ class AuthController extends Controller
             ], 422);
         }
     }
+
+    public function me(Request $request)
+    {
+        $user = $request->user();
+
+        if (($user->role ?? 'user') !== 'user') {
+            return response()->json([
+                'message' => 'Unauthorized: Only users can access this endpoint.',
+            ], 403);
+        }
+
+        return response()->json([
+            'message' => 'User retrieved successfully',
+            'user' => [
+                'id' => $user->id,
+                'full_name' => $user->full_name,
+                'username' => $user->username,
+                'email' => $user->email,
+                'role' => $user->role,
+            ],
+        ], 200);
+    }
 }

@@ -19,6 +19,11 @@ Backend
 - Migrations/Schema Builder: Laravel migrations in safe_gate/database/migrations
 - Testing: PHPUnit ^11.5.3 via Laravel test runner
 
+Python microservice (in-repo)
+- Framework: FastAPI
+- ASGI server: Uvicorn
+- Location: d:\ty_now\SafeGate\python_service\
+
 Frontend
 - No UI/frontend is included in this repository (API-only). A separate frontend can be connected later.
 
@@ -100,6 +105,16 @@ User auth
   - Failure response:
     - 401 if credentials invalid
     - 422 if validation fails
+
+- GET /api/user/me
+  - Middleware: auth:sanctum
+  - Controller: AuthController::me
+  - Access:
+    - Requires authenticated user (401 otherwise)
+    - Requires user role === 'user' (403 otherwise)
+  - Behavior:
+    - Returns the authenticated user's basic identity fields
+  - Response (200): {"message":"User retrieved successfully","user":{...}}
 
 Admin endpoints (bootstrap + listing)
 - POST /api/admin/test
@@ -279,6 +294,25 @@ Admin endpoints (bootstrap + listing)
     - Optionally creates product_tags rows for provided tag_ids
   - Response (201): {"message":"Product created successfully","product":{...},"images":[...],"tag_ids":[...]}
 
+- GET /api/user/get_product/{product_id}
+  - Middleware: auth:sanctum
+  - Controller: ProductController::getProduct
+  - Access:
+    - Requires authenticated user (401 otherwise)
+    - Requires user role === 'user' (403 otherwise)
+  - Path params:
+    - product_id: required integer min 1
+  - Behavior:
+    - Finds the product by id (deleted_at must be null)
+    - Returns the product with:
+      - images[] (ordered with primary first)
+      - tags[] (id + name)
+      - category (id + name + parent_id)
+      - condition_level (id + name + description + sort_order)
+      - seller (id + full_name + username + profile_picture)
+      - dormitory (via product.dormitory relationship)
+  - Response (200): {"message":"Product retrieved successfully","product":{...}}
+
 - GET /api/user/products/by-tag/{tag_name}
   - Middleware: auth:sanctum
   - Controller: ProductController::listProductsByTagName
@@ -334,6 +368,27 @@ Admin endpoints (bootstrap + listing)
     - Includes product images[] and tags[] arrays in each product
   - Response (200): {"message":"Favorite products retrieved successfully","products":[...]}
 
+- POST /api/user/behavioral_events
+  - Middleware: auth:sanctum
+  - Controller: BehavioralEventController::store
+  - Access:
+    - Requires authenticated user (401 otherwise)
+    - Requires user role === 'user' (403 otherwise)
+  - Body (JSON):
+    - event_type: required string max 50
+    - product_id: optional integer
+    - category_id: optional integer
+    - seller_id: optional integer
+    - metadata: optional JSON object
+    - occurred_at: optional date/time
+    - session_id: optional string max 100
+  - Behavior:
+    - Stores a behavioral event row for later recommendation usage
+    - If product_id is provided, the product must exist and not be soft-deleted
+    - If product_id is unknown, response is 404: {"message":"Product not found."}
+    - If you only want to log an app action (no specific product), omit product_id
+  - Response (201): {"message":"Behavioral event stored successfully","event":{...}}
+
 - POST /api/user/products/{product_id}/images
   - Middleware: auth:sanctum
   - Controller: ProductController::uploadImages
@@ -379,6 +434,20 @@ Routes are defined in safe_gate/routes/web.php.
 Implication:
 - Tokens are generated, but only some routes enforce them.
 - If you want admin/user endpoints protected broadly, the codebase needs auth:sanctum middleware applied to route groups.
+
+4.5 Python microservice (in-repo)
+- Base URL (local dev): http://127.0.0.1:8001
+- Example endpoints:
+  - GET /health
+  - GET /api/ping
+  - GET /api/test_py
+  - GET /api/hi
+- Cross-service auth flow:
+  - Client calls Python with Authorization: Bearer <Laravel token>
+  - Python forwards the same Authorization header to Laravel: GET /api/user/me
+  - Python responds with: {"message":"hi <username>"}
+- Laravel base URL used by Python:
+  - Environment variable: LARAVEL_BASE_URL (default: http://127.0.0.1:8000)
 
 
 5) Database layer (what is actually in migrations)

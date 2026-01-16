@@ -10,6 +10,7 @@ use App\Models\Product;
 use App\Models\ProductImage;
 use App\Models\ProductTag;
 use App\Models\Tag;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -208,6 +209,87 @@ class ProductController extends Controller
         return response()->json([
             'message' => 'User products retrieved successfully',
             'products' => $payload,
+        ], 200);
+    }
+
+    public function getProduct(Request $request, string $product_id)
+    {
+        $user = $request->user();
+
+        if (($user->role ?? 'user') !== 'user') {
+            return response()->json([
+                'message' => 'Unauthorized: Only users can access this endpoint.',
+            ], 403);
+        }
+
+        $productId = trim($product_id);
+
+        try {
+            $validated = validator(['product_id' => $productId], [
+                'product_id' => 'required|integer|min:1',
+            ])->validate();
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation Error',
+                'errors' => $e->errors(),
+            ], 422);
+        }
+
+        $product = Product::query()
+            ->with(['dormitory'])
+            ->whereKey((int) $validated['product_id'])
+            ->whereNull('deleted_at')
+            ->first();
+
+        if (! $product) {
+            return response()->json([
+                'message' => 'Product not found.',
+            ], 404);
+        }
+
+        $category = Category::query()
+            ->select(['id', 'name', 'parent_id'])
+            ->whereKey($product->category_id)
+            ->first();
+
+        $conditionLevel = ConditionLevel::query()
+            ->select(['id', 'name', 'description', 'sort_order'])
+            ->whereKey($product->condition_level_id)
+            ->first();
+
+        $seller = User::query()
+            ->select(['id', 'full_name', 'username', 'profile_picture'])
+            ->whereKey($product->seller_id)
+            ->first();
+
+        $images = ProductImage::query()
+            ->where('product_id', $product->id)
+            ->orderByDesc('is_primary')
+            ->orderBy('id')
+            ->get()
+            ->values();
+
+        $tags = DB::table('product_tags')
+            ->join('tags', 'product_tags.tag_id', '=', 'tags.id')
+            ->where('product_tags.product_id', $product->id)
+            ->select([
+                'tags.id',
+                'tags.name',
+            ])
+            ->orderBy('tags.id')
+            ->get()
+            ->values();
+
+        $payload = $product->toArray();
+        $payload['images'] = $images;
+        $payload['tags'] = $tags;
+        $payload['category'] = $category;
+        $payload['condition_level'] = $conditionLevel;
+        $payload['seller'] = $seller;
+
+        return response()->json([
+            'message' => 'Product retrieved successfully',
+            'product' => $payload,
         ], 200);
     }
 
