@@ -436,18 +436,48 @@ Implication:
 - If you want admin/user endpoints protected broadly, the codebase needs auth:sanctum middleware applied to route groups.
 
 4.5 Python microservice (in-repo)
-- Base URL (local dev): http://127.0.0.1:8001
+- Base URL (local dev): http://127.0.0.1:<uvicorn_port> (examples used: 8001, 9000)
 - Example endpoints:
   - GET /health
   - GET /api/ping
   - GET /api/test_py
   - GET /api/hi
+  - GET /api/recommendations/products
 - Cross-service auth flow:
   - Client calls Python with Authorization: Bearer <Laravel token>
   - Python forwards the same Authorization header to Laravel: GET /api/user/me
   - Python responds with: {"message":"hi <username>"}
 - Laravel base URL used by Python:
   - Environment variable: LARAVEL_BASE_URL (default: http://127.0.0.1:8000)
+- MySQL database connection used by Python:
+  - Environment variables: DB_HOST, DB_PORT, DB_DATABASE, DB_USERNAME, DB_PASSWORD
+  - Must point to the same MySQL database Laravel uses (safe_gate/.env). Example from repo:
+    - DB_HOST=127.0.0.1
+    - DB_PORT=3306
+    - DB_DATABASE=safegate
+    - DB_USERNAME=root
+    - DB_PASSWORD=(empty)
+
+- GET /api/recommendations/products
+  - Access:
+    - Requires Authorization header (same Laravel Bearer token)
+  - Query params:
+    - page: integer (default 1)
+    - page_size: integer (default 10, max 50)
+    - random_count: integer (default 3, how many of the returned items are exploratory/random)
+    - lookback_days: integer (default 30, how far back behavioral events are used)
+    - seed: optional integer (if set, makes random selection deterministic for testing)
+  - Behavior:
+    - Reads the authenticated user via Laravel /api/user/me
+    - Reads behavioral_events for the user (when table exists) to infer preferred category_id and seller_id
+    - Excludes products already interacted with (by product_id)
+    - Boosts nearby items by dormitory_id (same dorm) and university_id (same university)
+    - If dormitories.location contains coordinates (e.g. map link with @lat,lng or q=lat,lng), adds a distance-based boost
+    - Returns products in pages so the user is not overwhelmed
+    - Mixes exploration: random_count of page_size items are randomized
+  - Common failure mode:
+    - If Python is pointed at the wrong DB (DB_DATABASE mismatch), it may return 503 with "Database ... missing table ...".
+    - Fix by aligning Python DB_* env vars with safe_gate/.env and running Laravel migrations (php artisan migrate).
 
 
 5) Database layer (what is actually in migrations)
