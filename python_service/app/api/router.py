@@ -267,10 +267,10 @@ def recommend_products(
             events = conn.execute(
                 text(
                     """
-                    SELECT event_type, product_id, category_id, seller_id, occurred_at
+                    SELECT id, event_type, product_id, category_id, seller_id, occurred_at
                     FROM behavioral_events
                     WHERE user_id = :user_id AND occurred_at >= :since
-                    ORDER BY occurred_at DESC
+                    ORDER BY occurred_at DESC, id DESC
                     LIMIT 500
                     """
                 ),
@@ -282,11 +282,56 @@ def recommend_products(
             else:
                 raise
 
+        last_event_id = 0
+        last_event_at: Optional[str] = None
+        if len(events) > 0:
+            try:
+                last_event_id = int(events[0].get("id") or 0)
+            except Exception:
+                last_event_id = 0
+            try:
+                occurred_at0 = events[0].get("occurred_at")
+                if isinstance(occurred_at0, datetime):
+                    last_event_at = occurred_at0.isoformat()
+                elif isinstance(occurred_at0, str):
+                    last_event_at = occurred_at0
+            except Exception:
+                last_event_at = None
+
+        last_product_id = 0
+        last_product_at: Optional[str] = None
+        try:
+            last_product_row = conn.execute(
+                text(
+                    """
+                    SELECT MAX(id) AS last_product_id, MAX(created_at) AS last_product_created_at
+                    FROM products
+                    WHERE status = 'available' AND deleted_at IS NULL
+                    """
+                )
+            ).mappings().first()
+            if last_product_row is not None:
+                try:
+                    last_product_id = int(last_product_row.get("last_product_id") or 0)
+                except Exception:
+                    last_product_id = 0
+                try:
+                    ca = last_product_row.get("last_product_created_at")
+                    if isinstance(ca, datetime):
+                        last_product_at = ca.isoformat()
+                    elif isinstance(ca, str):
+                        last_product_at = ca
+                except Exception:
+                    last_product_at = None
+        except ProgrammingError as e:
+            if not (getattr(e.orig, "args", None) and len(e.orig.args) >= 1 and int(e.orig.args[0]) == 1146):
+                raise
+
         seen_product_ids: Set[int] = set()
         category_scores: Dict[int, float] = {}
         seller_scores: Dict[int, float] = {}
 
-        for e in events:
+        for idx, e in enumerate(events):
             occurred_at = e.get("occurred_at")
             if isinstance(occurred_at, str):
                 try:
@@ -298,6 +343,12 @@ def recommend_products(
 
             w = _event_weight(str(e.get("event_type") or ""))
             w *= _time_decay(occurred_at, now)
+            if idx == 0:
+                w *= 6.0
+            elif idx < 3:
+                w *= 4.0
+            elif idx < 10:
+                w *= 2.0
 
             pid = e.get("product_id")
             if pid is not None:
@@ -326,12 +377,10 @@ def recommend_products(
         base_query = """
             SELECT
                 p.id, p.seller_id, p.dormitory_id, p.category_id, p.condition_level_id,
-                p.title, p.description, p.price, p.status, p.deleted_at, p.created_at, p.updated_at,
+                p.title, p.price, p.status, p.created_at,
                 d.id AS dormitory__id, d.dormitory_name AS dormitory__dormitory_name,
-                d.domain AS dormitory__domain, d.location AS dormitory__location,
-                d.is_active AS dormitory__is_active, d.university_id AS dormitory__university_id,
-                u.id AS seller__id, u.full_name AS seller__full_name, u.username AS seller__username,
-                u.profile_picture AS seller__profile_picture,
+                d.location AS dormitory__location, d.university_id AS dormitory__university_id,
+                u.id AS seller__id, u.username AS seller__username, u.profile_picture AS seller__profile_picture,
                 CASE WHEN pl.id IS NULL THEN 0 ELSE 1 END AS is_promoted
             FROM products p
             JOIN dormitories d ON d.id = p.dormitory_id
@@ -417,25 +466,24 @@ def recommend_products(
 
         scored: List[Tuple[float, Dict[str, Any]]] = []
         for r in rows:
-            pid = int(r["id"])
             score = 0.0
 
             cid = r.get("category_id")
             if cid is not None:
                 try:
-                    score += 2.0 * category_scores.get(int(cid), 0.0)
+                    score += 1.5 * category_scores.get(int(cid), 0.0)
                 except Exception:
                     pass
 
             sid = r.get("seller_id")
             if sid is not None:
                 try:
-                    score += 3.0 * seller_scores.get(int(sid), 0.0)
+                    score += 1.0 * seller_scores.get(int(sid), 0.0)
                 except Exception:
                     pass
 
             if int(r.get("is_promoted") or 0) == 1:
-                score += 2.0
+                score += 3.0
 
             created_at = r.get("created_at")
             if isinstance(created_at, str):
@@ -444,24 +492,27 @@ def recommend_products(
                 except Exception:
                     created_at = None
             if isinstance(created_at, datetime):
-                if (now - created_at).total_seconds() <= 7 * 86400:
-                    score += 1.0
+                age_days = max(0.0, (now - created_at).total_seconds() / 86400.0)
+                score += 5.0 * math.exp(-age_days / 7.0)
 
             if buyer_dormitory_id is not None:
                 if int(r.get("dormitory_id") or 0) == buyer_dormitory_id:
-                    score += 5.0
+                    score += 50.0
                 else:
                     uni = r.get("dormitory__university_id")
                     uni = int(uni) if uni is not None else None
                     if buyer_university_id is not None and uni == buyer_university_id:
-                        score += 2.0
+                        score += 20.0
 
             product_coords = _parse_lat_lng_from_location(r.get("dormitory__location"))
+            distance_km: Optional[float] = None
             if buyer_coords is not None and product_coords is not None:
-                km = _haversine_km(buyer_coords, product_coords)
-                score += max(0.0, 4.0 - (km / 2.0))
+                distance_km = _haversine_km(buyer_coords, product_coords)
+                score += 30.0 * math.exp(-distance_km / 2.0)
 
-            scored.append((score, dict(r)))
+            r_dict = dict(r)
+            r_dict["_distance_km"] = distance_km
+            scored.append((score, r_dict))
 
         scored.sort(key=lambda x: (x[0], x[1].get("created_at") or ""), reverse=True)
         ranked = [r for _, r in scored]
@@ -473,7 +524,14 @@ def recommend_products(
         base_ids = {int(p["id"]) for p in base_items}
         pool = [p for p in ranked if int(p["id"]) not in base_ids]
 
-        seed_value = seed if seed is not None else random.SystemRandom().randrange(1, 2**31 - 1)
+        if seed is None:
+            seed_value = (
+                user_id * 1000003 + page * 9176 + last_event_id * 1013 + last_product_id * 7919
+            ) % (2**31 - 1)
+            if seed_value <= 0:
+                seed_value = 1
+        else:
+            seed_value = seed
         rng = random.Random(seed_value)
 
         random_items = pool[:]
@@ -489,30 +547,40 @@ def recommend_products(
             placeholders = ", ".join([f":pid_{i}" for i in range(len(combined_ids))])
             pid_params = {f"pid_{i}": v for i, v in enumerate(combined_ids)}
 
-            images = conn.execute(
-                text(
-                    f"""
-                    SELECT id, product_id, image_url, image_thumbnail_url, is_primary, created_at, updated_at
-                    FROM product_images
-                    WHERE product_id IN ({placeholders})
-                    ORDER BY is_primary DESC, id ASC
-                    """
-                ),
-                pid_params,
-            ).mappings().all()
+            try:
+                images = conn.execute(
+                    text(
+                        f"""
+                        SELECT product_id, image_url, image_thumbnail_url, is_primary
+                        FROM product_images
+                        WHERE product_id IN ({placeholders})
+                        ORDER BY is_primary DESC, id ASC
+                        """
+                    ),
+                    pid_params,
+                ).mappings().all()
+            except ProgrammingError as e:
+                if not (getattr(e.orig, "args", None) and len(e.orig.args) >= 1 and int(e.orig.args[0]) == 1146):
+                    raise
+                images = []
 
-            tags = conn.execute(
-                text(
-                    f"""
-                    SELECT pt.product_id, t.id, t.name
-                    FROM product_tags pt
-                    JOIN tags t ON t.id = pt.tag_id
-                    WHERE pt.product_id IN ({placeholders})
-                    ORDER BY t.id ASC
-                    """
-                ),
-                pid_params,
-            ).mappings().all()
+            try:
+                tags = conn.execute(
+                    text(
+                        f"""
+                        SELECT pt.product_id, t.id, t.name
+                        FROM product_tags pt
+                        JOIN tags t ON t.id = pt.tag_id
+                        WHERE pt.product_id IN ({placeholders})
+                        ORDER BY t.id ASC
+                        """
+                    ),
+                    pid_params,
+                ).mappings().all()
+            except ProgrammingError as e:
+                if not (getattr(e.orig, "args", None) and len(e.orig.args) >= 1 and int(e.orig.args[0]) == 1146):
+                    raise
+                tags = []
 
     images_by_product = _group_by_key([dict(x) for x in images], "product_id")
     tag_rows_by_product = _group_by_key([dict(x) for x in tags], "product_id")
@@ -520,46 +588,40 @@ def recommend_products(
     payload_products = []
     for p in combined:
         pid = int(p["id"])
+        imgs = images_by_product.get(pid, [])
+        image_thumbnail_url = None
+        if imgs:
+            first = imgs[0]
+            image_thumbnail_url = first.get("image_thumbnail_url")
         prod: Dict[str, Any] = {
-            "id": pid,
-            "seller_id": p.get("seller_id"),
-            "dormitory_id": p.get("dormitory_id"),
-            "category_id": p.get("category_id"),
-            "condition_level_id": p.get("condition_level_id"),
             "title": p.get("title"),
-            "description": p.get("description"),
             "price": float(p["price"]) if p.get("price") is not None else None,
             "status": p.get("status"),
-            "deleted_at": p.get("deleted_at"),
             "created_at": p.get("created_at"),
-            "updated_at": p.get("updated_at"),
+            "category_id": p.get("category_id"),
+            "condition_level_id": p.get("condition_level_id"),
+            "is_promoted": int(p.get("is_promoted") or 0),
             "dormitory": {
                 "id": p.get("dormitory__id"),
                 "dormitory_name": p.get("dormitory__dormitory_name"),
-                "domain": p.get("dormitory__domain"),
-                "location": p.get("dormitory__location"),
-                "is_active": p.get("dormitory__is_active"),
                 "university_id": p.get("dormitory__university_id"),
             },
-            "images": images_by_product.get(pid, []),
+            "image_thumbnail_url": image_thumbnail_url,
             "tags": [
                 {"id": t.get("id"), "name": t.get("name")} for t in tag_rows_by_product.get(pid, [])
             ],
-            "seller": {
-                "id": p.get("seller__id"),
-                "full_name": p.get("seller__full_name"),
-                "username": p.get("seller__username"),
-                "profile_picture": p.get("seller__profile_picture"),
-            },
+            "distance_km": p.get("_distance_km"),
         }
         payload_products.append(prod)
-
-    rng.shuffle(payload_products)
 
     return {
         "message": "Recommended products retrieved successfully",
         "page": page,
         "page_size": page_size,
         "random_count": random_count,
+        "last_event_id": last_event_id,
+        "last_event_at": last_event_at,
+        "last_product_id": last_product_id,
+        "last_product_at": last_product_at,
         "products": payload_products[:page_size],
     }

@@ -12,8 +12,11 @@ Route::post('/user/signup', [AuthController::class, 'signup']);
 Route::post('/user/login', [AuthController::class, 'login']);
 Route::middleware('auth:sanctum')->get('/user/me', [AuthController::class, 'me']);
 Route::middleware('auth:sanctum')->patch('/user/settings', [AuthController::class, 'updateProfile']);
+Route::middleware('auth:sanctum')->get('/user/settings/university-options', [AuthController::class, 'settingsUniversityOptions']);
+Route::middleware('auth:sanctum')->patch('/user/settings/university', [AuthController::class, 'updateUniversitySettings']);
 Route::middleware('auth:sanctum')->post('/user/products', [ProductController::class, 'store']);
 Route::middleware('auth:sanctum')->get('/user/products', [ProductController::class, 'myProducts']);
+Route::middleware('auth:sanctum')->get('/user/products/cards', [ProductController::class, 'myProductCards']);
 Route::middleware('auth:sanctum')->get('/user/get_product/{product_id}', [ProductController::class, 'getProduct']);
 Route::middleware('auth:sanctum')->get('/user/products/by-tag/{tag_name}', [ProductController::class, 'listProductsByTagName']);
 Route::middleware('auth:sanctum')->get('/user/products/by-category/{category_name}', [ProductController::class, 'listProductsByCategoryName']);
@@ -24,7 +27,9 @@ Route::middleware('auth:sanctum')->post('/user/products/{product_id}/images', [P
 Route::middleware('auth:sanctum')->get('/user/meta/categories', [ProductController::class, 'categories']);
 Route::middleware('auth:sanctum')->get('/user/meta/condition-levels', [ProductController::class, 'conditionLevels']);
 Route::middleware('auth:sanctum')->get('/user/meta/tags', [ProductController::class, 'tags']);
+Route::middleware('auth:sanctum')->get('/user/meta/options', [ProductController::class, 'metadataOptions']);
 Route::middleware('auth:sanctum')->get('/user/meta/dormitories', [ProductController::class, 'dormitories']);
+Route::middleware('auth:sanctum')->get('/user/meta/dormitories/by-university', [ProductController::class, 'dormitoriesByUserUniversity']);
 Route::middleware('auth:sanctum')->post('/user/tags', [ProductController::class, 'createTag']);
 
 Route::prefix('admin')->group(function () {

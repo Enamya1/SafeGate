@@ -1,0 +1,399 @@
+SafeGate Project Endpoint Report
+
+Scope
+- Laravel app (safe_gate) with API routes under /api
+- Laravel health route configured at /up
+- Python service (python_service) with base /api prefix
+
+Authentication Notes
+- auth:sanctum endpoints require a valid Sanctum personal access token.
+- token_auth middleware accepts token via:
+  - Authorization: Bearer <token>
+  - X-Access-Token: <token>
+  - X-Authorization: <token>
+  - access_token query parameter
+  - access_token body field
+- When missing or invalid, responses include {"message":"Unauthenticated."} with 401.
+
+Laravel Health
+1) GET /up
+   - Response 200: Laravel framework health response (built-in)
+
+2) GET /api/health-check
+   - Response 200: {"status":"ok","message":"Application is running smoothly!"}
+
+User Authentication
+3) POST /api/user/signup
+   - Request body:
+     - full_name (string, required)
+     - username (string, required, unique users.username)
+     - email (string email, required, unique users.email)
+     - phone_number (string, nullable)
+     - password (string, required, min 8)
+     - dormitory_id (integer, nullable, exists dormitories.id)
+   - Response 201: {"message":"User registered successfully","user":{...}}
+   - Response 422: {"message":"Validation Error","errors":{...}}
+
+4) POST /api/user/login
+   - Request body:
+     - email (string email, required)
+     - password (string, required)
+   - Response 200: {"message":"Login successful","access_token":"<token>","token_type":"Bearer"}
+   - Response 401: {"message":"Invalid login details"}
+   - Response 403: {"message":"Your account is deactivated. Please contact support."}
+   - Response 422: {"message":"Validation Error","errors":{...}}
+
+5) GET /api/user/me
+   - Auth: auth:sanctum
+   - Response 200: {"message":"User retrieved successfully","user":{"id":...,"full_name":...,"username":...,"email":...,"role":...}}
+   - Response 403: {"message":"Unauthorized: Only users can access this endpoint."}
+   - Response 401: {"message":"Unauthenticated."}
+
+6) PATCH /api/user/settings
+   - Auth: auth:sanctum
+   - Request body (all optional):
+     - full_name, username, email, phone_number, dormitory_id, profile_picture
+     - student_id, bio, date_of_birth, gender, language, timezone
+   - Response 200: {"message":"Profile updated successfully","user":{...}}
+   - Response 422: {"message":"Validation Error","errors":{...}}
+   - Response 401: {"message":"Unauthenticated."}
+
+7) GET /api/user/settings/university-options
+   - Auth: auth:sanctum, role=user
+   - Query:
+     - university_id (optional integer, exists universities.id)
+   - Response 200:
+     {
+       "message":"University options retrieved successfully",
+       "current":{"university_id":...,"dormitory_id":...},
+       "universities":[...],
+       "dormitories":[...]
+     }
+   - Response 422: {"message":"Validation Error","errors":{...}}
+   - Response 403: {"message":"Unauthorized: Only users can access this endpoint."}
+
+8) PATCH /api/user/settings/university
+   - Auth: auth:sanctum, role=user
+   - Request body:
+     - university_id (required integer, exists universities.id)
+     - dormitory_id (required integer, exists dormitories.id)
+   - Response 200:
+     {
+       "message":"University settings updated successfully",
+       "user":{"id":...,"dormitory_id":...},
+       "university":{"id":...,"name":"..."},
+       "dormitory":{"id":...,"dormitory_name":"...","is_active":...}
+     }
+   - Response 404: {"message":"Dormitory not found for the selected university."}
+   - Response 422: {"message":"Validation Error","errors":{...}}
+   - Response 403: {"message":"Unauthorized: Only users can access this endpoint."}
+
+User Products
+9) POST /api/user/products
+   - Auth: auth:sanctum, role=user
+   - Request body (JSON or multipart):
+     - category_id (required, integer, exists categories.id)
+     - condition_level_id (required, integer, exists condition_levels.id)
+     - title (required string)
+     - description (nullable string)
+     - price (required numeric >= 0.01)
+     - dormitory_id (required if user has no dormitory_id; otherwise nullable integer)
+     - tag_ids (nullable array of tag ids)
+     - primary_image_index (nullable integer)
+     - images (nullable files, jpg/jpeg/png/webp, max 6)
+     - thumbnail_images (nullable files, must match images count when provided)
+     - image_urls (nullable array of URLs, max 6)
+     - image_thumbnail_urls (nullable array matching image_urls count)
+   - Response 201: {"message":"Product created successfully","product":{...},"images":[...],"tag_ids":[...]}
+   - Response 403: {"message":"Unauthorized: Only users can access this endpoint."}
+   - Response 422: {"message":"Validation Error","errors":{...}}
+
+10) GET /api/user/products
+   - Auth: auth:sanctum, role=user
+   - Response 200: {"message":"User products retrieved successfully","products":[...]}
+   - Response 403: {"message":"Unauthorized: Only users can access this endpoint."}
+   - Response 401: {"message":"Unauthenticated."}
+
+11) GET /api/user/products/cards
+   - Auth: auth:sanctum, role=user
+   - Query:
+     - page (optional integer, min 1, default 1)
+     - page_size (optional integer, min 1, max 50, default 12)
+   - Response 200:
+     {
+       "message":"User product cards retrieved successfully",
+       "page":1,
+       "page_size":12,
+       "total":123,
+       "total_pages":11,
+       "products":[
+         {
+           "id":...,
+           "title":"...",
+           "price":...,
+           "status":"...",
+           "created_at":"...",
+           "image_thumbnail_url":"...",
+           "dormitory":{"id":...,"dormitory_name":"...","university_id":...},
+           "category":{"id":...,"name":"...","parent_id":...},
+           "condition_level":{"id":...,"name":"...","description":...,"sort_order":...}
+         }
+       ]
+     }
+   - Response 422: {"message":"Validation Error","errors":{...}}
+   - Response 403: {"message":"Unauthorized: Only users can access this endpoint."}
+   - Response 401: {"message":"Unauthenticated."}
+
+12) GET /api/user/get_product/{product_id}
+   - Auth: auth:sanctum, role=user
+   - Path params:
+     - product_id (required integer)
+   - Response 200: {"message":"Product retrieved successfully","product":{...,"images":[...],"tags":[...],"category":{...},"condition_level":{...},"seller":{...}}}
+   - Response 404: {"message":"Product not found."}
+   - Response 422: {"message":"Validation Error","errors":{...}}
+   - Response 403: {"message":"Unauthorized: Only users can access this endpoint."}
+
+13) GET /api/user/products/by-tag/{tag_name}
+   - Auth: auth:sanctum, role=user
+   - Path params:
+     - tag_name (required string)
+   - Response 200: {"message":"Products retrieved successfully","tag":{"id":...,"name":...},"products":[...]}
+   - Response 404: {"message":"Tag not found."}
+   - Response 422: {"message":"Validation Error","errors":{...}}
+   - Response 403: {"message":"Unauthorized: Only users can access this endpoint."}
+
+14) GET /api/user/products/by-category/{category_name}
+   - Auth: auth:sanctum, role=user
+   - Path params:
+     - category_name (required string)
+   - Response 200: {"message":"Products retrieved successfully","category":{"id":...,"name":...,"parent_id":...},"products":[...]}
+   - Response 404: {"message":"Category not found."}
+   - Response 422: {"message":"Validation Error","errors":{...}}
+   - Response 403: {"message":"Unauthorized: Only users can access this endpoint."}
+
+15) GET /api/user/get_favorites
+   - Auth: auth:sanctum, role=user
+   - Response 200: {"message":"Favorite products retrieved successfully","products":[...]}
+   - Response 403: {"message":"Unauthorized: Only users can access this endpoint."}
+
+16) POST /api/user/favorites
+   - Auth: auth:sanctum, role=user
+   - Request body:
+     - product_id (required integer)
+   - Response 201: {"message":"Product added to favorites successfully","favorite":{...}}
+   - Response 200: {"message":"Product is already in favorites","favorite":{...}}
+   - Response 404: {"message":"Product not found."}
+   - Response 422: {"message":"Validation Error","errors":{...}}
+   - Response 403: {"message":"Unauthorized: Only users can access this endpoint."}
+
+17) POST /api/user/products/{product_id}/images
+   - Auth: auth:sanctum, role=user (must be product seller)
+   - Path params:
+     - product_id (required integer)
+   - Request body (JSON or multipart):
+     - images (required unless image_urls provided; max 6)
+     - thumbnail_images (optional; must match images count)
+     - image_urls (required if no files; max 6)
+     - image_thumbnail_urls (optional, match image_urls count)
+     - primary_image_index (optional integer)
+   - Response 201: {"message":"Product images uploaded successfully","product_id":...,"images":[...]}
+   - Response 403: {"message":"Unauthorized: You can only modify your own products."}
+   - Response 404: {"message":"Product not found."}
+   - Response 422: {"message":"Validation Error","errors":{...}}
+
+18) POST /api/user/behavioral_events
+   - Auth: auth:sanctum, role=user
+   - Request body:
+     - event_type (required string max 50)
+     - product_id (nullable integer)
+     - category_id (nullable integer)
+     - seller_id (nullable integer)
+     - metadata (nullable array)
+     - occurred_at (nullable date)
+     - session_id (nullable string max 100)
+   - Response 201: {"message":"Behavioral event stored successfully","event":{...}}
+   - Response 404: {"message":"Product not found."}
+   - Response 422: {"message":"Validation Error","errors":{...}}
+   - Response 403: {"message":"Unauthorized: Only users can access this endpoint."}
+
+User Metadata
+19) GET /api/user/meta/options
+   - Auth: auth:sanctum, role=user
+   - Response 200: {"message":"Metadata options retrieved successfully","categories":[...],"condition_levels":[...],"tags":[...]}
+   - Response 403: {"message":"Unauthorized: Only users can access this endpoint."}
+
+20) GET /api/user/meta/categories
+   - Auth: auth:sanctum, role=user
+   - Response 200: {"message":"Categories retrieved successfully","categories":[...]}
+   - Response 403: {"message":"Unauthorized: Only users can access this endpoint."}
+
+21) GET /api/user/meta/condition-levels
+   - Auth: auth:sanctum, role=user
+   - Response 200: {"message":"Condition levels retrieved successfully","condition_levels":[...]}
+   - Response 403: {"message":"Unauthorized: Only users can access this endpoint."}
+
+22) GET /api/user/meta/tags
+   - Auth: auth:sanctum, role=user
+   - Response 200: {"message":"Tags retrieved successfully","tags":[...]}
+   - Response 403: {"message":"Unauthorized: Only users can access this endpoint."}
+
+23) GET /api/user/meta/dormitories
+   - Auth: auth:sanctum, role=user
+   - Response 200: {"message":"Dormitories retrieved successfully","dormitories":[...]}
+   - Response 403: {"message":"Unauthorized: Only users can access this endpoint."}
+
+24) GET /api/user/meta/dormitories/by-university
+   - Auth: auth:sanctum, role=user
+   - Response 200: {"message":"Dormitories retrieved successfully","university_id":...,"dormitories":[...]}
+   - Response 404: {"message":"Dormitory not found for the user."}
+   - Response 403: {"message":"Unauthorized: Only users can access this endpoint."}
+   - Response 401: {"message":"Unauthenticated."}
+
+25) POST /api/user/tags
+   - Auth: auth:sanctum, role=user
+   - Request body:
+     - name (required string, unique tags.name)
+   - Response 201: {"message":"Tag created successfully","tag":{...}}
+   - Response 422: {"message":"Validation Error","errors":{...}}
+   - Response 403: {"message":"Unauthorized: Only users can access this endpoint."}
+
+Admin
+26) POST /api/admin/test
+   - Response 200: {"message":"Admin endpoint reached!"}
+
+27) POST /api/admin/login
+   - Request body:
+     - email (string email, required)
+     - password (string, required)
+   - Response 200: {"message":"Admin login successful","access_token":"<token>","token_type":"Bearer"}
+   - Response 401: {"message":"Invalid login details"}
+   - Response 403: {"message":"Unauthorized: Only administrators can log in here."}
+   - Response 403: {"message":"Your admin account is deactivated. Please contact support."}
+   - Response 422: {"message":"Validation Error","errors":{...}}
+
+28) POST /api/admin/set_university
+   - Request body:
+     - name (required string, unique)
+     - domain (required string, unique)
+     - location (nullable string)
+     - pic (nullable string)
+   - Response 201: {"message":"University created successfully","university":{...}}
+   - Response 422: {"message":"Validation Error","errors":{...}}
+
+29) POST /api/admin/set_dormitory
+   - Request body:
+     - dormitory_name (required string, unique)
+     - domain (required string, unique)
+     - location (nullable url)
+     - is_active (nullable boolean)
+     - university_name (required string, exists universities.name)
+   - Response 201: {"message":"Dormitory created successfully","dormitory":{...}}
+   - Response 404: {"message":"University not found."}
+   - Response 422: {"message":"Validation Error","errors":{...}}
+
+30) GET /api/admin/universities
+   - Response 200: {"message":"Universities retrieved successfully","universities":[...]}
+
+31) GET /api/admin/universities/{university_name}/dormitories
+   - Response 200: {"message":"Dormitories retrieved successfully","university":"...","dormitories":[...]}
+   - Response 404: {"message":"University not found."}
+
+32) POST /api/admin/categories
+   - Auth: token_auth (Sanctum token)
+   - Request body:
+     - name (required string)
+     - parent_id (nullable integer, exists categories.id)
+   - Response 201: {"message":"Category created successfully","category":{...}}
+   - Response 422: {"message":"Validation Error","errors":{...}}
+   - Response 403: {"message":"Unauthorized: Only administrators can access this endpoint."}
+
+33) POST /api/admin/condition-levels
+   - Auth: token_auth (Sanctum token)
+   - Request body:
+     - name (required string, unique condition_levels.name)
+     - description (nullable string)
+     - sort_order (nullable integer min 0)
+   - Response 201: {"message":"Condition level created successfully","condition_level":{...}}
+   - Response 422: {"message":"Validation Error","errors":{...}}
+   - Response 403: {"message":"Unauthorized: Only administrators can access this endpoint."}
+
+34) GET /api/admin/users
+   - Auth: token_auth (Sanctum token)
+   - Query:
+     - per_page (optional integer 1-100, default 50)
+   - Response 200: {"message":"Users retrieved successfully","users":{pagination}}
+   - Response 422: {"message":"Validation Error","errors":{...}}
+   - Response 403: {"message":"Unauthorized: Only administrators can access this endpoint."}
+
+35) GET /api/admin/users/{id}
+   - Auth: token_auth (Sanctum token)
+   - Response 200: {"message":"User retrieved successfully","user":{...}}
+   - Response 404: {"message":"User not found."}
+   - Response 403: {"message":"Unauthorized: Only administrators can access this endpoint."}
+
+36) PATCH /api/admin/users/{id}
+   - Auth: token_auth (Sanctum token)
+   - Request body (all optional):
+     - full_name, username, email, phone_number, role, dormitory_id
+     - status (active|inactive|suspended), profile_picture, locked_until
+   - Response 200: {"message":"User updated successfully","user":{...}}
+   - Response 404: {"message":"User not found."}
+   - Response 422: {"message":"Validation Error","errors":{...}}
+   - Response 403: {"message":"Unauthorized: Only administrators can access this endpoint."}
+
+37) PATCH /api/admin/users/{id}/activate
+   - Auth: token_auth (Sanctum token)
+   - Response 200: {"message":"User activated successfully","user_id":...}
+   - Response 404: {"message":"User not found."}
+   - Response 403: {"message":"Unauthorized: Only administrators can access this endpoint."}
+
+38) PATCH /api/admin/users/{id}/deactivate
+   - Auth: token_auth (Sanctum token)
+   - Response 200: {"message":"User deactivated successfully","user_id":...}
+   - Response 404: {"message":"User not found."}
+   - Response 403: {"message":"Unauthorized: Only administrators can access this endpoint."}
+
+Python Service
+39) GET /health
+   - Response 200: {"status":"ok"}
+
+40) GET /api/ping
+   - Response 200: {"message":"pong"}
+
+41) GET /api/test_py
+   - Response 200: {"message":"python connected"}
+
+42) GET /api/hi
+   - Headers:
+     - Authorization: Bearer <Laravel token> (required)
+   - Response 200: {"message":"hi <username>"}
+   - Response 401: {"detail":"Missing Authorization header"}
+   - Response 401: {"detail":{"message":"Unauthenticated."}} (when Laravel /api/user/me fails)
+   - Response 502: {"detail":"Could not reach Laravel"}
+
+43) GET /api/recommendations/products
+   - Headers:
+     - Authorization: Bearer <Laravel token> (required)
+   - Query params:
+     - page (default 1, min 1)
+     - page_size (default 10, min 1, max 50)
+     - random_count (default 3, min 0, max 50)
+     - lookback_days (default 30, min 1, max 365)
+     - seed (optional integer)
+   - Response 200:
+     {
+       "message":"Recommended products retrieved successfully",
+       "page":1,
+       "page_size":10,
+       "random_count":3,
+       "last_event_id":0,
+       "last_event_at":null,
+       "last_product_id":0,
+       "last_product_at":null,
+       "products":[...]
+     }
+   - Response 401: {"detail":"Missing Authorization header"}
+   - Response 401: {"detail":"Invalid user"}
+   - Response 503: {"detail":"Database unavailable"}
+   - Response 503: {"detail":"Database '<name>' missing table: <table>. Check DB_* env or run Laravel migrations."}
+   - Response 502: {"detail":"Could not reach Laravel"}

@@ -94,6 +94,40 @@ class ProductController extends Controller
         ], 200);
     }
 
+    public function metadataOptions(Request $request)
+    {
+        $user = $request->user();
+
+        if (($user->role ?? 'user') !== 'user') {
+            return response()->json([
+                'message' => 'Unauthorized: Only users can access this endpoint.',
+            ], 403);
+        }
+
+        $categories = Category::query()
+            ->select(['id', 'name', 'parent_id'])
+            ->orderBy('id')
+            ->get();
+
+        $conditionLevels = ConditionLevel::query()
+            ->select(['id', 'name', 'description', 'sort_order'])
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get();
+
+        $tags = Tag::query()
+            ->select(['id', 'name'])
+            ->orderBy('id')
+            ->get();
+
+        return response()->json([
+            'message' => 'Metadata options retrieved successfully',
+            'categories' => $categories,
+            'condition_levels' => $conditionLevels,
+            'tags' => $tags,
+        ], 200);
+    }
+
     public function createTag(Request $request)
     {
         $user = $request->user();
@@ -142,6 +176,50 @@ class ProductController extends Controller
 
         return response()->json([
             'message' => 'Dormitories retrieved successfully',
+            'dormitories' => $dormitories,
+        ], 200);
+    }
+
+    public function dormitoriesByUserUniversity(Request $request)
+    {
+        $user = $request->user();
+
+        if (($user->role ?? 'user') !== 'user') {
+            return response()->json([
+                'message' => 'Unauthorized: Only users can access this endpoint.',
+            ], 403);
+        }
+
+        $dormitoryId = $user->dormitory_id;
+
+        if (! $dormitoryId) {
+            return response()->json([
+                'message' => 'Dormitories retrieved successfully',
+                'university_id' => null,
+                'dormitories' => [],
+            ], 200);
+        }
+
+        $userDormitory = Dormitory::query()
+            ->select(['id', 'university_id'])
+            ->whereKey($dormitoryId)
+            ->first();
+
+        if (! $userDormitory || ! $userDormitory->university_id) {
+            return response()->json([
+                'message' => 'Dormitory not found for the user.',
+            ], 404);
+        }
+
+        $dormitories = Dormitory::query()
+            ->select(['id', 'dormitory_name', 'domain', 'location', 'is_active', 'university_id'])
+            ->where('university_id', $userDormitory->university_id)
+            ->orderBy('id')
+            ->get();
+
+        return response()->json([
+            'message' => 'Dormitories retrieved successfully',
+            'university_id' => $userDormitory->university_id,
             'dormitories' => $dormitories,
         ], 200);
     }
@@ -208,6 +286,137 @@ class ProductController extends Controller
 
         return response()->json([
             'message' => 'User products retrieved successfully',
+            'products' => $payload,
+        ], 200);
+    }
+
+    public function myProductCards(Request $request)
+    {
+        $user = $request->user();
+
+        if (($user->role ?? 'user') !== 'user') {
+            return response()->json([
+                'message' => 'Unauthorized: Only users can access this endpoint.',
+            ], 403);
+        }
+
+        try {
+            $validated = validator($request->query(), [
+                'page' => 'nullable|integer|min:1',
+                'page_size' => 'nullable|integer|min:1|max:50',
+            ])->validate();
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation Error',
+                'errors' => $e->errors(),
+            ], 422);
+        }
+
+        $page = (int) ($validated['page'] ?? 1);
+        $pageSize = (int) ($validated['page_size'] ?? 12);
+
+        $paginator = Product::query()
+            ->select([
+                'id',
+                'seller_id',
+                'dormitory_id',
+                'category_id',
+                'condition_level_id',
+                'title',
+                'price',
+                'status',
+                'created_at',
+            ])
+            ->with(['dormitory:id,dormitory_name,university_id'])
+            ->where('seller_id', $user->id)
+            ->whereNull('deleted_at')
+            ->orderByDesc('id')
+            ->paginate($pageSize, ['*'], 'page', $page);
+
+        $products = $paginator->getCollection();
+        $productIds = $products->pluck('id')->all();
+
+        $imagesByProductId = [];
+
+        if (count($productIds) > 0) {
+            $imagesByProductId = ProductImage::query()
+                ->whereIn('product_id', $productIds)
+                ->orderByDesc('is_primary')
+                ->orderBy('id')
+                ->get()
+                ->groupBy('product_id')
+                ->all();
+        }
+
+        $categoryIds = $products->pluck('category_id')
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        $conditionLevelIds = $products->pluck('condition_level_id')
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        $categoriesById = collect();
+        $conditionLevelsById = collect();
+
+        if (count($categoryIds) > 0) {
+            $categoriesById = Category::query()
+                ->select(['id', 'name', 'parent_id'])
+                ->whereIn('id', $categoryIds)
+                ->get()
+                ->keyBy('id');
+        }
+
+        if (count($conditionLevelIds) > 0) {
+            $conditionLevelsById = ConditionLevel::query()
+                ->select(['id', 'name', 'description', 'sort_order'])
+                ->whereIn('id', $conditionLevelIds)
+                ->get()
+                ->keyBy('id');
+        }
+
+        $payload = $products
+            ->map(function (Product $product) use ($imagesByProductId, $categoriesById, $conditionLevelsById) {
+                $images = $imagesByProductId[$product->id] ?? collect();
+                $primaryImage = $images->first();
+                $imageThumbnailUrl = null;
+
+                if ($primaryImage) {
+                    $imageThumbnailUrl = $primaryImage->image_thumbnail_url ?? $primaryImage->image_url;
+                }
+
+                $category = $categoriesById->get($product->category_id);
+                $conditionLevel = $conditionLevelsById->get($product->condition_level_id);
+                $dormitory = $product->dormitory;
+
+                return [
+                    'id' => $product->id,
+                    'title' => $product->title,
+                    'price' => $product->price,
+                    'status' => $product->status,
+                    'created_at' => $product->created_at,
+                    'image_thumbnail_url' => $imageThumbnailUrl,
+                    'dormitory' => $dormitory ? [
+                        'id' => $dormitory->id,
+                        'dormitory_name' => $dormitory->dormitory_name,
+                        'university_id' => $dormitory->university_id,
+                    ] : null,
+                    'category' => $category ? $category->toArray() : null,
+                    'condition_level' => $conditionLevel ? $conditionLevel->toArray() : null,
+                ];
+            })
+            ->values();
+
+        return response()->json([
+            'message' => 'User product cards retrieved successfully',
+            'page' => $paginator->currentPage(),
+            'page_size' => $paginator->perPage(),
+            'total' => $paginator->total(),
+            'total_pages' => $paginator->lastPage(),
             'products' => $payload,
         ], 200);
     }

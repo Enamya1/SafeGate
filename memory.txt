@@ -294,6 +294,35 @@ Admin endpoints (bootstrap + listing)
     - Optionally creates product_tags rows for provided tag_ids
   - Response (201): {"message":"Product created successfully","product":{...},"images":[...],"tag_ids":[...]}
 
+- GET /api/user/products/cards
+  - Middleware: auth:sanctum
+  - Controller: ProductController::myProductCards
+  - Access:
+    - Requires authenticated user (401 otherwise)
+    - Requires user role === 'user' (403 otherwise)
+  - Query params:
+    - page: optional integer min 1 (default 1)
+    - page_size: optional integer min 1 max 50 (default 12)
+  - Behavior:
+    - Returns paginated products uploaded by the authenticated user
+    - Excludes soft-deleted products (deleted_at must be null)
+    - Each product includes card fields with a primary image thumbnail (image_thumbnail_url)
+  - Response (200): {"message":"User product cards retrieved successfully","page":1,"page_size":12,"total":0,"total_pages":0,"products":[...]}
+  - Response (422): {"message":"Validation Error","errors":{...}}
+
+- GET /api/user/meta/dormitories/by-university
+  - Middleware: auth:sanctum
+  - Controller: ProductController::dormitoriesByUserUniversity
+  - Access:
+    - Requires authenticated user (401 otherwise)
+    - Requires user role === 'user' (403 otherwise)
+  - Behavior:
+    - Uses the authenticated user's dormitory to determine university_id
+    - Returns dormitories for that university (includes is_active field)
+    - If user has no dormitory, returns an empty list with university_id = null
+  - Response (200): {"message":"Dormitories retrieved successfully","university_id":...,"dormitories":[...]}
+  - Response (404): {"message":"Dormitory not found for the user."}
+
 - GET /api/user/get_product/{product_id}
   - Middleware: auth:sanctum
   - Controller: ProductController::getProduct

@@ -1,0 +1,441 @@
+SafeGate UI Description Prompt
+
+Overview
+- Backend architecture: Laravel API (PHP 8, Sanctum) with FastAPI microservice for recommendations.
+- Data persistence: MySQL via Laravel migrations and SQLAlchemy (Python).
+- Authentication: Bearer tokens (Laravel Sanctum). Admin routes use explicit token authentication middleware.
+- API base: Laravel routes are under /api (e.g., GET /api/health-check). Python service mounts router under /api on its host and exposes GET /health.
+
+Primary User Roles
+- User: creates listings, browses, favorites, and updates profile. Most user endpoints require auth:sanctum.
+- Admin: maintains catalogs (universities, dormitories, categories, condition levels) and manages users. Admin actions require token authentication with admin role.
+
+Key Endpoints (Implementations exist in Laravel unless noted)
+- Health
+  - GET /api/health-check → status ok
+  - Python: GET /health → status ok
+- Authentication & Profile
+  - POST /api/user/signup → create user; fields: full_name, username, email, phone_number?, password, dormitory_id?
+  - POST /api/user/login → returns access_token (Bearer)
+  - GET /api/user/me (auth) → id, full_name, username, email, role
+  - PATCH /api/user/settings (auth) → update profile (full_name, username, email, phone_number, dormitory_id, profile_picture, student_id, bio, date_of_birth, gender, language, timezone)
+- Metadata (for forms and filters; auth)
+  - GET /api/user/meta/categories → id, name, parent_id
+  - GET /api/user/meta/condition-levels → id, name, description, sort_order
+  - GET /api/user/meta/tags → id, name
+  - GET /api/user/meta/dormitories → id, dormitory_name, domain, location, is_active, university_id
+  - POST /api/user/tags → create tag {name}
+- Listings (User; auth)
+  - POST /api/user/products → create product; supports images via files or via URLs with optional thumbnails
+  - POST /api/user/products/{product_id}/images → add/replace images; enforce primary image index; files or URLs (not both)
+  - GET /api/user/products → list user’s products; includes images[], tags[], dormitory
+  - GET /api/user/get_product/{product_id} → product detail with category, condition_level, seller, images[], tags[]
+  - GET /api/user/products/by-tag/{tag_name} → products by tag
+  - GET /api/user/products/by-category/{category_name} → products by category
+- Favorites (User; auth)
+  - POST /api/user/favorites → add product to favorites {product_id}
+  - GET /api/user/get_favorites → list favorite products with images[], tags[]
+- Behavioral Events (User; auth)
+  - POST /api/user/behavioral_events → track event_type, optional product/category/seller, metadata{}, occurred_at, session_id
+- Admin Console
+  - POST /api/admin/test → connectivity check
+  - POST /api/admin/login → returns admin token
+  - POST /api/admin/set_university → name, domain, location?, pic?
+  - POST /api/admin/set_dormitory → dormitory_name, domain, location(url)?, is_active, university_name
+  - GET /api/admin/universities → list universities
+  - GET /api/admin/universities/{university_name}/dormitories → list dormitories for university
+  - POST /api/admin/categories (token_auth) → name, parent_id?
+  - POST /api/admin/condition-levels (token_auth) → name, description?, sort_order?
+  - GET /api/admin/users (token_auth, paginated) → per_page
+  - GET /api/admin/users/{id} (token_auth)
+  - PATCH /api/admin/users/{id} (token_auth) → update user fields, role, status
+  - PATCH /api/admin/users/{id}/activate (token_auth) → set status=active
+  - PATCH /api/admin/users/{id}/deactivate (token_auth) → set status=inactive
+- Python Service (FastAPI; requires forwarding Laravel Authorization)
+  - GET /api/ping → pong
+  - GET /api/test_py → python connected
+  - GET /api/hi → returns greeting using Laravel /api/user/me
+  - GET /api/recommendations/products → personalized product feed with hybrid deterministic/random ranking, includes dormitory info, tags, image_thumbnail_url, optional distance_km
+
+Data Models (selected)
+- User: full_name, username, email, phone_number, profile_picture?, student_id?, bio?, date_of_birth?, gender?, language?, timezone?, dormitory_id?, role (default 'user'), status
+- Product: seller_id, dormitory_id, category_id, condition_level_id, title, description?, price>0, status, deleted_at?, modified_by?, modification_reason?
+- ProductImage: product_id, image_url, image_thumbnail_url?, is_primary
+- Tag: name
+- ProductTag: product_id, tag_id
+- Category: name, parent_id?
+- ConditionLevel: name, description?, sort_order
+- Dormitory: dormitory_name, domain, location(url/string), is_active, university_id?
+- University: name, domain, location?, pic?
+- BehavioralEvent (table): user_id, event_type, optional product/category/seller, metadata (JSON), occurred_at, session_id, ip_address, user_agent
+
+System Workflows
+- Signup → Login → Token storage → Navigate to Home
+- Profile Setup → Update dormitory and preferences → Personalization in recommendations
+- Create Listing → Select category/condition → Add tags → Add images (files OR URLs) → Choose primary image → Submit → View in My Listings
+- Manage Images → Upload additional images OR set URLs with thumbnails → Set primary index → Save
+- Browse → Use categories/tags filters → View recommendations feed (Python) → Open product details → Favorite or start chat (future)
+- Favorites → Toggle favorite on cards/detail → View Favorites list
+- Admin → Login → Create universities/dormitories → Create categories/condition levels → Manage users (paginate, edit, activate/deactivate)
+- Telemetry → Post behavioral_events on relevant interactions (view, favorite, offer, message, purchase)
+
+User Interface Requirements
+- Authentication
+  - Token-based auth; send Authorization: Bearer <token> for protected routes.
+  - Persist tokens securely (web: httpOnly cookie when viable or secure storage; mobile: secure keystore).
+  - Handle 401/403/404/422 gracefully with user-friendly messages.
+- Home/Feed (Recommendations)
+  - Pull from Python GET /api/recommendations/products; show product cards with:
+    - Title, price, status, created_at relative time
+    - Thumbnail image if available
+    - Dormitory badge (name) and optional distance_km indicator
+    - Tag chips; "Promoted" badge when is_promoted=1
+  - Client-side controls: page, page_size, random_count, lookback_days; preserve pagination state in URL.
+- Product Detail
+  - Gallery with primary image first; thumbnails grid
+  - Seller summary (username, profile_picture)
+  - Category and condition level display
+  - Tags list; dormitory info; actions: Favorite, Share
+  - Error states: product not found (404)
+- Create Listing
+  - Step form: Details → Media → Tags → Review
+  - Details: title, description, price (currency-aware formatting), category selector (flat or tree), condition selector (ordered by sort_order)
+  - Dormitory: prefilled from user.dormitory_id; if absent, require selection
+  - Media:
+    - Either upload up to 6 image files (jpg/jpeg/png/webp, ≤5MB each) with optional matching thumbnails
+    - Or provide up to 6 image_urls with optional matching image_thumbnail_urls
+    - Enforce primary_image_index within bounds; default 0
+    - Validate mutually exclusive paths (files vs URLs); matching counts for thumbnails
+  - Tags: multi-select from GET /api/user/meta/tags; allow create tag via POST /api/user/tags
+- My Listings
+  - List cards with images[], tags[]; sort by id desc; link to detail
+  - Manage images via POST /api/user/products/{product_id}/images
+- Favorites
+  - Toggle control on card/detail; POST /api/user/favorites
+  - List favorites via GET /api/user/get_favorites
+- Profile & Settings
+  - Editable fields: full_name, username, email, phone_number, dormitory_id, profile_picture, student_id, bio, date_of_birth, gender, language, timezone
+  - Display role, status; save with PATCH /api/user/settings
+- Admin Console
+  - Login: POST /api/admin/login; store admin token separately
+  - University Management: create, list
+  - Dormitory Management: create (linked to university), list by university
+  - Catalog Management: categories (parent hierarchy), condition levels (sorted)
+  - User Management: list with pagination; view; edit fields (incl. role/status); activate/deactivate
+
+Component Hierarchy (reference architecture; adaptable to React/Vue/Flutter)
+- AppShell
+  - Header (AuthStatus, Nav, Search)
+  - Sidebar (Filters, Categories, Tags)
+  - ContentRouter
+    - HomeFeedPage
+      - RecommendationsControls (page/page_size/random_count/lookback_days)
+      - ProductCardGrid
+        - ProductCard (ImageThumb, Title, Price, DormitoryBadge, TagsChips, Distance)
+    - ProductDetailPage
+      - ImageGallery (Primary, Thumbnails)
+      - SellerSummary
+      - AttributesPanel (Category, Condition, Tags)
+      - ActionsBar (Favorite, Share)
+    - CreateListingPage
+      - DetailsForm
+      - MediaForm (FilesUploader OR UrlsForm)
+      - TagsSelector (with CreateTagDialog)
+      - ReviewSubmit
+    - MyListingsPage (CardGrid)
+    - FavoritesPage (CardGrid)
+    - ProfileSettingsPage (ProfileForm)
+    - AdminPages
+      - AdminLoginPage
+      - UniversityManager (CreateForm, List)
+      - DormitoryManager (CreateForm, ListByUniversity)
+      - CatalogManager (CategoriesTree, ConditionLevelsList)
+      - UsersManager (PaginatedTable, UserDetail, EditUserForm, ActivateDeactivate)
+    - ErrorPages (Unauthorized, NotFound)
+
+Navigation Flows
+- Unauthenticated → Login or Signup → Authenticated HomeFeed
+- HomeFeed → ProductDetail → Favorite → Back
+- HomeFeed → Filters (Category/Tag) → Refined Feed OR Server queries
+- HomeFeed → CreateListing → MyListings
+- Header → ProfileSettings → Save → Return
+- AdminLogin → AdminDashboard → Management pages
+
+Data Visualization Needs
+- Tag chips with consistent color coding
+- Category tree visualization (if categories become hierarchical)
+- Condition levels presented in ordered scale (e.g., badges or slider)
+- Price formatting with locale/currency
+- Distance indicator (km) on cards when available; tooltip explaining calculation
+- Promoted badge styling
+- Empty states and skeleton loaders for lists and detail
+
+User Interaction Patterns
+- Form validation inline with clear messages; disable submit when invalid
+- Optimistic favorite toggles with rollback on failure
+- Debounced filter/search interactions
+- Infinite scroll or paginated grid for HomeFeed
+- Drag-and-drop for file uploads; paste URL support
+- Toasts/snackbars for success and error feedback
+- Accessibility-first inputs and controls
+
+Accessibility Considerations
+- Keyboard navigable components (cards, dialogs, forms)
+- ARIA roles: lists, buttons, dialogs; aria-live for toasts
+- Alt text for all product images; label/description for form fields
+- Color contrast meeting WCAG AA; focus styles visible
+- Error messaging announced to screen readers
+
+Responsive Design Requirements
+- Mobile-first layouts; breakpoints for phone, tablet, desktop
+- Card grid responsive columns; detail page collapses panels vertically on small screens
+- Touch targets ≥44px; forms mobile-friendly keyboards (email, number)
+- Images constrained to viewport; lazy loading; thumbnails for performance
+
+Technical Specifications
+- Auth
+  - Use Bearer tokens in Authorization header; handle 401/403 via global interceptor.
+  - Separate admin token context from user token.
+- Requests
+  - Content-Type: application/json for metadata/profile; multipart/form-data for image uploads.
+  - Enforce client-side validation aligned with backend rules: image files ≤5MB; max 6 images; URLs start with http(s) or /; primary_image_index bounds; mutual exclusivity of files vs URLs.
+- Error Handling
+  - Map 422 validation errors to field-level messages.
+  - 404 for missing entities; 503 surfaces in Python service when DB tables missing (dev environments).
+- Caching & State
+  - Cache metadata (categories, condition levels, tags, dormitories) with TTL and invalidation on create.
+  - Preserve pagination/filter state in URL (web) or route state (mobile).
+- Performance
+  - Use thumbnails for grids; defer full-resolution images until detail view.
+  - Virtualize long lists; batch API calls; parallel fetch of images/tags when not embedded.
+- Security
+  - Never log tokens; store securely; protect admin-only views by role checks.
+
+Creative Design Suggestions
+- Use campus-themed visuals for dormitories; badge colors per university.
+- Product cards with subtle elevation and hover micro-interactions.
+- Animated “promoted” ribbon; distance bubble gently animates when nearby.
+- Condition level as a colored scale (e.g., “Like New” → “Heavily Used”).
+- Tags presented as clickable chips that pivot the feed or open a filter drawer.
+
+Success Criteria
+- All described screens implemented with role-based access control.
+- Endpoints integrated with proper headers and payloads; validation enforced.
+- Recommendations feed functional and performant across devices.
+- Profile settings persist and reflect immediately after save.
+- Image uploads support both files and URLs with primary selection.
+- Admin can manage catalogs and users seamlessly.
+- Accessibility audit passes WCAG AA for critical user journeys.
+- Performance targets: TTI < 3s on 4G; list virtualization prevents jank; images lazy-loaded.
+
+Cross-Platform Compatibility
+- Web SPA compatible with modern browsers; PWA-ready where feasible.
+- Mobile (React Native/Flutter) shares service layer; consistent UX patterns.
+- Graceful degradation when Python recommendations unavailable (fallback to category/tag lists).
+- Locale-aware formatting for price and dates; timezone handling for created_at.
+
+Implementation Notes
+- Preload metadata after login; retry on transient failures with exponential backoff.
+- Show skeleton loaders for feed and detail; optimistic UI for favorites.
+- Respect server pagination (admin users), and provide client-side page control.
+- Structure components to be reusable across platforms; encapsulate service calls in a shared layer.
+
+UI Flow Description
+- Onboarding & Auth
+  - Entry: Unauthenticated user lands on Login or Signup.
+  - Actions: Submit signup/login forms; client validates inputs; on success store Bearer token; navigate to HomeFeedPage.
+  - System Responses: 201/200 success with token; 422 validation errors rendered inline; 401/403 show banner and keep on form; retry option.
+- HomeFeedPage (Recommendations)
+  - Entry: After auth; fetch GET /api/recommendations/products with default page/page_size/random_count/lookback_days.
+  - Actions: Scroll/paginate; change controls; click product card to open detail; favorite directly from card.
+  - System Responses: Success renders grid; loading skeletons; empty state when no products; network failure falls back to category/tag browse lists from Laravel endpoints.
+- ProductDetailPage
+  - Entry: From HomeFeed or lists; fetch GET /api/user/get_product/{id}.
+  - Actions: View gallery; favorite; share; navigate to seller profile (future).
+  - System Responses: 200 renders attributes, images, tags; 404 shows NotFound page and offers Back to feed.
+- CreateListingPage
+  - Entry: From Header or MyListings; requires auth.
+  - Actions: Fill Details (title, description, price, category, condition); choose Dormitory if not set; Media step chooses either file uploads or image URLs; set primary_image_index; select tags; submit.
+  - System Responses: 201 displays confirmation and route to MyListings; 422 field-level errors; mutual exclusivity errors between files and URLs; thumbnail count mismatch errors.
+- ImageManagement
+  - Entry: From MyListings card actions.
+  - Actions: Upload additional images OR set image_urls and image_thumbnail_urls; set primary image index.
+  - System Responses: 201 with updated images; 422 on invalid files/indices; 404 if product not found; 403 if not seller.
+- FavoritesPage
+  - Entry: Header → Favorites; fetch GET /api/user/get_favorites.
+  - Actions: Remove favorites; open detail.
+  - System Responses: Success grid; empty state when none; 401/403 prompt login.
+- ProfileSettingsPage
+  - Entry: Header → Profile; fetch GET /api/user/me; edit fields; PATCH /api/user/settings.
+  - Actions: Update profile and dormitory; save; navigate back or stay.
+  - System Responses: 200 success toast; 422 validation errors; 403 unauthorized role.
+- AdminPages (secured)
+  - AdminLogin → AdminDashboard (token stored separately).
+  - UniversityManager: create/list universities.
+  - DormitoryManager: create/list dormitories by university.
+  - CatalogManager: create categories and condition levels.
+  - UsersManager: list/paginate; view; edit; activate/deactivate users.
+  - System Responses: 200/201 on operations; 403 when role ≠ admin; 401 when token missing; validation error handling consistent.
+- Error & Edge Cases
+  - Network failures: show retry and offline message; degrade gracefully to static lists.
+  - Unauthorized: redirect to Login with message; preserve intended route.
+  - Not Found: dedicated page for products/users; back navigation.
+  - Rate limits/503: show maintenance banner; advise retry later.
+  - Consistency: standard headers, toasts, skeletons across pages.
+
+Color Palette Implementation
+- Base Palette
+  - Primary: #F63049 (main CTAs and important elements)
+  - Secondary: #D02752 (secondary buttons and highlights)
+  - Tertiary: #8A244B (accents and decorative elements)
+  - Dark: #111F35 (dark UI elements, text contrast, neutral base)
+- Text Colors (WCAG AA guidance)
+  - On Primary (#F63049): use #000000 for normal-size text (contrast ≈5.4:1); #FFFFFF only for large text (≥18pt semibold or ≥24pt regular) or when using a darkened primary variant.
+  - On Secondary (#D02752): use #FFFFFF for all text (contrast ≈5.1:1).
+  - On Tertiary (#8A244B): use #FFFFFF for all text (contrast ≈8.6:1).
+  - On Dark (#111F35): use #FFFFFF for headings/body; use #E6EAF2 for secondary text; #C9D1E8 for disabled text to maintain legibility.
+- Interactive States (recommended variants)
+  - Primary Button (filled)
+    - Default: background #F63049; text #000000; border none; shadow subtle.
+    - Hover: darken ~8–10%; recommended background ~#E62944; text #000000.
+    - Active: darken ~14–16%; recommended background ~#D9243F; text #000000.
+    - Focus: add 2px outline with color-mix of #F63049 and #111F35 for high-contrast ring.
+    - Alt (white text style): use background #D02752 with #FFFFFF text to satisfy AA; hover ~#B8214A; active ~#A41E45.
+  - Secondary Button
+    - Default: background #FFFFFF; text #D02752; border 1px #D02752.
+    - Hover: background color-mix 90% #FFFFFF + 10% #D02752; text #C5204B; border #C5204B.
+    - Active: background color-mix 80% #FFFFFF + 20% #D02752; text #B21E47; border #B21E47.
+    - Focus: 2px outline with #D02752 on dark surfaces; invert outline to #FFFFFF on secondary-dark surfaces.
+  - Tertiary Elements (chips/badges)
+    - Default: background color-mix 85% #FFFFFF + 15% #8A244B; text #8A244B.
+    - Hover: background color-mix 80% #FFFFFF + 20% #8A244B; text #7A1F43.
+    - Active: background color-mix 75% #FFFFFF + 25% #8A244B; text #6B1B3B.
+  - Links
+    - Default: color #D02752; hover underline + darken; active maintain darkened color.
+- Surfaces & Neutrals (derived from Dark)
+  - Surface-1: color-mix 90% #111F35 + 10% #FFFFFF (e.g., ~#16223F)
+  - Surface-2: color-mix 80% #111F35 + 20% #FFFFFF (e.g., ~#1C2A4A)
+  - Borders: use 30–40% mix toward #FFFFFF on dark surfaces; toward #111F35 on light surfaces.
+- Color Usage Guidelines
+  - Hierarchy: Primary for main CTAs, destructive confirmations only with explicit text; Secondary for alternate actions; Tertiary for labels/chips and decorative accents.
+  - Accessibility: Always verify 4.5:1 for body text; prefer darkened fills when pairing with white text; reserve white text on Primary for large text or use the Alt style.
+  - Consistency: Keep hover/active darkening consistent across components (~8–10% hover, ~14–16% active).
+  - Backgrounds: Use Dark-derived surfaces for headers/footers and panels; ensure component shadows retain visibility on dark surfaces.
+  - States: Disabled components reduce opacity to 40–50% and remove shadows; focus states use high-contrast outlines.
+  - Data Visualization: Use Tertiary for category/tag accents; Secondary for highlighted metrics; avoid overuse of Primary in charts to preserve CTA salience.
+  - Theming: Maintain palette integrity across platforms; for mobile, ensure touch feedback (ripple/press) uses the active variant with sufficient contrast.
+
+React UI Implementation Prompt
+- Goal
+  - Build a production-ready React + TypeScript application that fully mirrors all API functionality from the Laravel API and FastAPI service.
+  - Provide complete CRUD coverage where the API supports it, without inventing missing endpoints.
+- Technology Requirements
+  - React with functional components and hooks (useState, useEffect, useContext).
+  - TypeScript for strict typing of API requests/responses.
+  - Axios for HTTP calls; configure shared instances for Laravel and Python service base URLs.
+  - Responsive layout using CSS Grid/Flexbox; no reliance on undocumented UI libraries.
+  - Error boundaries for page-level and route-level failures.
+- API Integration Architecture
+  - Two Axios clients:
+    - apiClient for Laravel (baseURL = Laravel API root).
+    - pyClient for Python service (baseURL = Python service root).
+  - Request interceptors attach Authorization: Bearer <token> for authenticated endpoints.
+  - Response interceptors normalize errors into a consistent shape {status, message, fieldErrors?}.
+  - Separate auth contexts for user token and admin token to prevent cross-scope leakage.
+  - Persist tokens securely; use storage abstraction to allow secure storage on web/mobile.
+- State Management
+  - useContext for Auth state (user/admin token, user profile).
+  - useState + useEffect for local lists, filters, and form state.
+  - Centralized data cache module for metadata (categories, tags, dormitories, condition levels) with TTL.
+  - Keep pagination and filter state synchronized with URL query parameters.
+- React Components by Endpoint
+  - Health/Diagnostics
+    - HealthCheckStatus: GET /api/health-check; show API status.
+    - PythonHealthStatus: GET /health; show recommendations service status.
+  - Authentication & Profile
+    - SignupForm: POST /api/user/signup.
+    - LoginForm: POST /api/user/login; store user token.
+    - UserProfileSummary: GET /api/user/me.
+    - ProfileSettingsForm: PATCH /api/user/settings.
+  - Metadata Resources
+    - CategoriesList/CategoryPicker: GET /api/user/meta/categories.
+    - ConditionLevelPicker: GET /api/user/meta/condition-levels.
+    - TagsList/TagsPicker: GET /api/user/meta/tags.
+    - DormitoryPicker: GET /api/user/meta/dormitories.
+    - CreateTagForm: POST /api/user/tags.
+  - Products
+    - CreateProductForm: POST /api/user/products with multipart (files) or JSON (image URLs).
+    - UserProductsList: GET /api/user/products; render images and tags.
+    - ProductDetailView: GET /api/user/get_product/{product_id}.
+    - ProductsByTagView: GET /api/user/products/by-tag/{tag_name}.
+    - ProductsByCategoryView: GET /api/user/products/by-category/{category_name}.
+    - ProductImageUploader: POST /api/user/products/{product_id}/images.
+  - Favorites
+    - AddFavoriteButton: POST /api/user/favorites.
+    - FavoritesList: GET /api/user/get_favorites.
+  - Behavioral Events
+    - BehavioralEventTracker: POST /api/user/behavioral_events on view/favorite/message/purchase actions.
+  - Admin Console
+    - AdminLoginForm: POST /api/admin/login; store admin token.
+    - AdminConnectivityCheck: POST /api/admin/test.
+    - UniversityCreateForm: POST /api/admin/set_university.
+    - DormitoryCreateForm: POST /api/admin/set_dormitory.
+    - UniversitiesList: GET /api/admin/universities.
+    - DormitoriesByUniversityList: GET /api/admin/universities/{university_name}/dormitories.
+    - CategoryCreateForm: POST /api/admin/categories.
+    - ConditionLevelCreateForm: POST /api/admin/condition-levels.
+    - UsersListTable: GET /api/admin/users with pagination.
+    - UserDetailView: GET /api/admin/users/{id}.
+    - UserEditForm: PATCH /api/admin/users/{id}.
+    - UserActivateButton: PATCH /api/admin/users/{id}/activate.
+    - UserDeactivateButton: PATCH /api/admin/users/{id}/deactivate.
+  - Python Service Views
+    - RecommendationFeed: GET /api/recommendations/products with pagination controls.
+    - PythonPingStatus: GET /api/ping and GET /api/test_py.
+    - PythonHiBanner: GET /api/hi for greeting.
+- Navigation Structure
+  - Public: /login, /signup.
+  - User: /feed, /products/:id, /products/new, /products/my, /favorites, /profile.
+  - Admin: /admin/login, /admin/dashboard, /admin/universities, /admin/dormitories, /admin/catalog, /admin/users.
+  - Diagnostics: /status for health endpoints.
+- CRUD Coverage Matrix
+  - Users: Create (signup), Read (me/admin users), Update (profile/admin update), Activate/Deactivate (admin).
+  - Products: Create, Read (list/detail/filter), Update (images only); no delete endpoint.
+  - Tags: Create, Read list; no update/delete endpoints.
+  - Categories: Create (admin), Read list; no update/delete endpoints.
+  - Condition Levels: Create (admin), Read list; no update/delete endpoints.
+  - Universities/Dormitories: Create, Read list; no update/delete endpoints.
+  - Favorites: Create, Read list; no delete endpoint.
+  - Behavioral Events: Create only.
+  - Recommendations: Read only.
+- Error Handling & UX
+  - Global error boundary for unexpected runtime failures with a recovery action.
+  - API errors surface field-level messages for 422 responses.
+  - 401/403 triggers auth redirect with context-aware messaging.
+  - 404 shows Not Found page with navigation options.
+  - 503 from Python service triggers fallback to Laravel browsing lists.
+- Loading & Feedback
+  - Skeleton loaders for feed, product detail, lists.
+  - Inline spinners for button actions and form submission.
+  - Toast notifications for create/update success and errors.
+- TypeScript Typing Requirements
+  - Define interfaces for every endpoint response payload and request body.
+  - Use discriminated unions for error responses: ValidationError vs AuthError vs NotFoundError vs ServerError.
+  - Enforce strict null checks for optional fields (profile_picture, description, tags, thumbnails).
+- Authentication Flow
+  - Login stores token; user context fetches /api/user/me.
+  - Admin login stores separate token; admin pages must use admin token.
+  - Token expiry or invalid token should auto-logout and clear state.
+- Pagination Handling
+  - For admin user listing, use server pagination metadata (page, per_page, total).
+  - Recommendations feed uses page/page_size/random_count; maintain in URL.
+- Real-Time Updates
+  - No websocket support in API; implement periodic refresh for feed and admin lists with conservative intervals.
+- Responsive Design
+  - Mobile-first layouts with adaptive grids and collapsible filters.
+  - Ensure forms are usable on small screens with sticky primary CTA where appropriate.
+- Testing Requirements
+  - Unit tests for all components (form validation, error rendering, UI state).
+  - Integration tests for API clients and authentication flows.
+  - E2E scenarios: signup/login, create product with images, favorites flow, admin user management, recommendation feed pagination.
+  - Performance benchmarks: LCP < 2.5s, TTI < 3s on 4G, lazy-load images, keep list rendering under 16ms per frame.

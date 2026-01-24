@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Dormitory;
+use App\Models\University;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -113,6 +115,121 @@ class AuthController extends Controller
                 'errors' => $e->errors(),
             ], 422);
         }
+    }
+
+    public function settingsUniversityOptions(Request $request)
+    {
+        $user = $request->user();
+
+        if (($user->role ?? 'user') !== 'user') {
+            return response()->json([
+                'message' => 'Unauthorized: Only users can access this endpoint.',
+            ], 403);
+        }
+
+        try {
+            $validated = $request->validate([
+                'university_id' => 'nullable|integer|exists:universities,id',
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation Error',
+                'errors' => $e->errors(),
+            ], 422);
+        }
+
+        $universities = University::query()
+            ->select(['id', 'name'])
+            ->orderBy('name')
+            ->get();
+
+        $selectedUniversityId = $validated['university_id'] ?? null;
+        $dormitories = collect();
+
+        if ($selectedUniversityId) {
+            $dormitories = Dormitory::query()
+                ->select(['id', 'dormitory_name', 'university_id', 'is_active'])
+                ->where('university_id', $selectedUniversityId)
+                ->orderBy('dormitory_name')
+                ->get();
+        }
+
+        $currentDormitory = null;
+        $currentUniversityId = null;
+
+        if ($user->dormitory_id) {
+            $currentDormitory = Dormitory::query()
+                ->select(['id', 'dormitory_name', 'university_id', 'is_active'])
+                ->whereKey($user->dormitory_id)
+                ->first();
+            $currentUniversityId = $currentDormitory?->university_id;
+        }
+
+        return response()->json([
+            'message' => 'University options retrieved successfully',
+            'current' => [
+                'university_id' => $currentUniversityId,
+                'dormitory_id' => $user->dormitory_id,
+            ],
+            'universities' => $universities,
+            'dormitories' => $dormitories,
+        ], 200);
+    }
+
+    public function updateUniversitySettings(Request $request)
+    {
+        $user = $request->user();
+
+        if (($user->role ?? 'user') !== 'user') {
+            return response()->json([
+                'message' => 'Unauthorized: Only users can access this endpoint.',
+            ], 403);
+        }
+
+        try {
+            $validated = $request->validate([
+                'university_id' => 'required|integer|exists:universities,id',
+                'dormitory_id' => 'required|integer|exists:dormitories,id',
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation Error',
+                'errors' => $e->errors(),
+            ], 422);
+        }
+
+        $dormitory = Dormitory::query()
+            ->whereKey($validated['dormitory_id'])
+            ->where('university_id', $validated['university_id'])
+            ->first();
+
+        if (! $dormitory) {
+            return response()->json([
+                'message' => 'Dormitory not found for the selected university.',
+            ], 404);
+        }
+
+        $user->dormitory_id = $dormitory->id;
+        $user->save();
+
+        $university = University::query()
+            ->select(['id', 'name'])
+            ->whereKey($validated['university_id'])
+            ->first();
+
+        return response()->json([
+            'message' => 'University settings updated successfully',
+            'user' => [
+                'id' => $user->id,
+                'dormitory_id' => $user->dormitory_id,
+            ],
+            'university' => $university,
+            'dormitory' => [
+                'id' => $dormitory->id,
+                'dormitory_name' => $dormitory->dormitory_name,
+                'is_active' => $dormitory->is_active,
+            ],
+        ], 200);
     }
 
     public function me(Request $request)
