@@ -13,6 +13,25 @@ use Illuminate\Validation\ValidationException;
 
 class AdminController extends Controller
 {
+    private function publicDiskUrl(string $path): string
+    {
+        $baseUrl = (string) config('filesystems.disks.public.url', '');
+        $path = ltrim($path, '/');
+
+        if ($baseUrl === '') {
+            return '/storage/'.$path;
+        }
+
+        return rtrim($baseUrl, '/').'/'.$path;
+    }
+
+    private function storeProfilePicture($file, int $userId): string
+    {
+        $path = $file->storePublicly('users/'.$userId.'/profile', 'public');
+
+        return $this->publicDiskUrl($path);
+    }
+
     public function index()
     {
         return response()->json(['message' => 'Admin endpoint reached!']);
@@ -312,7 +331,7 @@ class AdminController extends Controller
         }
 
         try {
-            $validatedData = $request->validate([
+            $rules = [
                 'full_name' => 'sometimes|string|max:255',
                 'username' => 'sometimes|string|max:255|unique:users,username,'.$id,
                 'email' => 'sometimes|string|email|max:255|unique:users,email,'.$id,
@@ -322,7 +341,17 @@ class AdminController extends Controller
                 'status' => 'sometimes|string|in:active,inactive,suspended',
                 'profile_picture' => 'nullable|string|max:255',
                 'locked_until' => 'nullable|date',
-            ]);
+            ];
+
+            if ($request->hasFile('profile_picture')) {
+                $rules['profile_picture'] = ['file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'];
+            }
+
+            $validatedData = $request->validate($rules);
+
+            if ($request->hasFile('profile_picture')) {
+                $validatedData['profile_picture'] = $this->storeProfilePicture($request->file('profile_picture'), (int) $user->id);
+            }
         } catch (ValidationException $e) {
             return response()->json([
                 'message' => 'Validation Error',

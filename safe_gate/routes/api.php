@@ -18,6 +18,8 @@ Route::middleware('auth:sanctum')->post('/user/products', [ProductController::cl
 Route::middleware('auth:sanctum')->get('/user/products', [ProductController::class, 'myProducts']);
 Route::middleware('auth:sanctum')->get('/user/products/cards', [ProductController::class, 'myProductCards']);
 Route::middleware('auth:sanctum')->get('/user/get_product/{product_id}', [ProductController::class, 'getProduct']);
+Route::middleware('auth:sanctum')->get('/user/products/{product_id}/edit', [ProductController::class, 'getMyProductForEdit']);
+Route::middleware('auth:sanctum')->patch('/user/products/{product_id}/mark-sold', [ProductController::class, 'markMyProductAsSold']);
 Route::middleware('auth:sanctum')->get('/user/products/by-tag/{tag_name}', [ProductController::class, 'listProductsByTagName']);
 Route::middleware('auth:sanctum')->get('/user/products/by-category/{category_name}', [ProductController::class, 'listProductsByCategoryName']);
 Route::middleware('auth:sanctum')->get('/user/get_favorites', [ProductController::class, 'myFavorites']);

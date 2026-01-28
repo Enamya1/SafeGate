@@ -310,6 +310,36 @@ Admin endpoints (bootstrap + listing)
   - Response (200): {"message":"User product cards retrieved successfully","page":1,"page_size":12,"total":0,"total_pages":0,"products":[...]}
   - Response (422): {"message":"Validation Error","errors":{...}}
 
+- GET /api/user/products/{product_id}/edit
+  - Middleware: auth:sanctum
+  - Controller: ProductController::getMyProductForEdit
+  - Access:
+    - Requires authenticated user (401 otherwise)
+    - Requires user role === 'user' (403 otherwise)
+  - Path params:
+    - product_id: required integer min 1
+  - Behavior:
+    - Returns only the authenticated user's product (deleted_at must be null)
+    - Includes images[] (primary first), tags[] and tag_ids[]
+  - Response (200): {"message":"User product retrieved successfully","product":{...}}
+  - Response (404): {"message":"Product not found."}
+  - Response (422): {"message":"Validation Error","errors":{...}}
+
+- PATCH /api/user/products/{product_id}/mark-sold
+  - Middleware: auth:sanctum
+  - Controller: ProductController::markMyProductAsSold
+  - Access:
+    - Requires authenticated user (401 otherwise)
+    - Requires user role === 'user' (403 otherwise)
+  - Path params:
+    - product_id: required integer min 1
+  - Behavior:
+    - Marks the authenticated user's product status as sold
+    - Returns id and status
+  - Response (200): {"message":"Product marked as sold successfully","product":{"id":...,"status":"sold"}}
+  - Response (404): {"message":"Product not found."}
+  - Response (422): {"message":"Validation Error","errors":{...}}
+
 - GET /api/user/meta/dormitories/by-university
   - Middleware: auth:sanctum
   - Controller: ProductController::dormitoriesByUserUniversity

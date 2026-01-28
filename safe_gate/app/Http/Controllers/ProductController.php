@@ -502,6 +502,122 @@ class ProductController extends Controller
         ], 200);
     }
 
+    public function getMyProductForEdit(Request $request, string $product_id)
+    {
+        $user = $request->user();
+
+        if (($user->role ?? 'user') !== 'user') {
+            return response()->json([
+                'message' => 'Unauthorized: Only users can access this endpoint.',
+            ], 403);
+        }
+
+        $productId = trim($product_id);
+
+        try {
+            $validated = validator(['product_id' => $productId], [
+                'product_id' => 'required|integer|min:1',
+            ])->validate();
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation Error',
+                'errors' => $e->errors(),
+            ], 422);
+        }
+
+        $product = Product::query()
+            ->with(['dormitory'])
+            ->whereKey((int) $validated['product_id'])
+            ->where('seller_id', $user->id)
+            ->whereNull('deleted_at')
+            ->first();
+
+        if (! $product) {
+            return response()->json([
+                'message' => 'Product not found.',
+            ], 404);
+        }
+
+        $images = ProductImage::query()
+            ->where('product_id', $product->id)
+            ->orderByDesc('is_primary')
+            ->orderBy('id')
+            ->get()
+            ->values();
+
+        $tags = DB::table('product_tags')
+            ->join('tags', 'product_tags.tag_id', '=', 'tags.id')
+            ->where('product_tags.product_id', $product->id)
+            ->select([
+                'tags.id',
+                'tags.name',
+            ])
+            ->orderBy('tags.id')
+            ->get()
+            ->values();
+
+        $tagIds = $tags->pluck('id')->values();
+
+        $payload = $product->toArray();
+        $payload['images'] = $images;
+        $payload['tags'] = $tags;
+        $payload['tag_ids'] = $tagIds;
+
+        return response()->json([
+            'message' => 'User product retrieved successfully',
+            'product' => $payload,
+        ], 200);
+    }
+
+    public function markMyProductAsSold(Request $request, string $product_id)
+    {
+        $user = $request->user();
+
+        if (($user->role ?? 'user') !== 'user') {
+            return response()->json([
+                'message' => 'Unauthorized: Only users can access this endpoint.',
+            ], 403);
+        }
+
+        $productId = trim($product_id);
+
+        try {
+            $validated = validator(['product_id' => $productId], [
+                'product_id' => 'required|integer|min:1',
+            ])->validate();
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation Error',
+                'errors' => $e->errors(),
+            ], 422);
+        }
+
+        $product = Product::query()
+            ->whereKey((int) $validated['product_id'])
+            ->where('seller_id', $user->id)
+            ->whereNull('deleted_at')
+            ->first();
+
+        if (! $product) {
+            return response()->json([
+                'message' => 'Product not found.',
+            ], 404);
+        }
+
+        if ($product->status !== 'sold') {
+            $product->status = 'sold';
+            $product->save();
+        }
+
+        return response()->json([
+            'message' => 'Product marked as sold successfully',
+            'product' => [
+                'id' => $product->id,
+                'status' => $product->status,
+            ],
+        ], 200);
+    }
+
     public function listProductsByTagName(Request $request, string $tag_name)
     {
         $user = $request->user();

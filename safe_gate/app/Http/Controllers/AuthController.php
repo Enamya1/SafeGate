@@ -12,6 +12,25 @@ use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
+    private function publicDiskUrl(string $path): string
+    {
+        $baseUrl = (string) config('filesystems.disks.public.url', '');
+        $path = ltrim($path, '/');
+
+        if ($baseUrl === '') {
+            return '/storage/'.$path;
+        }
+
+        return rtrim($baseUrl, '/').'/'.$path;
+    }
+
+    private function storeProfilePicture($file, int $userId): string
+    {
+        $path = $file->storePublicly('users/'.$userId.'/profile', 'public');
+
+        return $this->publicDiskUrl($path);
+    }
+
     public function signup(Request $request)
     {
         try {
@@ -87,7 +106,7 @@ class AuthController extends Controller
         try {
             $user = Auth::user();
 
-            $validatedData = $request->validate([
+            $rules = [
                 'full_name' => 'sometimes|string|max:255',
                 'username' => 'sometimes|string|max:255|unique:users,username,'.$user->id,
                 'email' => 'sometimes|string|email|max:255|unique:users,email,'.$user->id,
@@ -100,7 +119,17 @@ class AuthController extends Controller
                 'gender' => 'nullable|string|max:255',
                 'language' => 'nullable|string|max:255',
                 'timezone' => 'nullable|string|max:255',
-            ]);
+            ];
+
+            if ($request->hasFile('profile_picture')) {
+                $rules['profile_picture'] = ['file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'];
+            }
+
+            $validatedData = $request->validate($rules);
+
+            if ($request->hasFile('profile_picture')) {
+                $validatedData['profile_picture'] = $this->storeProfilePicture($request->file('profile_picture'), (int) $user->id);
+            }
 
             $user->fill($validatedData);
             $user->save();
@@ -249,6 +278,7 @@ class AuthController extends Controller
                 'full_name' => $user->full_name,
                 'username' => $user->username,
                 'email' => $user->email,
+                'profile_picture' => $user->profile_picture,
                 'role' => $user->role,
             ],
         ], 200);
