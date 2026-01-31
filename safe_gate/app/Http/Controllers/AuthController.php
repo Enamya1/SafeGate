@@ -277,6 +277,22 @@ class AuthController extends Controller
         ], 200);
     }
 
+    public function profilePicture(Request $request)
+    {
+        $user = $request->user();
+
+        if (($user->role ?? 'user') !== 'user') {
+            return response()->json([
+                'message' => 'Unauthorized: Only users can access this endpoint.',
+            ], 403);
+        }
+
+        return response()->json([
+            'message' => 'User profile picture retrieved successfully',
+            'profile_picture' => $user->profile_picture,
+        ], 200);
+    }
+
     public function me(Request $request)
     {
         $user = $request->user();

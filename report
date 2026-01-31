@@ -64,6 +64,11 @@ User Authentication
    - Response 200: {"message":"User language retrieved successfully","language":"..."}
    - Response 403: {"message":"Unauthorized: Only users can access this endpoint."}
 
+6b) GET /api/user/settings/profile-picture
+   - Auth: auth:sanctum, role=user
+   - Response 200: {"message":"User profile picture retrieved successfully","profile_picture":"..."}
+   - Response 403: {"message":"Unauthorized: Only users can access this endpoint."}
+
 7) GET /api/user/settings/university-options
    - Auth: auth:sanctum, role=user
    - Query:
