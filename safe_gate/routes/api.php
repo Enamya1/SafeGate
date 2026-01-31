@@ -12,6 +12,7 @@ Route::post('/user/signup', [AuthController::class, 'signup']);
 Route::post('/user/login', [AuthController::class, 'login']);
 Route::middleware('auth:sanctum')->get('/user/me', [AuthController::class, 'me']);
 Route::middleware('auth:sanctum')->patch('/user/settings', [AuthController::class, 'updateProfile']);
+Route::middleware('auth:sanctum')->get('/user/settings/language', [AuthController::class, 'language']);
 Route::middleware('auth:sanctum')->get('/user/settings/university-options', [AuthController::class, 'settingsUniversityOptions']);
 Route::middleware('auth:sanctum')->patch('/user/settings/university', [AuthController::class, 'updateUniversitySettings']);
 Route::middleware('auth:sanctum')->post('/user/products', [ProductController::class, 'store']);

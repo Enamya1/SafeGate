@@ -59,6 +59,11 @@ User Authentication
    - Response 422: {"message":"Validation Error","errors":{...}}
    - Response 401: {"message":"Unauthenticated."}
 
+6a) GET /api/user/settings/language
+   - Auth: auth:sanctum, role=user
+   - Response 200: {"message":"User language retrieved successfully","language":"..."}
+   - Response 403: {"message":"Unauthorized: Only users can access this endpoint."}
+
 7) GET /api/user/settings/university-options
    - Auth: auth:sanctum, role=user
    - Query:
