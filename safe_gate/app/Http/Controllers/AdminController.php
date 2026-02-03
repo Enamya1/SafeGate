@@ -329,6 +329,7 @@ class AdminController extends Controller
                 'users.role',
                 'users.status',
                 'users.profile_picture',
+                'users.last_login_at',
                 'universities.name as university_name',
             ])
             ->orderBy('users.id')
