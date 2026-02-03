@@ -92,6 +92,9 @@ class AuthController extends Controller
             ], 403);
         }
 
+        $user->last_login_at = now();
+        $user->save();
+
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([

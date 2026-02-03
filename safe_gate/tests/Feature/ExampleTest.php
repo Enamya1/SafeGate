@@ -345,6 +345,29 @@ class ExampleTest extends TestCase
             ->assertJsonPath('message', 'Your account is deactivated. Please contact support.');
     }
 
+    public function test_user_login_updates_last_login_at(): void
+    {
+        $user = User::create([
+            'full_name' => 'Active User',
+            'username' => 'activeuser',
+            'email' => 'active@example.com',
+            'password' => Hash::make('password123'),
+            'role' => 'user',
+            'status' => 'active',
+        ]);
+
+        $this->assertNull($user->last_login_at);
+
+        $response = $this->postJson('/api/user/login', [
+            'email' => 'active@example.com',
+            'password' => 'password123',
+        ]);
+
+        $response->assertStatus(200);
+
+        $this->assertNotNull($user->fresh()->last_login_at);
+    }
+
     public function test_deactivated_admin_cannot_login(): void
     {
         $admin = User::create([
