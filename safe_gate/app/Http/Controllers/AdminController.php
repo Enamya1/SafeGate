@@ -10,6 +10,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
+use Laravel\Sanctum\PersonalAccessToken;
 
 class AdminController extends Controller
 {
@@ -30,6 +31,31 @@ class AdminController extends Controller
         $path = $file->storePublicly('users/'.$userId.'/profile', 'public');
 
         return $this->publicDiskUrl($path);
+    }
+
+    private function extractToken(Request $request): ?string
+    {
+        $authorization = $request->headers->get('Authorization');
+
+        if (is_string($authorization) && $authorization !== '' && str_starts_with($authorization, 'Bearer ')) {
+            return substr($authorization, 7);
+        }
+
+        $token =
+            $request->headers->get('X-Access-Token')
+            ?? $request->headers->get('X-Authorization')
+            ?? $request->query('access_token')
+            ?? $request->input('access_token');
+
+        if (! is_string($token) || $token === '') {
+            return null;
+        }
+
+        if (str_starts_with($token, 'Bearer ')) {
+            return substr($token, 7);
+        }
+
+        return $token;
     }
 
     public function index()
@@ -78,6 +104,31 @@ class AdminController extends Controller
             'access_token' => $token,
             'token_type' => 'Bearer',
         ]);
+    }
+
+    public function logout(Request $request)
+    {
+        $admin = $request->user();
+
+        if (! $admin || $admin->role !== 'admin') {
+            return response()->json([
+                'message' => 'Unauthorized: Only administrators can access this endpoint.',
+            ], 403);
+        }
+
+        $token = $this->extractToken($request);
+
+        if ($token) {
+            $accessToken = PersonalAccessToken::findToken($token);
+
+            if ($accessToken) {
+                $accessToken->delete();
+            }
+        }
+
+        return response()->json([
+            'message' => 'Logout successful',
+        ], 200);
     }
 
     public function set_university(Request $request)

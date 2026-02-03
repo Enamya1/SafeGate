@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('api')->get('/health-check', HealthCheckController::class);
 Route::post('/user/signup', [AuthController::class, 'signup']);
 Route::post('/user/login', [AuthController::class, 'login']);
+Route::middleware('auth:sanctum')->post('/user/logout', [AuthController::class, 'logout']);
 Route::middleware('auth:sanctum')->get('/user/me', [AuthController::class, 'me']);
 Route::middleware('auth:sanctum')->patch('/user/settings', [AuthController::class, 'updateProfile']);
 Route::middleware('auth:sanctum')->get('/user/settings/language', [AuthController::class, 'language']);
@@ -39,6 +40,7 @@ Route::middleware('auth:sanctum')->post('/user/tags', [ProductController::class,
 Route::prefix('admin')->group(function () {
     Route::post('/test', [AdminController::class, 'index']);
     Route::post('/login', [AdminController::class, 'login']);
+    Route::middleware('token_auth')->post('/logout', [AdminController::class, 'logout']);
     Route::post('/set_university', [AdminController::class, 'set_university']);
     Route::post('/set_dormitory', [AdminController::class, 'set_dormitory']);
     Route::get('/universities', [AdminController::class, 'listUniversities']);

@@ -43,6 +43,11 @@ User Authentication
    - Response 403: {"message":"Your account is deactivated. Please contact support."}
    - Response 422: {"message":"Validation Error","errors":{...}}
 
+4a) POST /api/user/logout
+   - Auth: auth:sanctum, role=user
+   - Response 200: {"message":"Logout successful"}
+   - Response 403: {"message":"Unauthorized: Only users can access this endpoint."}
+
 5) GET /api/user/me
    - Auth: auth:sanctum
    - Response 200: {"message":"User retrieved successfully","user":{"id":...,"full_name":...,"username":...,"email":...,"profile_picture":...,"role":...}}
@@ -302,7 +307,13 @@ Admin
    - Response 403: {"message":"Your admin account is deactivated. Please contact support."}
    - Response 422: {"message":"Validation Error","errors":{...}}
 
-30) POST /api/admin/set_university
+30) POST /api/admin/logout
+   - Auth: token_auth (Sanctum token), role=admin
+   - Response 200: {"message":"Logout successful"}
+   - Response 403: {"message":"Unauthorized: Only administrators can access this endpoint."}
+   - Response 401: {"message":"Unauthenticated."}
+
+31) POST /api/admin/set_university
    - Request body:
      - name (required string, unique)
      - domain (required string, unique)
@@ -311,7 +322,7 @@ Admin
    - Response 201: {"message":"University created successfully","university":{...}}
    - Response 422: {"message":"Validation Error","errors":{...}}
 
-31) POST /api/admin/set_dormitory
+32) POST /api/admin/set_dormitory
    - Request body:
      - dormitory_name (required string, unique)
      - domain (required string, unique)
@@ -322,14 +333,14 @@ Admin
    - Response 404: {"message":"University not found."}
    - Response 422: {"message":"Validation Error","errors":{...}}
 
-32) GET /api/admin/universities
+33) GET /api/admin/universities
    - Response 200: {"message":"Universities retrieved successfully","universities":[...]}
 
-33) GET /api/admin/universities/{university_name}/dormitories
+34) GET /api/admin/universities/{university_name}/dormitories
    - Response 200: {"message":"Dormitories retrieved successfully","university":"...","dormitories":[...]}
    - Response 404: {"message":"University not found."}
 
-34) POST /api/admin/categories
+35) POST /api/admin/categories
    - Auth: token_auth (Sanctum token)
    - Request body:
      - name (required string)
@@ -338,7 +349,7 @@ Admin
    - Response 422: {"message":"Validation Error","errors":{...}}
    - Response 403: {"message":"Unauthorized: Only administrators can access this endpoint."}
 
-35) POST /api/admin/condition-levels
+36) POST /api/admin/condition-levels
    - Auth: token_auth (Sanctum token)
    - Request body:
      - name (required string, unique condition_levels.name)
@@ -348,7 +359,7 @@ Admin
    - Response 422: {"message":"Validation Error","errors":{...}}
    - Response 403: {"message":"Unauthorized: Only administrators can access this endpoint."}
 
-36) GET /api/admin/users
+37) GET /api/admin/users
    - Auth: token_auth (Sanctum token)
    - Query:
      - per_page (optional integer 1-100, default 50)
@@ -356,13 +367,13 @@ Admin
    - Response 422: {"message":"Validation Error","errors":{...}}
    - Response 403: {"message":"Unauthorized: Only administrators can access this endpoint."}
 
-37) GET /api/admin/users/{id}
+38) GET /api/admin/users/{id}
    - Auth: token_auth (Sanctum token)
    - Response 200: {"message":"User retrieved successfully","user":{...}}
    - Response 404: {"message":"User not found."}
    - Response 403: {"message":"Unauthorized: Only administrators can access this endpoint."}
 
-38) PATCH /api/admin/users/{id}
+39) PATCH /api/admin/users/{id}
    - Auth: token_auth (Sanctum token)
    - Request body (all optional, JSON or multipart/form-data):
      - full_name, username, email, phone_number, role, dormitory_id
@@ -373,29 +384,29 @@ Admin
    - Response 422: {"message":"Validation Error","errors":{...}}
    - Response 403: {"message":"Unauthorized: Only administrators can access this endpoint."}
 
-39) PATCH /api/admin/users/{id}/activate
+40) PATCH /api/admin/users/{id}/activate
    - Auth: token_auth (Sanctum token)
    - Response 200: {"message":"User activated successfully","user_id":...}
    - Response 404: {"message":"User not found."}
    - Response 403: {"message":"Unauthorized: Only administrators can access this endpoint."}
 
-40) PATCH /api/admin/users/{id}/deactivate
+41) PATCH /api/admin/users/{id}/deactivate
    - Auth: token_auth (Sanctum token)
    - Response 200: {"message":"User deactivated successfully","user_id":...}
    - Response 404: {"message":"User not found."}
    - Response 403: {"message":"Unauthorized: Only administrators can access this endpoint."}
 
 Python Service
-41) GET /health
+42) GET /health
    - Response 200: {"status":"ok"}
 
-42) GET /api/ping
+43) GET /api/ping
    - Response 200: {"message":"pong"}
 
-43) GET /api/test_py
+44) GET /api/test_py
    - Response 200: {"message":"python connected"}
 
-44) GET /api/hi
+45) GET /api/hi
    - Headers:
      - Authorization: Bearer <Laravel token> (required)
    - Response 200: {"message":"hi <username>"}
@@ -403,7 +414,7 @@ Python Service
    - Response 401: {"detail":{"message":"Unauthenticated."}} (when Laravel /api/user/me fails)
    - Response 502: {"detail":"Could not reach Laravel"}
 
-45) GET /api/recommendations/products
+46) GET /api/recommendations/products
    - Headers:
      - Authorization: Bearer <Laravel token> (required)
    - Query params:

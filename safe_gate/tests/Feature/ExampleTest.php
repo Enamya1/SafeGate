@@ -28,6 +28,33 @@ class ExampleTest extends TestCase
         $response->assertStatus(401);
     }
 
+    public function test_admin_can_logout_and_revoke_token(): void
+    {
+        $admin = User::create([
+            'full_name' => 'Admin User',
+            'username' => 'adminuser',
+            'email' => 'admin@example.com',
+            'phone_number' => null,
+            'password' => Hash::make('password123'),
+            'dormitory_id' => null,
+            'role' => 'admin',
+        ]);
+
+        $token = $admin->createToken('admin_auth_token')->plainTextToken;
+
+        $this->assertSame(1, $admin->tokens()->count());
+
+        $response = $this
+            ->withHeader('Authorization', 'Bearer '.$token)
+            ->postJson('/api/admin/logout');
+
+        $response
+            ->assertStatus(200)
+            ->assertJsonPath('message', 'Logout successful');
+
+        $this->assertSame(0, $admin->tokens()->count());
+    }
+
     public function test_admin_users_endpoint_returns_users_for_admin_token(): void
     {
         $admin = User::create([
