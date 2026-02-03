@@ -359,11 +359,11 @@ Admin
    - Response 422: {"message":"Validation Error","errors":{...}}
    - Response 403: {"message":"Unauthorized: Only administrators can access this endpoint."}
 
-37) GET /api/admin/users
+37) GET /api/admin/get_all_users
    - Auth: token_auth (Sanctum token)
    - Query:
-     - per_page (optional integer 1-100, default 50)
-   - Response 200: {"message":"Users retrieved successfully","users":{pagination}}
+    - per_page (optional integer 1-100, default 10)
+   - Response 200: {"message":"Users retrieved successfully","users":{pagination with university_name per user}}
    - Response 422: {"message":"Validation Error","errors":{...}}
    - Response 403: {"message":"Unauthorized: Only administrators can access this endpoint."}
 

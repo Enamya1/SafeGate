@@ -317,20 +317,21 @@ class AdminController extends Controller
             ], 422);
         }
 
-        $perPage = (int) ($validated['per_page'] ?? 50);
+        $perPage = (int) ($validated['per_page'] ?? 10);
 
         $users = User::query()
+            ->leftJoin('dormitories', 'users.dormitory_id', '=', 'dormitories.id')
+            ->leftJoin('universities', 'dormitories.university_id', '=', 'universities.id')
             ->select([
-                'id',
-                'full_name',
-                'email',
-                'role',
-                'phone_number',
-                'dormitory_id',
-                'status',
-                'profile_picture',
+                'users.id',
+                'users.full_name',
+                'users.email',
+                'users.role',
+                'users.status',
+                'users.profile_picture',
+                'universities.name as university_name',
             ])
-            ->orderBy('id')
+            ->orderBy('users.id')
             ->paginate($perPage);
 
         return response()->json([

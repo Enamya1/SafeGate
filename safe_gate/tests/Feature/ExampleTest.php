@@ -23,7 +23,7 @@ class ExampleTest extends TestCase
 
     public function test_admin_users_endpoint_returns_unauthenticated_without_token(): void
     {
-        $response = $this->get('/api/admin/users');
+        $response = $this->get('/api/admin/get_all_users');
 
         $response->assertStatus(401);
     }
@@ -67,13 +67,28 @@ class ExampleTest extends TestCase
             'role' => 'admin',
         ]);
 
+        $university = \App\Models\University::create([
+            'name' => 'Test University',
+            'domain' => 'test.edu',
+            'location' => null,
+            'pic' => null,
+        ]);
+
+        $dormitory = \App\Models\Dormitory::create([
+            'dormitory_name' => 'Dorm A',
+            'domain' => 'dorm-a.test.edu',
+            'location' => null,
+            'is_active' => true,
+            'university_id' => $university->id,
+        ]);
+
         User::create([
             'full_name' => 'Regular User',
             'username' => 'regularuser',
             'email' => 'user@example.com',
             'phone_number' => null,
             'password' => Hash::make('password123'),
-            'dormitory_id' => null,
+            'dormitory_id' => $dormitory->id,
             'role' => 'user',
         ]);
 
@@ -81,7 +96,7 @@ class ExampleTest extends TestCase
 
         $response = $this
             ->withHeader('Authorization', 'Bearer '.$token)
-            ->getJson('/api/admin/users');
+            ->getJson('/api/admin/get_all_users');
 
         $response
             ->assertStatus(200)
@@ -95,14 +110,18 @@ class ExampleTest extends TestCase
                             'full_name',
                             'email',
                             'role',
-                            'phone_number',
-                            'dormitory_id',
                             'status',
                             'profile_picture',
+                            'university_name',
                         ],
                     ],
                 ],
             ]);
+
+        $users = $response->json('users.data');
+        $this->assertTrue(collect($users)->contains(
+            fn (array $user): bool => ($user['university_name'] ?? null) === 'Test University'
+        ));
     }
 
     public function test_admin_users_endpoint_accepts_token_from_query_string(): void
@@ -117,19 +136,34 @@ class ExampleTest extends TestCase
             'role' => 'admin',
         ]);
 
+        $university = \App\Models\University::create([
+            'name' => 'Test University',
+            'domain' => 'test.edu',
+            'location' => null,
+            'pic' => null,
+        ]);
+
+        $dormitory = \App\Models\Dormitory::create([
+            'dormitory_name' => 'Dorm A',
+            'domain' => 'dorm-a.test.edu',
+            'location' => null,
+            'is_active' => true,
+            'university_id' => $university->id,
+        ]);
+
         User::create([
             'full_name' => 'Regular User',
             'username' => 'regularuser',
             'email' => 'user@example.com',
             'phone_number' => null,
             'password' => Hash::make('password123'),
-            'dormitory_id' => null,
+            'dormitory_id' => $dormitory->id,
             'role' => 'user',
         ]);
 
         $token = $admin->createToken('admin_auth_token')->plainTextToken;
 
-        $response = $this->getJson('/api/admin/users?access_token='.urlencode($token));
+        $response = $this->getJson('/api/admin/get_all_users?access_token='.urlencode($token));
 
         $response
             ->assertStatus(200)
@@ -143,14 +177,18 @@ class ExampleTest extends TestCase
                             'full_name',
                             'email',
                             'role',
-                            'phone_number',
-                            'dormitory_id',
                             'status',
                             'profile_picture',
+                            'university_name',
                         ],
                     ],
                 ],
             ]);
+
+        $users = $response->json('users.data');
+        $this->assertTrue(collect($users)->contains(
+            fn (array $user): bool => ($user['university_name'] ?? null) === 'Test University'
+        ));
     }
 
     public function test_admin_show_user_endpoint_returns_user_data_for_admin_token(): void
