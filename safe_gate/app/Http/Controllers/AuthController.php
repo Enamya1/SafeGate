@@ -7,6 +7,7 @@ use App\Models\University;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 
@@ -261,6 +262,159 @@ class AuthController extends Controller
                 'dormitory_name' => $dormitory->dormitory_name,
                 'is_active' => $dormitory->is_active,
             ],
+        ], 200);
+    }
+
+    public function sendMessage(Request $request)
+    {
+        $user = $request->user();
+
+        if (($user->role ?? 'user') !== 'user') {
+            return response()->json([
+                'message' => 'Unauthorized: Only users can access this endpoint.',
+            ], 403);
+        }
+
+        try {
+            $validated = $request->validate([
+                'receiver_id' => 'required|integer|min:1|exists:users,id',
+                'message_text' => 'required|string|max:2000',
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation Error',
+                'errors' => $e->errors(),
+            ], 422);
+        }
+
+        if ((int) $validated['receiver_id'] === (int) $user->id) {
+            return response()->json([
+                'message' => 'Receiver cannot be the sender.',
+            ], 422);
+        }
+
+        $senderId = (int) $user->id;
+        $receiverId = (int) $validated['receiver_id'];
+        $participantA = min($senderId, $receiverId);
+        $participantB = max($senderId, $receiverId);
+
+        $conversation = DB::table('conversations')
+            ->whereNull('product_id')
+            ->where('buyer_id', $participantA)
+            ->where('seller_id', $participantB)
+            ->first();
+
+        $conversationId = $conversation?->id;
+
+        if (! $conversationId) {
+            $conversationId = DB::table('conversations')->insertGetId([
+                'product_id' => null,
+                'buyer_id' => $participantA,
+                'seller_id' => $participantB,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+
+        $messageId = DB::table('messages')->insertGetId([
+            'conversation_id' => $conversationId,
+            'sender_id' => $senderId,
+            'message_text' => $validated['message_text'],
+            'read_at' => null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $message = DB::table('messages')->where('id', $messageId)->first();
+
+        return response()->json([
+            'message' => 'Message sent successfully',
+            'conversation_id' => $conversationId,
+            'message_data' => $message,
+        ], 201);
+    }
+
+    public function myMessages(Request $request)
+    {
+        $user = $request->user();
+
+        if (($user->role ?? 'user') !== 'user') {
+            return response()->json([
+                'message' => 'Unauthorized: Only users can access this endpoint.',
+            ], 403);
+        }
+
+        try {
+            $validated = $request->validate([
+                'conversation_id' => 'required|integer|min:1|exists:conversations,id',
+                'limit' => 'nullable|integer|min:1|max:100',
+                'before_id' => 'nullable|integer|min:1',
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation Error',
+                'errors' => $e->errors(),
+            ], 422);
+        }
+
+        $conversation = DB::table('conversations')
+            ->select(['id', 'buyer_id', 'seller_id'])
+            ->where('id', (int) $validated['conversation_id'])
+            ->first();
+
+        if (! $conversation) {
+            return response()->json([
+                'message' => 'Conversation not found.',
+            ], 404);
+        }
+
+        if ((int) $conversation->buyer_id !== (int) $user->id && (int) $conversation->seller_id !== (int) $user->id) {
+            return response()->json([
+                'message' => 'Unauthorized: You are not part of this conversation.',
+            ], 403);
+        }
+
+        $limit = (int) ($validated['limit'] ?? 50);
+
+        $messagesQuery = DB::table('messages')
+            ->join('users', 'messages.sender_id', '=', 'users.id')
+            ->where('messages.conversation_id', (int) $conversation->id)
+            ->select([
+                'messages.id',
+                'messages.conversation_id',
+                'messages.sender_id',
+                'users.username as sender_username',
+                'users.full_name as sender_full_name',
+                'users.profile_picture as sender_profile_picture',
+                'messages.message_text',
+                'messages.read_at',
+                'messages.created_at',
+            ])
+            ->orderByDesc('messages.id')
+            ->limit($limit);
+
+        if (array_key_exists('before_id', $validated) && $validated['before_id'] !== null) {
+            $messagesQuery->where('messages.id', '<', (int) $validated['before_id']);
+        }
+
+        $messages = $messagesQuery->get()->reverse()->values();
+
+        $otherUserId = (int) $conversation->buyer_id === (int) $user->id
+            ? (int) $conversation->seller_id
+            : (int) $conversation->buyer_id;
+
+        $otherUser = DB::table('users')
+            ->select(['id', 'username', 'full_name', 'profile_picture'])
+            ->where('id', $otherUserId)
+            ->first();
+
+        return response()->json([
+            'message' => 'Messages retrieved successfully',
+            'conversation' => [
+                'id' => (int) $conversation->id,
+                'other_user' => $otherUser,
+            ],
+            'messages' => $messages,
         ], 200);
     }
 

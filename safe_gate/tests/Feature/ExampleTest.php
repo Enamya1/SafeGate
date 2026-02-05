@@ -82,7 +82,18 @@ class ExampleTest extends TestCase
             'university_id' => $university->id,
         ]);
 
-        User::create([
+        $category = \App\Models\Category::create([
+            'name' => 'Electronics',
+            'parent_id' => null,
+        ]);
+
+        $conditionLevel = \App\Models\ConditionLevel::create([
+            'name' => 'Good',
+            'description' => null,
+            'sort_order' => 1,
+        ]);
+
+        $user = User::create([
             'full_name' => 'Regular User',
             'username' => 'regularuser',
             'email' => 'user@example.com',
@@ -90,6 +101,17 @@ class ExampleTest extends TestCase
             'password' => Hash::make('password123'),
             'dormitory_id' => $dormitory->id,
             'role' => 'user',
+        ]);
+
+        \App\Models\Product::create([
+            'seller_id' => $user->id,
+            'dormitory_id' => $dormitory->id,
+            'category_id' => $category->id,
+            'condition_level_id' => $conditionLevel->id,
+            'title' => 'Keyboard',
+            'description' => null,
+            'price' => 20.00,
+            'status' => 'sold',
         ]);
 
         $token = $admin->createToken('admin_auth_token')->plainTextToken;
@@ -114,6 +136,8 @@ class ExampleTest extends TestCase
                             'profile_picture',
                             'last_login_at',
                             'university_name',
+                            'product_count',
+                            'sold_counter',
                         ],
                     ],
                 ],
@@ -122,6 +146,10 @@ class ExampleTest extends TestCase
         $users = $response->json('users.data');
         $this->assertTrue(collect($users)->contains(
             fn (array $user): bool => ($user['university_name'] ?? null) === 'Test University'
+        ));
+        $this->assertTrue(collect($users)->contains(
+            fn (array $user): bool => ($user['product_count'] ?? null) === 1
+                && ($user['sold_counter'] ?? null) === 1
         ));
     }
 
@@ -152,7 +180,18 @@ class ExampleTest extends TestCase
             'university_id' => $university->id,
         ]);
 
-        User::create([
+        $category = \App\Models\Category::create([
+            'name' => 'Electronics',
+            'parent_id' => null,
+        ]);
+
+        $conditionLevel = \App\Models\ConditionLevel::create([
+            'name' => 'Good',
+            'description' => null,
+            'sort_order' => 1,
+        ]);
+
+        $user = User::create([
             'full_name' => 'Regular User',
             'username' => 'regularuser',
             'email' => 'user@example.com',
@@ -160,6 +199,17 @@ class ExampleTest extends TestCase
             'password' => Hash::make('password123'),
             'dormitory_id' => $dormitory->id,
             'role' => 'user',
+        ]);
+
+        \App\Models\Product::create([
+            'seller_id' => $user->id,
+            'dormitory_id' => $dormitory->id,
+            'category_id' => $category->id,
+            'condition_level_id' => $conditionLevel->id,
+            'title' => 'Keyboard',
+            'description' => null,
+            'price' => 20.00,
+            'status' => 'sold',
         ]);
 
         $token = $admin->createToken('admin_auth_token')->plainTextToken;
@@ -182,6 +232,8 @@ class ExampleTest extends TestCase
                             'profile_picture',
                             'last_login_at',
                             'university_name',
+                            'product_count',
+                            'sold_counter',
                         ],
                     ],
                 ],
@@ -190,6 +242,10 @@ class ExampleTest extends TestCase
         $users = $response->json('users.data');
         $this->assertTrue(collect($users)->contains(
             fn (array $user): bool => ($user['university_name'] ?? null) === 'Test University'
+        ));
+        $this->assertTrue(collect($users)->contains(
+            fn (array $user): bool => ($user['product_count'] ?? null) === 1
+                && ($user['sold_counter'] ?? null) === 1
         ));
     }
 

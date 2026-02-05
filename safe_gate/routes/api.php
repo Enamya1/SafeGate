@@ -17,6 +17,8 @@ Route::middleware('auth:sanctum')->get('/user/settings/language', [AuthControlle
 Route::middleware('auth:sanctum')->get('/user/settings/profile-picture', [AuthController::class, 'profilePicture']);
 Route::middleware('auth:sanctum')->get('/user/settings/university-options', [AuthController::class, 'settingsUniversityOptions']);
 Route::middleware('auth:sanctum')->patch('/user/settings/university', [AuthController::class, 'updateUniversitySettings']);
+Route::middleware('auth:sanctum')->post('/user/messages', [AuthController::class, 'sendMessage']);
+Route::middleware('auth:sanctum')->get('/user/messages', [AuthController::class, 'myMessages']);
 Route::middleware('auth:sanctum')->post('/user/products', [ProductController::class, 'store']);
 Route::middleware('auth:sanctum')->get('/user/products', [ProductController::class, 'myProducts']);
 Route::middleware('auth:sanctum')->get('/user/products/cards', [ProductController::class, 'myProductCards']);

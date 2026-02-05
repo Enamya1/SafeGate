@@ -8,6 +8,7 @@ use App\Models\Dormitory;
 use App\Models\University;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\PersonalAccessToken;
@@ -322,6 +323,10 @@ class AdminController extends Controller
         $users = User::query()
             ->leftJoin('dormitories', 'users.dormitory_id', '=', 'dormitories.id')
             ->leftJoin('universities', 'dormitories.university_id', '=', 'universities.id')
+            ->leftJoin('products', function ($join) {
+                $join->on('users.id', '=', 'products.seller_id')
+                    ->whereNull('products.deleted_at');
+            })
             ->select([
                 'users.id',
                 'users.full_name',
@@ -331,6 +336,18 @@ class AdminController extends Controller
                 'users.profile_picture',
                 'users.last_login_at',
                 'universities.name as university_name',
+                DB::raw('COUNT(products.id) as product_count'),
+                DB::raw("SUM(CASE WHEN products.status = 'sold' THEN 1 ELSE 0 END) as sold_counter"),
+            ])
+            ->groupBy([
+                'users.id',
+                'users.full_name',
+                'users.email',
+                'users.role',
+                'users.status',
+                'users.profile_picture',
+                'users.last_login_at',
+                'universities.name',
             ])
             ->orderBy('users.id')
             ->paginate($perPage);

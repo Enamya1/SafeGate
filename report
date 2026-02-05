@@ -222,6 +222,31 @@ User Products
    - Response 422: {"message":"Validation Error","errors":{...}}
    - Response 403: {"message":"Unauthorized: Only users can access this endpoint."}
 
+18a) POST /api/user/messages
+   - Auth: auth:sanctum, role=user
+   - Request body:
+     - receiver_id (required integer, exists users.id)
+     - message_text (required string, max 2000)
+   - Response 201: {"message":"Message sent successfully","conversation_id":...,"message_data":{...}}
+   - Response 403: {"message":"Unauthorized: Only users can access this endpoint."}
+   - Response 422: {"message":"Validation Error","errors":{...}}
+   - Response 422: {"message":"Receiver cannot be the sender."}
+
+18b) GET /api/user/messages
+   - Auth: auth:sanctum, role=user
+   - Query:
+     - conversation_id (required integer, exists conversations.id)
+     - limit (optional integer 1-100, default 50)
+     - before_id (optional integer; pagination for older messages)
+   - Response 200:
+     {
+       "message":"Messages retrieved successfully",
+       "conversation":{"id":...,"other_user":{"id":...,"username":"...","full_name":"...","profile_picture":"..."}},
+       "messages":[{"id":...,"sender_id":...,"sender_username":"...","message_text":"...","created_at":"..."}]
+     }
+   - Response 403: {"message":"Unauthorized: You are not part of this conversation."}
+   - Response 422: {"message":"Validation Error","errors":{...}}
+
 19) POST /api/user/products/{product_id}/images
    - Auth: auth:sanctum, role=user (must be product seller)
    - Path params:
@@ -363,7 +388,7 @@ Admin
    - Auth: token_auth (Sanctum token)
    - Query:
     - per_page (optional integer 1-100, default 10)
-   - Response 200: {"message":"Users retrieved successfully","users":{pagination with university_name and last_login_at per user}}
+   - Response 200: {"message":"Users retrieved successfully","users":{pagination with university_name, last_login_at, product_count, sold_counter per user}}
    - Response 422: {"message":"Validation Error","errors":{...}}
    - Response 403: {"message":"Unauthorized: Only administrators can access this endpoint."}
 
