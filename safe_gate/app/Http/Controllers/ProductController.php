@@ -30,6 +30,35 @@ class ProductController extends Controller
         return rtrim($baseUrl, '/').'/'.$path;
     }
 
+    private function recordProductBehaviorEventBatch(Request $request, User $user, iterable $products, string $eventType): void
+    {
+        $now = now();
+        $rows = [];
+
+        foreach ($products as $product) {
+            $rows[] = [
+                'user_id' => $user->id,
+                'event_type' => $eventType,
+                'product_id' => $product->id,
+                'category_id' => $product->category_id,
+                'seller_id' => $product->seller_id,
+                'metadata' => null,
+                'occurred_at' => $now,
+                'session_id' => null,
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+        }
+
+        if (count($rows) === 0) {
+            return;
+        }
+
+        DB::table('behavioral_events')->insert($rows);
+    }
+
     public function categories(Request $request)
     {
         $user = $request->user();
@@ -489,6 +518,21 @@ class ProductController extends Controller
             ->get()
             ->values();
 
+        DB::table('behavioral_events')->insert([
+            'user_id' => $user->id,
+            'event_type' => 'click',
+            'product_id' => $product->id,
+            'category_id' => $product->category_id,
+            'seller_id' => $product->seller_id,
+            'metadata' => null,
+            'occurred_at' => now(),
+            'session_id' => null,
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
         $payload = $product->toArray();
         $payload['images'] = $images;
         $payload['tags'] = $tags;
@@ -669,6 +713,8 @@ class ProductController extends Controller
                 ->get();
         }
 
+        $this->recordProductBehaviorEventBatch($request, $user, $products, 'view');
+
         $matchedProductIds = $products->pluck('id')->all();
 
         $imagesByProductId = [];
@@ -763,6 +809,8 @@ class ProductController extends Controller
             ->orderByDesc('id')
             ->get();
 
+        $this->recordProductBehaviorEventBatch($request, $user, $products, 'view');
+
         $productIds = $products->pluck('id')->all();
 
         $imagesByProductId = [];
@@ -855,6 +903,23 @@ class ProductController extends Controller
             'user_id' => $user->id,
             'product_id' => $productId,
         ]);
+
+        if ($favorite->wasRecentlyCreated) {
+            DB::table('behavioral_events')->insert([
+                'user_id' => $user->id,
+                'event_type' => 'favorite',
+                'product_id' => $product->id,
+                'category_id' => $product->category_id,
+                'seller_id' => $product->seller_id,
+                'metadata' => null,
+                'occurred_at' => now(),
+                'session_id' => null,
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
 
         $status = $favorite->wasRecentlyCreated ? 201 : 200;
         $message = $favorite->wasRecentlyCreated

@@ -438,6 +438,7 @@ class AdminController extends Controller
                 $primaryImage = $images->first();
 
                 return [
+                    'id' => $product->id,
                     'title' => $product->title,
                     'status' => $product->status,
                     'created_at' => $product->created_at,
@@ -525,16 +526,94 @@ class AdminController extends Controller
             ->get()
             ->values();
 
+        $viewsCount = DB::table('behavioral_events')
+            ->where('product_id', $product->id)
+            ->where('event_type', 'view')
+            ->count();
+
+        $clicksCount = DB::table('behavioral_events')
+            ->where('product_id', $product->id)
+            ->where('event_type', 'click')
+            ->count();
+
+        $favoritesCount = DB::table('favorites')
+            ->where('product_id', $product->id)
+            ->count();
+
         $payload = $product->toArray();
         $payload['images'] = $images;
         $payload['tags'] = $tags;
         $payload['category'] = $category;
         $payload['condition_level'] = $conditionLevel;
         $payload['seller'] = $seller;
+        $payload['views'] = $viewsCount;
+        $payload['clicks'] = $clicksCount;
+        $payload['favorites'] = $favoritesCount;
 
         return response()->json([
             'message' => 'Admin product retrieved successfully',
             'product' => $payload,
+        ], 200);
+    }
+
+    public function blockProduct(Request $request, string $product_id)
+    {
+        $admin = $request->user();
+
+        if (! $admin || $admin->role !== 'admin') {
+            return response()->json([
+                'message' => 'Unauthorized: Only administrators can access this endpoint.',
+            ], 403);
+        }
+
+        $productId = trim($product_id);
+
+        try {
+            $validated = $request->validate([
+                'reason' => 'required|string|max:1000',
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation Error',
+                'errors' => $e->errors(),
+            ], 422);
+        }
+
+        try {
+            $validatedProduct = validator(['product_id' => $productId], [
+                'product_id' => 'required|integer|min:1',
+            ])->validate();
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation Error',
+                'errors' => $e->errors(),
+            ], 422);
+        }
+
+        $product = Product::query()
+            ->whereKey((int) $validatedProduct['product_id'])
+            ->whereNull('deleted_at')
+            ->first();
+
+        if (! $product) {
+            return response()->json([
+                'message' => 'Product not found.',
+            ], 404);
+        }
+
+        $product->status = 'block';
+        $product->modified_by = $admin->id;
+        $product->modification_reason = $validated['reason'];
+        $product->save();
+
+        return response()->json([
+            'message' => 'Product blocked successfully',
+            'product' => [
+                'id' => $product->id,
+                'status' => $product->status,
+                'modified_by' => $product->modified_by,
+                'modification_reason' => $product->modification_reason,
+            ],
         ], 200);
     }
     public function showUser(Request $request, string $id)

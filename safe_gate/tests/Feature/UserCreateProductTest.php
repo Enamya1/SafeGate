@@ -532,6 +532,30 @@ class UserCreateProductTest extends TestCase
         $this->assertNotNull($product1Payload);
         $this->assertCount(1, $product1Payload['images'] ?? []);
         $this->assertCount(2, $product1Payload['tags'] ?? []);
+
+        $this->assertDatabaseHas('behavioral_events', [
+            'user_id' => $user->id,
+            'event_type' => 'view',
+            'product_id' => $product1->id,
+            'category_id' => $category->id,
+            'seller_id' => $user->id,
+        ]);
+
+        $this->assertDatabaseHas('behavioral_events', [
+            'user_id' => $user->id,
+            'event_type' => 'view',
+            'product_id' => $product2->id,
+            'category_id' => $category->id,
+            'seller_id' => $user->id,
+        ]);
+
+        $this->assertDatabaseHas('behavioral_events', [
+            'user_id' => $user->id,
+            'event_type' => 'view',
+            'product_id' => $otherProduct->id,
+            'category_id' => $category->id,
+            'seller_id' => $otherUser->id,
+        ]);
     }
 
     public function test_list_products_by_unknown_tag_returns_404(): void
@@ -688,6 +712,22 @@ class UserCreateProductTest extends TestCase
         $this->assertCount(1, $product1Payload['tags'] ?? []);
         $this->assertSame($tag->id, $product1Payload['tags'][0]['id']);
         $this->assertSame($tag->name, $product1Payload['tags'][0]['name']);
+
+        $this->assertDatabaseHas('behavioral_events', [
+            'user_id' => $user->id,
+            'event_type' => 'view',
+            'product_id' => $product1->id,
+            'category_id' => $electronics->id,
+            'seller_id' => $user->id,
+        ]);
+
+        $this->assertDatabaseHas('behavioral_events', [
+            'user_id' => $user->id,
+            'event_type' => 'view',
+            'product_id' => $product2->id,
+            'category_id' => $electronics->id,
+            'seller_id' => $user->id,
+        ]);
     }
 
     public function test_list_products_by_unknown_category_returns_404(): void
@@ -788,6 +828,14 @@ class UserCreateProductTest extends TestCase
             'user_id' => $user->id,
             'product_id' => $product->id,
         ]);
+
+        $this->assertDatabaseHas('behavioral_events', [
+            'user_id' => $user->id,
+            'event_type' => 'favorite',
+            'product_id' => $product->id,
+            'category_id' => $category->id,
+            'seller_id' => $user->id,
+        ]);
     }
 
     public function test_add_product_to_favorites_is_idempotent(): void
@@ -854,6 +902,7 @@ class UserCreateProductTest extends TestCase
             ->assertStatus(200);
 
         $this->assertSame(1, Favorite::query()->count());
+        $this->assertSame(1, \DB::table('behavioral_events')->where('event_type', 'favorite')->count());
     }
 
     public function test_user_can_list_favorite_products(): void
@@ -1088,6 +1137,14 @@ class UserCreateProductTest extends TestCase
             ->assertJsonPath('product.seller.username', $seller->username)
             ->assertJsonCount(1, 'product.images')
             ->assertJsonCount(1, 'product.tags');
+
+        $this->assertDatabaseHas('behavioral_events', [
+            'user_id' => $viewer->id,
+            'event_type' => 'click',
+            'product_id' => $product->id,
+            'category_id' => $category->id,
+            'seller_id' => $seller->id,
+        ]);
     }
 
     public function test_get_product_with_unknown_product_returns_404(): void

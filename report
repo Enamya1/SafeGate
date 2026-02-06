@@ -164,6 +164,7 @@ User Products
    - Auth: auth:sanctum, role=user
    - Path params:
      - product_id (required integer)
+   - Side effect: creates a behavioral_events record with event_type "click"
    - Response 200: {"message":"Product retrieved successfully","product":{...,"images":[...],"tags":[...],"category":{...},"condition_level":{...},"seller":{...}}}
    - Response 404: {"message":"Product not found."}
    - Response 422: {"message":"Validation Error","errors":{...}}
@@ -193,6 +194,7 @@ User Products
    - Auth: auth:sanctum, role=user
    - Path params:
      - tag_name (required string)
+   - Side effect: creates behavioral_events records with event_type "view" for returned products
    - Response 200: {"message":"Products retrieved successfully","tag":{"id":...,"name":...},"products":[...]}
    - Response 404: {"message":"Tag not found."}
    - Response 422: {"message":"Validation Error","errors":{...}}
@@ -202,6 +204,7 @@ User Products
    - Auth: auth:sanctum, role=user
    - Path params:
      - category_name (required string)
+   - Side effect: creates behavioral_events records with event_type "view" for returned products
    - Response 200: {"message":"Products retrieved successfully","category":{"id":...,"name":...,"parent_id":...},"products":[...]}
    - Response 404: {"message":"Category not found."}
    - Response 422: {"message":"Validation Error","errors":{...}}
@@ -216,6 +219,7 @@ User Products
    - Auth: auth:sanctum, role=user
    - Request body:
      - product_id (required integer)
+   - Side effect: creates a behavioral_events record with event_type "favorite" on first add
    - Response 201: {"message":"Product added to favorites successfully","favorite":{...}}
    - Response 200: {"message":"Product is already in favorites","favorite":{...}}
    - Response 404: {"message":"Product not found."}
@@ -398,7 +402,7 @@ Admin
    - Auth: token_auth (Sanctum token)
    - Query:
     - per_page (optional integer 1-100, default 6)
-   - Response 200: {"message":"Products retrieved successfully","page":...,"page_size":...,"total":...,"total_pages":...,"products":[{"title":"...","status":"...","created_at":"...","image_url":"...","tags":[{"id":...,"name":"..."}]}]}
+  - Response 200: {"message":"Products retrieved successfully","page":...,"page_size":...,"total":...,"total_pages":...,"products":[{"id":...,"title":"...","status":"...","created_at":"...","image_url":"...","tags":[{"id":...,"name":"..."}]}]}
    - Response 422: {"message":"Validation Error","errors":{...}}
    - Response 403: {"message":"Unauthorized: Only administrators can access this endpoint."}
 
@@ -406,18 +410,29 @@ Admin
    - Auth: token_auth (Sanctum token)
    - Path params:
      - product_id (required integer)
-   - Response 200: {"message":"Admin product retrieved successfully","product":{...,"images":[...],"tags":[...],"category":{...},"condition_level":{...},"seller":{...}}}
+  - Response 200: {"message":"Admin product retrieved successfully","product":{...,"images":[...],"tags":[...],"category":{...},"condition_level":{...},"seller":{...},"views":...,"clicks":...,"favorites":...}}
    - Response 404: {"message":"Product not found."}
    - Response 422: {"message":"Validation Error","errors":{...}}
    - Response 403: {"message":"Unauthorized: Only administrators can access this endpoint."}
 
-40) GET /api/admin/users/{id}
+40) PATCH /api/admin/products/{product_id}/block
+  - Auth: token_auth (Sanctum token)
+  - Path params:
+    - product_id (required integer)
+  - Request body:
+    - reason (required string)
+  - Response 200: {"message":"Product blocked successfully","product":{"id":...,"status":"block","modified_by":...,"modification_reason":"..."}}
+  - Response 404: {"message":"Product not found."}
+  - Response 422: {"message":"Validation Error","errors":{...}}
+  - Response 403: {"message":"Unauthorized: Only administrators can access this endpoint."}
+
+41) GET /api/admin/users/{id}
    - Auth: token_auth (Sanctum token)
    - Response 200: {"message":"User retrieved successfully","user":{...,"created_at":"YYYY-MM-DD","listed_count":...,"sold_count":...,"sold":...,"dormitory":{"id":...,"dormitory_name":"...","university_id":...},"university":{"id":...,"name":"..."}}}
    - Response 404: {"message":"User not found."}
    - Response 403: {"message":"Unauthorized: Only administrators can access this endpoint."}
 
-41) PATCH /api/admin/users/{id}
+42) PATCH /api/admin/users/{id}
    - Auth: token_auth (Sanctum token)
    - Request body (all optional, JSON or multipart/form-data):
      - full_name, username, email, phone_number, role, dormitory_id
@@ -428,29 +443,29 @@ Admin
    - Response 422: {"message":"Validation Error","errors":{...}}
    - Response 403: {"message":"Unauthorized: Only administrators can access this endpoint."}
 
-42) PATCH /api/admin/users/{id}/activate
+43) PATCH /api/admin/users/{id}/activate
    - Auth: token_auth (Sanctum token)
    - Response 200: {"message":"User activated successfully","user_id":...}
    - Response 404: {"message":"User not found."}
    - Response 403: {"message":"Unauthorized: Only administrators can access this endpoint."}
 
-42) PATCH /api/admin/users/{id}/deactivate
+44) PATCH /api/admin/users/{id}/deactivate
    - Auth: token_auth (Sanctum token)
    - Response 200: {"message":"User deactivated successfully","user_id":...}
    - Response 404: {"message":"User not found."}
    - Response 403: {"message":"Unauthorized: Only administrators can access this endpoint."}
 
 Python Service
-43) GET /health
+45) GET /health
    - Response 200: {"status":"ok"}
 
-44) GET /api/ping
+46) GET /api/ping
    - Response 200: {"message":"pong"}
 
-45) GET /api/test_py
+47) GET /api/test_py
    - Response 200: {"message":"python connected"}
 
-46) GET /api/hi
+48) GET /api/hi
    - Headers:
      - Authorization: Bearer <Laravel token> (required)
    - Response 200: {"message":"hi <username>"}
