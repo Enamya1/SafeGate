@@ -9,7 +9,8 @@ class University extends Model
     protected $fillable = [
         'name',
         'domain',
-        'location',
+        'latitude',
+        'longitude',
         'pic',
     ];
 }

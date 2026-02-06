@@ -70,14 +70,16 @@ class ExampleTest extends TestCase
         $university = \App\Models\University::create([
             'name' => 'Test University',
             'domain' => 'test.edu',
-            'location' => null,
+            'latitude' => null,
+            'longitude' => null,
             'pic' => null,
         ]);
 
         $dormitory = \App\Models\Dormitory::create([
             'dormitory_name' => 'Dorm A',
             'domain' => 'dorm-a.test.edu',
-            'location' => null,
+            'latitude' => null,
+            'longitude' => null,
             'is_active' => true,
             'university_id' => $university->id,
         ]);
@@ -168,14 +170,16 @@ class ExampleTest extends TestCase
         $university = \App\Models\University::create([
             'name' => 'Test University',
             'domain' => 'test.edu',
-            'location' => null,
+            'latitude' => null,
+            'longitude' => null,
             'pic' => null,
         ]);
 
         $dormitory = \App\Models\Dormitory::create([
             'dormitory_name' => 'Dorm A',
             'domain' => 'dorm-a.test.edu',
-            'location' => null,
+            'latitude' => null,
+            'longitude' => null,
             'is_active' => true,
             'university_id' => $university->id,
         ]);

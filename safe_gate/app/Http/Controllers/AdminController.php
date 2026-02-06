@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Category;
 use App\Models\ConditionLevel;
 use App\Models\Dormitory;
+use App\Models\Product;
+use App\Models\ProductImage;
 use App\Models\University;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -138,7 +140,8 @@ class AdminController extends Controller
             $validatedData = $request->validate([
                 'name' => 'required|string|max:255|unique:universities',
                 'domain' => 'required|string|max:255|unique:universities',
-                'location' => 'nullable|string|max:255',
+                'latitude' => 'nullable|numeric|between:-90,90',
+                'longitude' => 'nullable|numeric|between:-180,180',
                 'pic' => 'nullable|string|max:255',
             ]);
         } catch (ValidationException $e) {
@@ -151,7 +154,8 @@ class AdminController extends Controller
         $university = University::create([
             'name' => $validatedData['name'],
             'domain' => $validatedData['domain'],
-            'location' => $validatedData['location'] ?? null,
+            'latitude' => $validatedData['latitude'] ?? null,
+            'longitude' => $validatedData['longitude'] ?? null,
             'pic' => $validatedData['pic'] ?? null,
         ]);
 
@@ -167,7 +171,8 @@ class AdminController extends Controller
             $validatedData = $request->validate([
                 'dormitory_name' => 'required|string|max:255|unique:dormitories',
                 'domain' => 'required|string|max:255|unique:dormitories',
-                'location' => 'nullable|url|max:255',
+                'latitude' => 'nullable|numeric|between:-90,90',
+                'longitude' => 'nullable|numeric|between:-180,180',
                 'is_active' => 'boolean',
                 'university_name' => 'required|string|max:255|exists:universities,name',
             ]);
@@ -189,7 +194,8 @@ class AdminController extends Controller
         $dormitory = Dormitory::create([
             'dormitory_name' => $validatedData['dormitory_name'],
             'domain' => $validatedData['domain'],
-            'location' => $validatedData['location'] ?? null,
+            'latitude' => $validatedData['latitude'] ?? null,
+            'longitude' => $validatedData['longitude'] ?? null,
             'is_active' => $validatedData['is_active'] ?? true,
             'university_id' => $university->id,
         ]);
@@ -358,6 +364,179 @@ class AdminController extends Controller
         ], 200);
     }
 
+    public function listProducts(Request $request)
+    {
+        $admin = $request->user();
+
+        if (! $admin || $admin->role !== 'admin') {
+            return response()->json([
+                'message' => 'Unauthorized: Only administrators can access this endpoint.',
+            ], 403);
+        }
+
+        try {
+            $validated = $request->validate([
+                'per_page' => 'nullable|integer|min:1|max:100',
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation Error',
+                'errors' => $e->errors(),
+            ], 422);
+        }
+
+        $perPage = (int) ($validated['per_page'] ?? 6);
+
+        $paginator = Product::query()
+            ->select([
+                'id',
+                'title',
+                'status',
+                'created_at',
+            ])
+            ->whereNull('deleted_at')
+            ->orderByDesc('id')
+            ->paginate($perPage);
+
+        $products = $paginator->getCollection();
+        $productIds = $products->pluck('id')->all();
+
+        $imagesByProductId = [];
+        $tagsByProductId = [];
+
+        if (count($productIds) > 0) {
+            $imagesByProductId = ProductImage::query()
+                ->whereIn('product_id', $productIds)
+                ->orderByDesc('is_primary')
+                ->orderBy('id')
+                ->get()
+                ->groupBy('product_id')
+                ->all();
+
+            $tagRows = DB::table('product_tags')
+                ->join('tags', 'product_tags.tag_id', '=', 'tags.id')
+                ->whereIn('product_tags.product_id', $productIds)
+                ->select([
+                    'product_tags.product_id',
+                    'tags.id',
+                    'tags.name',
+                ])
+                ->orderBy('tags.id')
+                ->get();
+
+            foreach ($tagRows as $row) {
+                $tagsByProductId[$row->product_id][] = [
+                    'id' => $row->id,
+                    'name' => $row->name,
+                ];
+            }
+        }
+
+        $payload = $products
+            ->map(function (Product $product) use ($imagesByProductId, $tagsByProductId) {
+                $images = $imagesByProductId[$product->id] ?? collect();
+                $primaryImage = $images->first();
+
+                return [
+                    'title' => $product->title,
+                    'status' => $product->status,
+                    'created_at' => $product->created_at,
+                    'image_url' => $primaryImage?->image_url,
+                    'tags' => $tagsByProductId[$product->id] ?? [],
+                ];
+            })
+            ->values();
+
+        return response()->json([
+            'message' => 'Products retrieved successfully',
+            'page' => $paginator->currentPage(),
+            'page_size' => $paginator->perPage(),
+            'total' => $paginator->total(),
+            'total_pages' => $paginator->lastPage(),
+            'products' => $payload,
+        ], 200);
+    }
+
+    public function showProduct(Request $request, string $product_id)
+    {
+        $admin = $request->user();
+
+        if (! $admin || $admin->role !== 'admin') {
+            return response()->json([
+                'message' => 'Unauthorized: Only administrators can access this endpoint.',
+            ], 403);
+        }
+
+        $productId = trim($product_id);
+
+        try {
+            $validated = validator(['product_id' => $productId], [
+                'product_id' => 'required|integer|min:1',
+            ])->validate();
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation Error',
+                'errors' => $e->errors(),
+            ], 422);
+        }
+
+        $product = Product::query()
+            ->with(['dormitory'])
+            ->whereKey((int) $validated['product_id'])
+            ->whereNull('deleted_at')
+            ->first();
+
+        if (! $product) {
+            return response()->json([
+                'message' => 'Product not found.',
+            ], 404);
+        }
+
+        $category = Category::query()
+            ->select(['id', 'name', 'parent_id'])
+            ->whereKey($product->category_id)
+            ->first();
+
+        $conditionLevel = ConditionLevel::query()
+            ->select(['id', 'name', 'description', 'sort_order'])
+            ->whereKey($product->condition_level_id)
+            ->first();
+
+        $seller = User::query()
+            ->select(['id', 'full_name', 'username', 'profile_picture'])
+            ->whereKey($product->seller_id)
+            ->first();
+
+        $images = ProductImage::query()
+            ->where('product_id', $product->id)
+            ->orderByDesc('is_primary')
+            ->orderBy('id')
+            ->get()
+            ->values();
+
+        $tags = DB::table('product_tags')
+            ->join('tags', 'product_tags.tag_id', '=', 'tags.id')
+            ->where('product_tags.product_id', $product->id)
+            ->select([
+                'tags.id',
+                'tags.name',
+            ])
+            ->orderBy('tags.id')
+            ->get()
+            ->values();
+
+        $payload = $product->toArray();
+        $payload['images'] = $images;
+        $payload['tags'] = $tags;
+        $payload['category'] = $category;
+        $payload['condition_level'] = $conditionLevel;
+        $payload['seller'] = $seller;
+
+        return response()->json([
+            'message' => 'Admin product retrieved successfully',
+            'product' => $payload,
+        ], 200);
+    }
     public function showUser(Request $request, string $id)
     {
         $admin = $request->user();
@@ -376,9 +555,53 @@ class AdminController extends Controller
             ], 404);
         }
 
+        $listedCount = Product::query()
+            ->where('seller_id', $user->id)
+            ->whereNull('deleted_at')
+            ->where('status', '!=', 'sold')
+            ->count();
+
+        $soldCount = Product::query()
+            ->where('seller_id', $user->id)
+            ->whereNull('deleted_at')
+            ->where('status', 'sold')
+            ->count();
+
+        $dormitory = null;
+        $university = null;
+
+        if ($user->dormitory_id) {
+            $dormitory = Dormitory::query()
+                ->select(['id', 'dormitory_name', 'university_id'])
+                ->whereKey($user->dormitory_id)
+                ->first();
+
+            if ($dormitory?->university_id) {
+                $university = University::query()
+                    ->select(['id', 'name'])
+                    ->whereKey($dormitory->university_id)
+                    ->first();
+            }
+        }
+
+        $payload = $user->toArray();
+        $payload['created_at'] = $user->created_at ? $user->created_at->format('Y-m-d') : null;
+        $payload['listed_count'] = $listedCount;
+        $payload['sold_count'] = $soldCount;
+        $payload['sold'] = $soldCount;
+        $payload['dormitory'] = $dormitory ? [
+            'id' => $dormitory->id,
+            'dormitory_name' => $dormitory->dormitory_name,
+            'university_id' => $dormitory->university_id,
+        ] : null;
+        $payload['university'] = $university ? [
+            'id' => $university->id,
+            'name' => $university->name,
+        ] : null;
+
         return response()->json([
             'message' => 'User retrieved successfully',
-            'user' => $user,
+            'user' => $payload,
         ], 200);
     }
 

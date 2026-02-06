@@ -342,7 +342,8 @@ Admin
    - Request body:
      - name (required string, unique)
      - domain (required string, unique)
-     - location (nullable string)
+     - latitude (nullable number float, -90 to 90)
+     - longitude (nullable number float, -180 to 180)
      - pic (nullable string)
    - Response 201: {"message":"University created successfully","university":{...}}
    - Response 422: {"message":"Validation Error","errors":{...}}
@@ -351,7 +352,8 @@ Admin
    - Request body:
      - dormitory_name (required string, unique)
      - domain (required string, unique)
-     - location (nullable url)
+     - latitude (nullable number float, -90 to 90)
+     - longitude (nullable number float, -180 to 180)
      - is_active (nullable boolean)
      - university_name (required string, exists universities.name)
    - Response 201: {"message":"Dormitory created successfully","dormitory":{...}}
@@ -392,13 +394,30 @@ Admin
    - Response 422: {"message":"Validation Error","errors":{...}}
    - Response 403: {"message":"Unauthorized: Only administrators can access this endpoint."}
 
-38) GET /api/admin/users/{id}
+38) GET /api/admin/products
    - Auth: token_auth (Sanctum token)
-   - Response 200: {"message":"User retrieved successfully","user":{...}}
+   - Query:
+    - per_page (optional integer 1-100, default 6)
+   - Response 200: {"message":"Products retrieved successfully","page":...,"page_size":...,"total":...,"total_pages":...,"products":[{"title":"...","status":"...","created_at":"...","image_url":"...","tags":[{"id":...,"name":"..."}]}]}
+   - Response 422: {"message":"Validation Error","errors":{...}}
+   - Response 403: {"message":"Unauthorized: Only administrators can access this endpoint."}
+
+39) GET /api/admin/products/{product_id}
+   - Auth: token_auth (Sanctum token)
+   - Path params:
+     - product_id (required integer)
+   - Response 200: {"message":"Admin product retrieved successfully","product":{...,"images":[...],"tags":[...],"category":{...},"condition_level":{...},"seller":{...}}}
+   - Response 404: {"message":"Product not found."}
+   - Response 422: {"message":"Validation Error","errors":{...}}
+   - Response 403: {"message":"Unauthorized: Only administrators can access this endpoint."}
+
+40) GET /api/admin/users/{id}
+   - Auth: token_auth (Sanctum token)
+   - Response 200: {"message":"User retrieved successfully","user":{...,"created_at":"YYYY-MM-DD","listed_count":...,"sold_count":...,"sold":...,"dormitory":{"id":...,"dormitory_name":"...","university_id":...},"university":{"id":...,"name":"..."}}}
    - Response 404: {"message":"User not found."}
    - Response 403: {"message":"Unauthorized: Only administrators can access this endpoint."}
 
-39) PATCH /api/admin/users/{id}
+41) PATCH /api/admin/users/{id}
    - Auth: token_auth (Sanctum token)
    - Request body (all optional, JSON or multipart/form-data):
      - full_name, username, email, phone_number, role, dormitory_id
@@ -409,29 +428,29 @@ Admin
    - Response 422: {"message":"Validation Error","errors":{...}}
    - Response 403: {"message":"Unauthorized: Only administrators can access this endpoint."}
 
-40) PATCH /api/admin/users/{id}/activate
+42) PATCH /api/admin/users/{id}/activate
    - Auth: token_auth (Sanctum token)
    - Response 200: {"message":"User activated successfully","user_id":...}
    - Response 404: {"message":"User not found."}
    - Response 403: {"message":"Unauthorized: Only administrators can access this endpoint."}
 
-41) PATCH /api/admin/users/{id}/deactivate
+42) PATCH /api/admin/users/{id}/deactivate
    - Auth: token_auth (Sanctum token)
    - Response 200: {"message":"User deactivated successfully","user_id":...}
    - Response 404: {"message":"User not found."}
    - Response 403: {"message":"Unauthorized: Only administrators can access this endpoint."}
 
 Python Service
-42) GET /health
+43) GET /health
    - Response 200: {"status":"ok"}
 
-43) GET /api/ping
+44) GET /api/ping
    - Response 200: {"message":"pong"}
 
-44) GET /api/test_py
+45) GET /api/test_py
    - Response 200: {"message":"python connected"}
 
-45) GET /api/hi
+46) GET /api/hi
    - Headers:
      - Authorization: Bearer <Laravel token> (required)
    - Response 200: {"message":"hi <username>"}
@@ -439,7 +458,7 @@ Python Service
    - Response 401: {"detail":{"message":"Unauthenticated."}} (when Laravel /api/user/me fails)
    - Response 502: {"detail":"Could not reach Laravel"}
 
-46) GET /api/recommendations/products
+47) GET /api/recommendations/products
    - Headers:
      - Authorization: Bearer <Laravel token> (required)
    - Query params:

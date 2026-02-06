@@ -11,7 +11,8 @@ class Dormitory extends Model
     protected $fillable = [
         'dormitory_name',
         'domain',
-        'location',
+        'latitude',
+        'longitude',
         'is_active',
         'university_id',
     ];

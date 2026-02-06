@@ -50,14 +50,16 @@ class UserBehavioralEventTest extends TestCase
         $university = University::create([
             'name' => 'Test University',
             'domain' => 'test.edu',
-            'location' => null,
+            'latitude' => null,
+            'longitude' => null,
             'pic' => null,
         ]);
 
         $dormitory = Dormitory::create([
             'dormitory_name' => 'Dorm A',
             'domain' => 'dorm-a.test.edu',
-            'location' => null,
+            'latitude' => null,
+            'longitude' => null,
             'is_active' => true,
             'university_id' => $university->id,
         ]);
