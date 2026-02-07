@@ -402,6 +402,7 @@ Admin
    - Auth: token_auth (Sanctum token)
    - Query:
     - per_page (optional integer 1-100, default 6)
+    - user_id (required integer, exists users.id)
   - Response 200: {"message":"Products retrieved successfully","page":...,"page_size":...,"total":...,"total_pages":...,"products":[{"id":...,"title":"...","status":"...","created_at":"...","image_url":"...","tags":[{"id":...,"name":"..."}]}]}
    - Response 422: {"message":"Validation Error","errors":{...}}
    - Response 403: {"message":"Unauthorized: Only administrators can access this endpoint."}
@@ -416,23 +417,43 @@ Admin
    - Response 403: {"message":"Unauthorized: Only administrators can access this endpoint."}
 
 40) PATCH /api/admin/products/{product_id}/block
-  - Auth: token_auth (Sanctum token)
-  - Path params:
-    - product_id (required integer)
-  - Request body:
-    - reason (required string)
-  - Response 200: {"message":"Product blocked successfully","product":{"id":...,"status":"block","modified_by":...,"modification_reason":"..."}}
-  - Response 404: {"message":"Product not found."}
-  - Response 422: {"message":"Validation Error","errors":{...}}
-  - Response 403: {"message":"Unauthorized: Only administrators can access this endpoint."}
+ - Auth: token_auth (Sanctum token)
+ - Path params:
+   - product_id (required integer)
+ - Request body:
+   - reason (required string)
+ - Response 200: {"message":"Product blocked successfully","product":{"id":...,"status":"block","modified_by":...,"modification_reason":"..."}}
+ - Response 404: {"message":"Product not found."}
+ - Response 422: {"message":"Validation Error","errors":{...}}
+ - Response 403: {"message":"Unauthorized: Only administrators can access this endpoint."}
 
-41) GET /api/admin/users/{id}
+41) POST /api/admin/messages
+ - Auth: token_auth (Sanctum token)
+ - Request body:
+   - receiver_id (required integer, exists users.id)
+   - message_text (required string, max 2000)
+ - Response 201: {"message":"Message sent successfully","conversation_id":...,"message_data":{...}}
+ - Response 403: {"message":"Unauthorized: Only administrators can access this endpoint."}
+ - Response 422: {"message":"Validation Error","errors":{...}}
+ - Response 422: {"message":"Receiver cannot be the sender."}
+
+42) GET /api/admin/messages
+ - Auth: token_auth (Sanctum token)
+ - Query:
+   - conversation_id (optional integer, exists conversations.id)
+   - limit (optional integer 1-100, default 50)
+   - before_id (optional integer; pagination for older messages)
+ - Response 200: {"message":"Messages retrieved successfully","messages":[{"id":...,"conversation_id":...,"sender_id":...,"sender_username":"...","message_text":"...","created_at":"..."}]}
+ - Response 422: {"message":"Validation Error","errors":{...}}
+ - Response 403: {"message":"Unauthorized: Only administrators can access this endpoint."}
+
+43) GET /api/admin/users/{id}
    - Auth: token_auth (Sanctum token)
    - Response 200: {"message":"User retrieved successfully","user":{...,"created_at":"YYYY-MM-DD","listed_count":...,"sold_count":...,"sold":...,"dormitory":{"id":...,"dormitory_name":"...","university_id":...},"university":{"id":...,"name":"..."}}}
    - Response 404: {"message":"User not found."}
    - Response 403: {"message":"Unauthorized: Only administrators can access this endpoint."}
 
-42) PATCH /api/admin/users/{id}
+44) PATCH /api/admin/users/{id}
    - Auth: token_auth (Sanctum token)
    - Request body (all optional, JSON or multipart/form-data):
      - full_name, username, email, phone_number, role, dormitory_id
@@ -443,29 +464,29 @@ Admin
    - Response 422: {"message":"Validation Error","errors":{...}}
    - Response 403: {"message":"Unauthorized: Only administrators can access this endpoint."}
 
-43) PATCH /api/admin/users/{id}/activate
+45) PATCH /api/admin/users/{id}/activate
    - Auth: token_auth (Sanctum token)
    - Response 200: {"message":"User activated successfully","user_id":...}
    - Response 404: {"message":"User not found."}
    - Response 403: {"message":"Unauthorized: Only administrators can access this endpoint."}
 
-44) PATCH /api/admin/users/{id}/deactivate
+46) PATCH /api/admin/users/{id}/deactivate
    - Auth: token_auth (Sanctum token)
    - Response 200: {"message":"User deactivated successfully","user_id":...}
    - Response 404: {"message":"User not found."}
    - Response 403: {"message":"Unauthorized: Only administrators can access this endpoint."}
 
 Python Service
-45) GET /health
+47) GET /health
    - Response 200: {"status":"ok"}
 
-46) GET /api/ping
+48) GET /api/ping
    - Response 200: {"message":"pong"}
 
-47) GET /api/test_py
+49) GET /api/test_py
    - Response 200: {"message":"python connected"}
 
-48) GET /api/hi
+50) GET /api/hi
    - Headers:
      - Authorization: Bearer <Laravel token> (required)
    - Response 200: {"message":"hi <username>"}
@@ -473,7 +494,7 @@ Python Service
    - Response 401: {"detail":{"message":"Unauthenticated."}} (when Laravel /api/user/me fails)
    - Response 502: {"detail":"Could not reach Laravel"}
 
-47) GET /api/recommendations/products
+51) GET /api/recommendations/products
    - Headers:
      - Authorization: Bearer <Laravel token> (required)
    - Query params:

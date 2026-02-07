@@ -53,6 +53,8 @@ Route::prefix('admin')->group(function () {
     Route::middleware('token_auth')->get('/products', [AdminController::class, 'listProducts']);
     Route::middleware('token_auth')->get('/products/{product_id}', [AdminController::class, 'showProduct']);
     Route::middleware('token_auth')->patch('/products/{product_id}/block', [AdminController::class, 'blockProduct']);
+    Route::middleware('token_auth')->post('/messages', [AdminController::class, 'sendMessage']);
+    Route::middleware('token_auth')->get('/messages', [AdminController::class, 'listMessages']);
     Route::middleware('token_auth')->get('/users/{id}', [AdminController::class, 'showUser']);
     Route::middleware('token_auth')->patch('/users/{id}', [AdminController::class, 'updateUser']);
     Route::middleware('token_auth')->patch('/users/{id}/activate', [AdminController::class, 'activateUser']);

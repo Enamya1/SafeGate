@@ -164,6 +164,109 @@ class AdminCreateCategoryTest extends TestCase
         ]);
     }
 
+    public function test_admin_can_send_message_to_user(): void
+    {
+        $admin = User::create([
+            'full_name' => 'Admin User',
+            'username' => 'adminuser',
+            'email' => 'admin@example.com',
+            'phone_number' => null,
+            'password' => Hash::make('password123'),
+            'dormitory_id' => null,
+            'role' => 'admin',
+        ]);
+
+        $receiver = User::factory()->create([
+            'role' => 'user',
+            'status' => 'active',
+        ]);
+
+        $token = $admin->createToken('admin_auth_token')->plainTextToken;
+
+        $response = $this
+            ->withHeader('Authorization', 'Bearer '.$token)
+            ->postJson('/api/admin/messages', [
+                'receiver_id' => $receiver->id,
+                'message_text' => 'Hello from admin',
+            ]);
+
+        $response
+            ->assertStatus(201)
+            ->assertJsonPath('message', 'Message sent successfully')
+            ->assertJsonPath('message_data.sender_id', $admin->id)
+            ->assertJsonPath('message_data.message_text', 'Hello from admin');
+
+        $conversationId = $response->json('conversation_id');
+        $participantA = min($admin->id, $receiver->id);
+        $participantB = max($admin->id, $receiver->id);
+
+        $this->assertDatabaseHas('conversations', [
+            'id' => $conversationId,
+            'product_id' => null,
+            'buyer_id' => $participantA,
+            'seller_id' => $participantB,
+        ]);
+
+        $this->assertDatabaseHas('messages', [
+            'conversation_id' => $conversationId,
+            'sender_id' => $admin->id,
+            'message_text' => 'Hello from admin',
+        ]);
+    }
+
+    public function test_admin_can_view_previous_messages(): void
+    {
+        $admin = User::create([
+            'full_name' => 'Admin User',
+            'username' => 'adminuser',
+            'email' => 'admin@example.com',
+            'phone_number' => null,
+            'password' => Hash::make('password123'),
+            'dormitory_id' => null,
+            'role' => 'admin',
+        ]);
+
+        $sender = User::factory()->create([
+            'role' => 'user',
+            'status' => 'active',
+        ]);
+
+        $receiver = User::factory()->create([
+            'role' => 'user',
+            'status' => 'active',
+        ]);
+
+        $conversationId = DB::table('conversations')->insertGetId([
+            'product_id' => null,
+            'buyer_id' => min($sender->id, $receiver->id),
+            'seller_id' => max($sender->id, $receiver->id),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $messageId = DB::table('messages')->insertGetId([
+            'conversation_id' => $conversationId,
+            'sender_id' => $sender->id,
+            'message_text' => 'Older message',
+            'read_at' => null,
+            'created_at' => now()->subMinute(),
+            'updated_at' => now()->subMinute(),
+        ]);
+
+        $token = $admin->createToken('admin_auth_token')->plainTextToken;
+
+        $response = $this
+            ->withHeader('Authorization', 'Bearer '.$token)
+            ->getJson('/api/admin/messages?limit=10');
+
+        $response
+            ->assertStatus(200)
+            ->assertJsonPath('message', 'Messages retrieved successfully')
+            ->assertJsonPath('messages.0.id', $messageId)
+            ->assertJsonPath('messages.0.conversation_id', $conversationId)
+            ->assertJsonPath('messages.0.message_text', 'Older message');
+    }
+
     public function test_admin_product_details_include_metrics(): void
     {
         $admin = User::create([

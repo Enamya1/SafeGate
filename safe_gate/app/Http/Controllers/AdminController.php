@@ -377,6 +377,7 @@ class AdminController extends Controller
         try {
             $validated = $request->validate([
                 'per_page' => 'nullable|integer|min:1|max:100',
+                'user_id' => 'required|integer|min:1|exists:users,id',
             ]);
         } catch (ValidationException $e) {
             return response()->json([
@@ -386,6 +387,7 @@ class AdminController extends Controller
         }
 
         $perPage = (int) ($validated['per_page'] ?? 6);
+        $userId = (int) $validated['user_id'];
 
         $paginator = Product::query()
             ->select([
@@ -395,6 +397,7 @@ class AdminController extends Controller
                 'created_at',
             ])
             ->whereNull('deleted_at')
+            ->where('seller_id', $userId)
             ->orderByDesc('id')
             ->paginate($perPage);
 
@@ -614,6 +617,136 @@ class AdminController extends Controller
                 'modified_by' => $product->modified_by,
                 'modification_reason' => $product->modification_reason,
             ],
+        ], 200);
+    }
+
+    public function sendMessage(Request $request)
+    {
+        $admin = $request->user();
+
+        if (! $admin || $admin->role !== 'admin') {
+            return response()->json([
+                'message' => 'Unauthorized: Only administrators can access this endpoint.',
+            ], 403);
+        }
+
+        try {
+            $validated = $request->validate([
+                'receiver_id' => 'required|integer|min:1|exists:users,id',
+                'message_text' => 'required|string|max:2000',
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation Error',
+                'errors' => $e->errors(),
+            ], 422);
+        }
+
+        if ((int) $validated['receiver_id'] === (int) $admin->id) {
+            return response()->json([
+                'message' => 'Receiver cannot be the sender.',
+            ], 422);
+        }
+
+        $senderId = (int) $admin->id;
+        $receiverId = (int) $validated['receiver_id'];
+        $participantA = min($senderId, $receiverId);
+        $participantB = max($senderId, $receiverId);
+
+        $conversation = DB::table('conversations')
+            ->whereNull('product_id')
+            ->where('buyer_id', $participantA)
+            ->where('seller_id', $participantB)
+            ->first();
+
+        $conversationId = $conversation?->id;
+
+        if (! $conversationId) {
+            $conversationId = DB::table('conversations')->insertGetId([
+                'product_id' => null,
+                'buyer_id' => $participantA,
+                'seller_id' => $participantB,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+
+        $messageId = DB::table('messages')->insertGetId([
+            'conversation_id' => $conversationId,
+            'sender_id' => $senderId,
+            'message_text' => $validated['message_text'],
+            'read_at' => null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $message = DB::table('messages')->where('id', $messageId)->first();
+
+        return response()->json([
+            'message' => 'Message sent successfully',
+            'conversation_id' => $conversationId,
+            'message_data' => $message,
+        ], 201);
+    }
+
+    public function listMessages(Request $request)
+    {
+        $admin = $request->user();
+
+        if (! $admin || $admin->role !== 'admin') {
+            return response()->json([
+                'message' => 'Unauthorized: Only administrators can access this endpoint.',
+            ], 403);
+        }
+
+        try {
+            $validated = $request->validate([
+                'conversation_id' => 'nullable|integer|min:1|exists:conversations,id',
+                'limit' => 'nullable|integer|min:1|max:100',
+                'before_id' => 'nullable|integer|min:1',
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation Error',
+                'errors' => $e->errors(),
+            ], 422);
+        }
+
+        $limit = (int) ($validated['limit'] ?? 50);
+
+        $messagesQuery = DB::table('messages')
+            ->join('users', 'messages.sender_id', '=', 'users.id')
+            ->join('conversations', 'messages.conversation_id', '=', 'conversations.id')
+            ->select([
+                'messages.id',
+                'messages.conversation_id',
+                'conversations.product_id',
+                'conversations.buyer_id',
+                'conversations.seller_id',
+                'messages.sender_id',
+                'users.username as sender_username',
+                'users.full_name as sender_full_name',
+                'users.profile_picture as sender_profile_picture',
+                'messages.message_text',
+                'messages.read_at',
+                'messages.created_at',
+            ])
+            ->orderByDesc('messages.id')
+            ->limit($limit);
+
+        if (array_key_exists('conversation_id', $validated) && $validated['conversation_id'] !== null) {
+            $messagesQuery->where('messages.conversation_id', (int) $validated['conversation_id']);
+        }
+
+        if (array_key_exists('before_id', $validated) && $validated['before_id'] !== null) {
+            $messagesQuery->where('messages.id', '<', (int) $validated['before_id']);
+        }
+
+        $messages = $messagesQuery->get()->reverse()->values();
+
+        return response()->json([
+            'message' => 'Messages retrieved successfully',
+            'messages' => $messages,
         ], 200);
     }
     public function showUser(Request $request, string $id)
