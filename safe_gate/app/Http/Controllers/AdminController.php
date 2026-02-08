@@ -276,7 +276,38 @@ class AdminController extends Controller
 
     public function listUniversities()
     {
-        $universities = University::all();
+        $universities = University::query()
+            ->select([
+                'universities.id',
+                'universities.name',
+                'universities.domain',
+                'universities.latitude',
+                'universities.longitude',
+                'universities.pic',
+                'universities.created_at',
+                'universities.updated_at',
+            ])
+            ->selectSub(
+                Dormitory::query()
+                    ->selectRaw('COUNT(DISTINCT dormitories.id)')
+                    ->whereColumn('dormitories.university_id', 'universities.id'),
+                'dormitories_count'
+            )
+            ->selectSub(
+                User::query()
+                    ->join('dormitories', 'users.dormitory_id', '=', 'dormitories.id')
+                    ->selectRaw('COUNT(DISTINCT users.id)')
+                    ->whereColumn('dormitories.university_id', 'universities.id'),
+                'users_count'
+            )
+            ->orderBy('universities.id')
+            ->get()
+            ->map(function ($university) {
+                $university->created_at = $university->created_at
+                    ? $university->created_at->format('Y/m/d')
+                    : null;
+                return $university;
+            });
 
         return response()->json([
             'message' => 'Universities retrieved successfully',
@@ -300,6 +331,45 @@ class AdminController extends Controller
             'message' => 'Dormitories retrieved successfully',
             'university' => $university->name,
             'dormitories' => $dormitories,
+        ], 200);
+    }
+
+    public function listDormitoryUniversityNames(Request $request)
+    {
+        $admin = $request->user();
+
+        if (! $admin || $admin->role !== 'admin') {
+            return response()->json([
+                'message' => 'Unauthorized: Only administrators can access this endpoint.',
+            ], 403);
+        }
+
+        $rows = Dormitory::query()
+            ->join('universities', 'dormitories.university_id', '=', 'universities.id')
+            ->select([
+                'universities.name as university_name',
+                'dormitories.dormitory_name',
+            ])
+            ->orderBy('universities.name')
+            ->orderBy('dormitories.dormitory_name')
+            ->get();
+
+        $grouped = $rows
+            ->groupBy('university_name')
+            ->map(function ($items, $universityName) {
+                return [
+                    'university_name' => $universityName,
+                    'dormitories' => $items
+                        ->pluck('dormitory_name')
+                        ->unique()
+                        ->values(),
+                ];
+            })
+            ->values();
+
+        return response()->json([
+            'message' => 'Dormitories retrieved successfully',
+            'universities' => $grouped,
         ], 200);
     }
 
@@ -341,6 +411,7 @@ class AdminController extends Controller
                 'users.status',
                 'users.profile_picture',
                 'users.last_login_at',
+                'dormitories.dormitory_name as dormitory_name',
                 'universities.name as university_name',
                 DB::raw('COUNT(products.id) as product_count'),
                 DB::raw("SUM(CASE WHEN products.status = 'sold' THEN 1 ELSE 0 END) as sold_counter"),
@@ -353,6 +424,7 @@ class AdminController extends Controller
                 'users.status',
                 'users.profile_picture',
                 'users.last_login_at',
+                'dormitories.dormitory_name',
                 'universities.name',
             ])
             ->orderBy('users.id')

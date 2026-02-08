@@ -371,6 +371,11 @@ Admin
    - Response 200: {"message":"Dormitories retrieved successfully","university":"...","dormitories":[...]}
    - Response 404: {"message":"University not found."}
 
+34b) GET /api/admin/dormitories_and_university_/names
+   - Auth: token_auth (Sanctum token)
+   - Response 200: {"message":"Dormitories retrieved successfully","universities":[{"university_name":"...","dormitories":["..."]}]}
+   - Response 403: {"message":"Unauthorized: Only administrators can access this endpoint."}
+
 35) POST /api/admin/categories
    - Auth: token_auth (Sanctum token)
    - Request body:
@@ -394,7 +399,7 @@ Admin
    - Auth: token_auth (Sanctum token)
    - Query:
     - per_page (optional integer 1-100, default 10)
-   - Response 200: {"message":"Users retrieved successfully","users":{pagination with university_name, last_login_at, product_count, sold_counter per user}}
+  - Response 200: {"message":"Users retrieved successfully","users":{pagination with dormitory_name, university_name, last_login_at, product_count, sold_counter per user}}
    - Response 422: {"message":"Validation Error","errors":{...}}
    - Response 403: {"message":"Unauthorized: Only administrators can access this endpoint."}
 

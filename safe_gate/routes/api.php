@@ -47,6 +47,7 @@ Route::prefix('admin')->group(function () {
     Route::post('/set_dormitory', [AdminController::class, 'set_dormitory']);
     Route::get('/universities', [AdminController::class, 'listUniversities']);
     Route::get('/universities/{university_name}/dormitories', [AdminController::class, 'listDormitoriesByUniversity']);
+    Route::middleware('token_auth')->get('/dormitories_and_university_/names', [AdminController::class, 'listDormitoryUniversityNames']);
     Route::middleware('token_auth')->post('/categories', [AdminController::class, 'createCategory']);
     Route::middleware('token_auth')->post('/condition-levels', [AdminController::class, 'createConditionLevel']);
     Route::middleware('token_auth')->get('/get_all_users', [AdminController::class, 'listUsers']);
