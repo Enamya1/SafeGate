@@ -337,11 +337,11 @@ class ExampleTest extends TestCase
 
         $response
             ->assertStatus(200)
-            ->assertJsonPath('message', 'User updated successfully')
-            ->assertJsonPath('user.full_name', 'Updated User Name')
-            ->assertJsonPath('user.email', 'updated@example.com')
-            ->assertJsonPath('user.phone_number', '0987654321')
-            ->assertJsonPath('user.role', 'admin');
+            ->assertJsonPath('message', 'User updated successfully');
+
+        $updatedAt = $response->json('updated_at');
+        $this->assertNotNull($updatedAt);
+        $this->assertMatchesRegularExpression('/^\d{4}\/\d{2}\/\d{2} \d{2}:\d{2}$/', $updatedAt);
 
         $this->assertDatabaseHas('users', [
             'id' => $user->id,

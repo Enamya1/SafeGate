@@ -909,26 +909,17 @@ class AdminController extends Controller
 
         try {
             $rules = [
+                'student_id' => 'sometimes|nullable|string|max:255',
                 'full_name' => 'sometimes|string|max:255',
                 'username' => 'sometimes|string|max:255|unique:users,username,'.$id,
                 'email' => 'sometimes|string|email|max:255|unique:users,email,'.$id,
                 'phone_number' => 'nullable|string|max:20',
                 'role' => 'sometimes|string|in:admin,user',
-                'dormitory_id' => 'nullable|exists:dormitories,id',
-                'status' => 'sometimes|string|in:active,inactive,suspended',
-                'profile_picture' => 'nullable|string|max:255',
-                'locked_until' => 'nullable|date',
+                'gender' => 'sometimes|nullable|string|max:255',
+                'language' => 'sometimes|nullable|string|max:255',
             ];
 
-            if ($request->hasFile('profile_picture')) {
-                $rules['profile_picture'] = ['file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'];
-            }
-
             $validatedData = $request->validate($rules);
-
-            if ($request->hasFile('profile_picture')) {
-                $validatedData['profile_picture'] = $this->storeProfilePicture($request->file('profile_picture'), (int) $user->id);
-            }
         } catch (ValidationException $e) {
             return response()->json([
                 'message' => 'Validation Error',
@@ -938,9 +929,11 @@ class AdminController extends Controller
 
         $user->update($validatedData);
 
+        $updatedAt = $user->updated_at ? $user->updated_at->format('Y/m/d H:i') : null;
+
         return response()->json([
             'message' => 'User updated successfully',
-            'user' => $user,
+            'updated_at' => $updatedAt,
         ], 200);
     }
 

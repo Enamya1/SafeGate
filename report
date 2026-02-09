@@ -460,11 +460,9 @@ Admin
 
 44) PATCH /api/admin/users/{id}
    - Auth: token_auth (Sanctum token)
-   - Request body (all optional, JSON or multipart/form-data):
-     - full_name, username, email, phone_number, role, dormitory_id
-     - status (active|inactive|suspended), locked_until
-     - profile_picture (file: jpg/jpeg/png/webp, max 5MB)
-   - Response 200: {"message":"User updated successfully","user":{...}}
+   - Request body (all optional, JSON):
+     - student_id, full_name, username, email, role, phone_number, gender, language
+   - Response 200: {"message":"User updated successfully","updated_at":"YYYY/MM/DD HH:MM"}
    - Response 404: {"message":"User not found."}
    - Response 422: {"message":"Validation Error","errors":{...}}
    - Response 403: {"message":"Unauthorized: Only administrators can access this endpoint."}
