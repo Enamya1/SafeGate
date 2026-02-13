@@ -14,6 +14,7 @@ use App\Models\University;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -902,7 +903,7 @@ class UserCreateProductTest extends TestCase
             ->assertStatus(200);
 
         $this->assertSame(1, Favorite::query()->count());
-        $this->assertSame(1, \DB::table('behavioral_events')->where('event_type', 'favorite')->count());
+        $this->assertSame(1, DB::table('behavioral_events')->where('event_type', 'favorite')->count());
     }
 
     public function test_user_can_list_favorite_products(): void

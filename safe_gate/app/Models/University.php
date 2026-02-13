@@ -11,6 +11,7 @@ class University extends Model
         'domain',
         'latitude',
         'longitude',
+        'address',
         'pic',
     ];
 }

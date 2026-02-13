@@ -85,6 +85,7 @@ User Authentication
        "universities":[...],
        "dormitories":[...]
      }
+   - Notes: universities include address; dormitories include address when returned
    - Response 422: {"message":"Validation Error","errors":{...}}
    - Response 403: {"message":"Unauthorized: Only users can access this endpoint."}
 
@@ -305,11 +306,13 @@ User Metadata
 25) GET /api/user/meta/dormitories
    - Auth: auth:sanctum, role=user
    - Response 200: {"message":"Dormitories retrieved successfully","dormitories":[...]}
+   - Notes: dormitory objects include address
    - Response 403: {"message":"Unauthorized: Only users can access this endpoint."}
 
 26) GET /api/user/meta/dormitories/by-university
    - Auth: auth:sanctum, role=user
    - Response 200: {"message":"Dormitories retrieved successfully","university_id":...,"dormitories":[...]}
+   - Notes: dormitory objects include address
    - Response 404: {"message":"Dormitory not found for the user."}
    - Response 403: {"message":"Unauthorized: Only users can access this endpoint."}
    - Response 401: {"message":"Unauthenticated."}
@@ -348,6 +351,7 @@ Admin
      - domain (required string, unique)
      - latitude (nullable number float, -90 to 90)
      - longitude (nullable number float, -180 to 180)
+     - address (nullable string)
      - pic (nullable string)
    - Response 201: {"message":"University created successfully","university":{...}}
    - Response 422: {"message":"Validation Error","errors":{...}}
@@ -358,6 +362,7 @@ Admin
      - domain (required string, unique)
      - latitude (nullable number float, -90 to 90)
      - longitude (nullable number float, -180 to 180)
+     - address (nullable string)
      - is_active (nullable boolean)
      - university_name (required string, exists universities.name)
    - Response 201: {"message":"Dormitory created successfully","dormitory":{...}}
@@ -365,10 +370,13 @@ Admin
    - Response 422: {"message":"Validation Error","errors":{...}}
 
 33) GET /api/admin/universities
-   - Response 200: {"message":"Universities retrieved successfully","universities":[...]}
+   - Query:
+     - per_page (optional integer 1-100, default 10)
+   - Response 200: {"message":"Universities retrieved successfully","universities":{pagination with data items containing id, name, address, created_at (YYYY-MM-DD), dormitories_count, users_count}}
 
 34) GET /api/admin/universities/{university_name}/dormitories
    - Response 200: {"message":"Dormitories retrieved successfully","university":"...","dormitories":[...]}
+   - Notes: dormitory objects include address
    - Response 404: {"message":"University not found."}
 
 34b) GET /api/admin/dormitories_and_university_/names
@@ -454,7 +462,7 @@ Admin
 
 43) GET /api/admin/users/{id}
    - Auth: token_auth (Sanctum token)
-   - Response 200: {"message":"User retrieved successfully","user":{...,"created_at":"YYYY-MM-DD","listed_count":...,"sold_count":...,"sold":...,"dormitory":{"id":...,"dormitory_name":"...","university_id":...},"university":{"id":...,"name":"..."}}}
+   - Response 200: {"message":"User retrieved successfully","user":{...,"created_at":"YYYY-MM-DD","listed_count":...,"sold_count":...,"sold":...,"dormitory":{"id":...,"dormitory_name":"...","university_id":...,"address":"..."},"university":{"id":...,"name":"...","address":"..."}}}
    - Response 404: {"message":"User not found."}
    - Response 403: {"message":"Unauthorized: Only administrators can access this endpoint."}
 

@@ -13,6 +13,7 @@ class Dormitory extends Model
         'domain',
         'latitude',
         'longitude',
+        'address',
         'is_active',
         'university_id',
     ];

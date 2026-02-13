@@ -199,7 +199,7 @@ class ProductController extends Controller
         }
 
         $dormitories = Dormitory::query()
-            ->select(['id', 'dormitory_name', 'domain', 'latitude', 'longitude', 'is_active', 'university_id'])
+            ->select(['id', 'dormitory_name', 'domain', 'latitude', 'longitude', 'address', 'is_active', 'university_id'])
             ->orderBy('id')
             ->get();
 
@@ -241,7 +241,7 @@ class ProductController extends Controller
         }
 
         $dormitories = Dormitory::query()
-            ->select(['id', 'dormitory_name', 'domain', 'latitude', 'longitude', 'is_active', 'university_id'])
+            ->select(['id', 'dormitory_name', 'domain', 'latitude', 'longitude', 'address', 'is_active', 'university_id'])
             ->where('university_id', $userDormitory->university_id)
             ->orderBy('id')
             ->get();

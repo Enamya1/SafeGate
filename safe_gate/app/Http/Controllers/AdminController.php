@@ -142,6 +142,7 @@ class AdminController extends Controller
                 'domain' => 'required|string|max:255|unique:universities',
                 'latitude' => 'nullable|numeric|between:-90,90',
                 'longitude' => 'nullable|numeric|between:-180,180',
+                'address' => 'nullable|string',
                 'pic' => 'nullable|string|max:255',
             ]);
         } catch (ValidationException $e) {
@@ -156,6 +157,7 @@ class AdminController extends Controller
             'domain' => $validatedData['domain'],
             'latitude' => $validatedData['latitude'] ?? null,
             'longitude' => $validatedData['longitude'] ?? null,
+            'address' => $validatedData['address'] ?? null,
             'pic' => $validatedData['pic'] ?? null,
         ]);
 
@@ -173,6 +175,7 @@ class AdminController extends Controller
                 'domain' => 'required|string|max:255|unique:dormitories',
                 'latitude' => 'nullable|numeric|between:-90,90',
                 'longitude' => 'nullable|numeric|between:-180,180',
+                'address' => 'nullable|string',
                 'is_active' => 'boolean',
                 'university_name' => 'required|string|max:255|exists:universities,name',
             ]);
@@ -196,6 +199,7 @@ class AdminController extends Controller
             'domain' => $validatedData['domain'],
             'latitude' => $validatedData['latitude'] ?? null,
             'longitude' => $validatedData['longitude'] ?? null,
+            'address' => $validatedData['address'] ?? null,
             'is_active' => $validatedData['is_active'] ?? true,
             'university_id' => $university->id,
         ]);
@@ -274,18 +278,27 @@ class AdminController extends Controller
         ], 201);
     }
 
-    public function listUniversities()
+    public function listUniversities(Request $request)
     {
-        $universities = University::query()
+        try {
+            $validated = $request->validate([
+                'per_page' => 'nullable|integer|min:1|max:100',
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation Error',
+                'errors' => $e->errors(),
+            ], 422);
+        }
+
+        $perPage = (int) ($validated['per_page'] ?? 10);
+
+        $paginator = University::query()
             ->select([
                 'universities.id',
                 'universities.name',
-                'universities.domain',
-                'universities.latitude',
-                'universities.longitude',
-                'universities.pic',
+                'universities.address',
                 'universities.created_at',
-                'universities.updated_at',
             ])
             ->selectSub(
                 Dormitory::query()
@@ -301,17 +314,18 @@ class AdminController extends Controller
                 'users_count'
             )
             ->orderBy('universities.id')
-            ->get()
-            ->map(function ($university) {
-                $university->created_at = $university->created_at
-                    ? $university->created_at->format('Y/m/d')
-                    : null;
-                return $university;
-            });
+            ->paginate($perPage);
+
+        $paginator->getCollection()->transform(function ($university) {
+            $university->created_at = $university->created_at
+                ? $university->created_at->format('Y-m-d')
+                : null;
+            return $university;
+        });
 
         return response()->json([
             'message' => 'Universities retrieved successfully',
-            'universities' => $universities,
+            'universities' => $paginator,
         ], 200);
     }
 
@@ -856,13 +870,13 @@ class AdminController extends Controller
 
         if ($user->dormitory_id) {
             $dormitory = Dormitory::query()
-                ->select(['id', 'dormitory_name', 'university_id'])
+                ->select(['id', 'dormitory_name', 'university_id', 'address'])
                 ->whereKey($user->dormitory_id)
                 ->first();
 
             if ($dormitory?->university_id) {
                 $university = University::query()
-                    ->select(['id', 'name'])
+                    ->select(['id', 'name', 'address'])
                     ->whereKey($dormitory->university_id)
                     ->first();
             }
@@ -877,10 +891,12 @@ class AdminController extends Controller
             'id' => $dormitory->id,
             'dormitory_name' => $dormitory->dormitory_name,
             'university_id' => $dormitory->university_id,
+            'address' => $dormitory->address,
         ] : null;
         $payload['university'] = $university ? [
             'id' => $university->id,
             'name' => $university->name,
+            'address' => $university->address,
         ] : null;
 
         return response()->json([
