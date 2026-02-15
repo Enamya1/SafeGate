@@ -352,9 +352,27 @@ Admin
      - latitude (nullable number float, -90 to 90)
      - longitude (nullable number float, -180 to 180)
      - address (nullable string)
-     - pic (nullable string)
+     - pic (nullable array of strings)
    - Response 201: {"message":"University created successfully","university":{...}}
    - Response 422: {"message":"Validation Error","errors":{...}}
+
+31b) PATCH /api/admin/universities/{id}
+   - Auth: token_auth (Sanctum token)
+   - Request body:
+     - name (optional string, unique)
+     - domain (optional string, unique)
+     - website (optional nullable string url)
+     - latitude (optional nullable number float, -90 to 90)
+     - longitude (optional nullable number float, -180 to 180)
+     - address (optional nullable string)
+     - pic (optional nullable array of strings)
+     - contact_email (optional nullable string email)
+     - contact_phone (optional nullable string)
+     - description (optional nullable string)
+   - Response 200: {"message":"University updated successfully","university":{...}}
+   - Response 404: {"message":"University not found."}
+   - Response 422: {"message":"Validation Error","errors":{...}}
+   - Response 403: {"message":"Unauthorized: Only administrators can access this endpoint."}
 
 32) POST /api/admin/set_dormitory
    - Request body:
@@ -374,6 +392,40 @@ Admin
      - per_page (optional integer 1-100, default 10)
    - Response 200: {"message":"Universities retrieved successfully","universities":{pagination with data items containing id, name, address, created_at (YYYY-MM-DD), dormitories_count, users_count}}
 
+33b) GET /api/admin/universities/{id}
+   - Auth: token_auth (Sanctum token)
+   - Response 200:
+     {
+       "message":"University retrieved successfully",
+       "university":{
+         "id":...,
+         "name":"...",
+         "domain":"...",
+         "website":"...",
+         "latitude":...,
+         "longitude":...,
+         "address":"...",
+         "pic":[...],
+         "contact_email":"...",
+         "contact_phone":"...",
+         "description":"...",
+         "created_at":"YYYY-MM-DD",
+         "dormitories_count":...,
+         "users_count":...,
+         "listings_total":...,
+         "listings":[{"id":...,"title":"..."}],
+         "recent_listings":[
+           {"id":...,"title":"...","seller_name":"...","date":"YYYY.MM.DD"},
+           ...
+          ],
+          "categories_total":...,
+          "categories":[{"id":...,"name":"...","product_count":...}],
+          "average_order_value": 0.00,
+          "average_daily_uploads": 0.00
+       }
+     }
+   - Response 404: {"message":"University not found."}
+   - Response 403: {"message":"Unauthorized: Only administrators can access this endpoint."}
 34) GET /api/admin/universities/{university_name}/dormitories
    - Response 200: {"message":"Dormitories retrieved successfully","university":"...","dormitories":[...]}
    - Notes: dormitory objects include address

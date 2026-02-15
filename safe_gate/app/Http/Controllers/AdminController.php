@@ -136,6 +136,15 @@ class AdminController extends Controller
 
     public function set_university(Request $request)
     {
+        $picInput = $request->input('pic');
+
+        if (is_string($picInput)) {
+            $picInput = trim($picInput);
+            $request->merge([
+                'pic' => $picInput === '' ? null : [$picInput],
+            ]);
+        }
+
         try {
             $validatedData = $request->validate([
                 'name' => 'required|string|max:255|unique:universities',
@@ -143,7 +152,8 @@ class AdminController extends Controller
                 'latitude' => 'nullable|numeric|between:-90,90',
                 'longitude' => 'nullable|numeric|between:-180,180',
                 'address' => 'nullable|string',
-                'pic' => 'nullable|string|max:255',
+                'pic' => 'nullable|array',
+                'pic.*' => 'string|max:2048',
             ]);
         } catch (ValidationException $e) {
             return response()->json([
@@ -208,6 +218,190 @@ class AdminController extends Controller
             'message' => 'Dormitory created successfully',
             'dormitory' => $dormitory,
         ], 201);
+    }
+
+    public function updateUniversity(Request $request, string $id)
+    {
+        $admin = $request->user();
+
+        if (! $admin || $admin->role !== 'admin') {
+            return response()->json([
+                'message' => 'Unauthorized: Only administrators can access this endpoint.',
+            ], 403);
+        }
+
+        $university = University::find($id);
+
+        if (! $university) {
+            return response()->json([
+                'message' => 'University not found.',
+            ], 404);
+        }
+
+        $picInput = $request->input('pic');
+
+        if (is_string($picInput)) {
+            $picInput = trim($picInput);
+            $request->merge([
+                'pic' => $picInput === '' ? null : [$picInput],
+            ]);
+        }
+
+        try {
+            $validatedData = $request->validate([
+                'name' => 'sometimes|string|max:255|unique:universities,name,'.$id,
+                'domain' => 'sometimes|string|max:255|unique:universities,domain,'.$id,
+                'latitude' => 'sometimes|nullable|numeric|between:-90,90',
+                'longitude' => 'sometimes|nullable|numeric|between:-180,180',
+                'address' => 'sometimes|nullable|string',
+                'website' => 'sometimes|nullable|url|max:255',
+                'pic' => 'nullable|array',
+                'pic.*' => 'string|max:2048',
+                'contact_email' => 'sometimes|nullable|email|max:255',
+                'contact_phone' => 'sometimes|nullable|string|max:20',
+                'description' => 'sometimes|nullable|string',
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation Error',
+                'errors' => $e->errors(),
+            ], 422);
+        }
+
+        $university->update($validatedData);
+
+        return response()->json([
+            'message' => 'University updated successfully',
+            'university' => $university,
+        ], 200);
+    }
+
+    public function showUniversity(Request $request, string $id)
+    {
+        $admin = $request->user();
+
+        if (! $admin || $admin->role !== 'admin') {
+            return response()->json([
+                'message' => 'Unauthorized: Only administrators can access this endpoint.',
+            ], 403);
+        }
+
+        $university = University::find($id);
+
+        if (! $university) {
+            return response()->json([
+                'message' => 'University not found.',
+            ], 404);
+        }
+
+        $dormitoriesCount = Dormitory::query()
+            ->where('university_id', $university->id)
+            ->count();
+
+        $usersCount = User::query()
+            ->join('dormitories', 'users.dormitory_id', '=', 'dormitories.id')
+            ->where('dormitories.university_id', $university->id)
+            ->count('users.id');
+
+        $listings = Product::query()
+            ->join('dormitories', 'products.dormitory_id', '=', 'dormitories.id')
+            ->where('dormitories.university_id', $university->id)
+            ->whereNull('products.deleted_at')
+            ->orderBy('products.id')
+            ->select(['products.id', 'products.title'])
+            ->get();
+
+        $listingsTotal = $listings->count();
+
+        $recentListings = Product::query()
+            ->join('dormitories', 'products.dormitory_id', '=', 'dormitories.id')
+            ->join('users', 'products.seller_id', '=', 'users.id')
+            ->where('dormitories.university_id', $university->id)
+            ->whereNull('products.deleted_at')
+            ->orderByDesc('products.created_at')
+            ->limit(4)
+            ->select([
+                'products.id',
+                'products.title',
+                'users.full_name as seller_full_name',
+                'products.created_at',
+            ])
+            ->get()
+            ->map(function ($row) {
+                $date = $row->created_at ? $row->created_at->format('Y.m.d') : null;
+                return [
+                    'id' => $row->id,
+                    'title' => $row->title,
+                    'seller_name' => $row->seller_full_name,
+                    'date' => $date,
+                ];
+            });
+
+        $categoryCounts = Category::query()
+            ->join('products', 'categories.id', '=', 'products.category_id')
+            ->join('dormitories', 'products.dormitory_id', '=', 'dormitories.id')
+            ->where('dormitories.university_id', $university->id)
+            ->whereNull('products.deleted_at')
+            ->groupBy('categories.id', 'categories.name')
+            ->orderBy('categories.name')
+            ->select([
+                'categories.id',
+                'categories.name',
+                DB::raw('COUNT(products.id) as product_count'),
+            ])
+            ->get();
+
+        $categoriesTotal = $categoryCounts->count();
+
+        $averageOrderValue = Product::query()
+            ->join('dormitories', 'products.dormitory_id', '=', 'dormitories.id')
+            ->where('dormitories.university_id', $university->id)
+            ->whereNull('products.deleted_at')
+            ->selectRaw('AVG(products.price) as avg_price')
+            ->value('avg_price');
+        $averageOrderValue = $averageOrderValue ? round((float) $averageOrderValue, 2) : 0.0;
+
+        $uploadsCount = Product::query()
+            ->join('dormitories', 'products.dormitory_id', '=', 'dormitories.id')
+            ->where('dormitories.university_id', $university->id)
+            ->whereNull('products.deleted_at')
+            ->count();
+
+        $firstUploadAt = Product::query()
+            ->join('dormitories', 'products.dormitory_id', '=', 'dormitories.id')
+            ->where('dormitories.university_id', $university->id)
+            ->whereNull('products.deleted_at')
+            ->min('products.created_at');
+
+        $daysSpan = $firstUploadAt ? now()->diffInDays(\Illuminate\Support\Carbon::parse($firstUploadAt)) + 1 : 0;
+        $averageDailyUploads = $daysSpan > 0 ? round($uploadsCount / $daysSpan, 2) : 0.0;
+
+        return response()->json([
+            'message' => 'University retrieved successfully',
+            'university' => [
+                'id' => $university->id,
+                'name' => $university->name,
+                'domain' => $university->domain,
+                'latitude' => $university->latitude,
+                'longitude' => $university->longitude,
+                'address' => $university->address,
+                'website' => $university->website,
+                'pic' => $university->pic,
+                'contact_email' => $university->contact_email,
+                'contact_phone' => $university->contact_phone,
+                'description' => $university->description,
+                'created_at' => $university->created_at ? $university->created_at->format('Y-m-d') : null,
+                'dormitories_count' => $dormitoriesCount,
+                'users_count' => $usersCount,
+                'listings_total' => $listingsTotal,
+                'listings' => $listings,
+                'recent_listings' => $recentListings,
+                'categories_total' => $categoriesTotal,
+                'categories' => $categoryCounts,
+                'average_order_value' => $averageOrderValue,
+                'average_daily_uploads' => $averageDailyUploads,
+            ],
+        ], 200);
     }
 
     public function createCategory(Request $request)

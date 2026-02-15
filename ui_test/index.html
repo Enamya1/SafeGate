@@ -1,455 +1,277 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SafeGate User Products - Test View</title>
-  <style>
-    :root {
-      color-scheme: light;
-      font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
-      --ink: #101828;
-      --muted: #667085;
-      --line: #e4e7ec;
-      --accent: #7c4dff;
-      --accent-2: #22d3ee;
-      --bg: #f8fafc;
-      --card: #ffffff;
-      --shadow: 0 12px 30px rgba(16, 24, 40, 0.08);
-    }
-
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      margin: 0;
-      background: var(--bg);
-      color: var(--ink);
-    }
-
-    header {
-      position: sticky;
-      top: 0;
-      z-index: 10;
-      backdrop-filter: blur(10px);
-      background: rgba(248, 250, 252, 0.7);
-      border-bottom: 1px solid rgba(228, 231, 236, 0.7);
-    }
-
-    .nav {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 20px 40px;
-      gap: 24px;
-    }
-
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      font-weight: 700;
-      letter-spacing: 0.5px;
-      font-size: 18px;
-    }
-
-    .brand-badge {
-      width: 36px;
-      height: 36px;
-      border-radius: 12px;
-      background: linear-gradient(135deg, var(--accent), var(--accent-2));
-      display: grid;
-      place-items: center;
-      color: #fff;
-      font-weight: 700;
-      box-shadow: 0 8px 20px rgba(124, 77, 255, 0.35);
-    }
-
-    .nav-links {
-      display: flex;
-      gap: 18px;
-      flex-wrap: wrap;
-    }
-
-    .nav-link {
-      position: relative;
-      text-decoration: none;
-      color: var(--ink);
-      font-weight: 600;
-      letter-spacing: 0.3px;
-      padding: 6px 4px;
-    }
-
-    .nav-link::after {
-      content: "";
-      position: absolute;
-      left: 0;
-      bottom: -4px;
-      width: 100%;
-      height: 3px;
-      border-radius: 99px;
-      background: linear-gradient(90deg, var(--accent), var(--accent-2));
-      transform: scaleX(0);
-      transform-origin: left;
-      transition: transform 0.25s ease;
-    }
-
-    .nav-link:hover {
-      color: #1d2939;
-      transform: translateY(-1px);
-    }
-
-    .nav-link:hover::after {
-      transform: scaleX(1);
-    }
-
-    main {
-      padding: 32px 40px 60px;
-      max-width: 1200px;
-      margin: 0 auto;
-      display: flex;
-      flex-direction: column;
-      gap: 28px;
-    }
-
-    .panel {
-      background: var(--card);
-      border-radius: 18px;
-      box-shadow: var(--shadow);
-      padding: 24px;
-      display: grid;
-      gap: 18px;
-    }
-
-    .panel h2 {
-      margin: 0;
-      font-size: 20px;
-    }
-
-    .form-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 16px;
-    }
-
-    label {
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--muted);
-      display: grid;
-      gap: 8px;
-    }
-
-    input {
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      padding: 12px 14px;
-      font-size: 14px;
-      outline: none;
-      transition: border 0.2s ease, box-shadow 0.2s ease;
-    }
-
-    input:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(124, 77, 255, 0.15);
-    }
-
-    .actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-    }
-
-    .btn {
-      border: none;
-      padding: 12px 18px;
-      border-radius: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
-    }
-
-    .btn-primary {
-      background: linear-gradient(135deg, var(--accent), #9b7bff);
-      color: #fff;
-      box-shadow: 0 12px 24px rgba(124, 77, 255, 0.25);
-    }
-
-    .btn-secondary {
-      background: #111827;
-      color: #fff;
-      box-shadow: 0 12px 24px rgba(17, 24, 39, 0.25);
-    }
-
-    .btn:hover {
-      transform: translateY(-1px);
-      opacity: 0.95;
-    }
-
-    .status {
-      font-size: 13px;
-      color: var(--muted);
-    }
-
-    .products {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 18px;
-    }
-
-    .card {
-      background: var(--card);
-      border-radius: 16px;
-      box-shadow: var(--shadow);
-      overflow: hidden;
-      display: grid;
-      gap: 12px;
-    }
-
-    .card img {
-      width: 100%;
-      height: 180px;
-      object-fit: cover;
-      background: #e4e7ec;
-    }
-
-    .card-body {
-      padding: 16px;
-      display: grid;
-      gap: 8px;
-    }
-
-    .price {
-      font-weight: 700;
-      font-size: 16px;
-    }
-
-    .meta {
-      font-size: 13px;
-      color: var(--muted);
-    }
-
-    @media (max-width: 720px) {
-      .nav {
-        padding: 16px 20px;
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SafeGate Admin set_university Test</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+        --ink: #0f172a;
+        --muted: #64748b;
+        --line: #e2e8f0;
+        --accent: #2563eb;
+        --bg: #f8fafc;
+        --card: #ffffff;
+        --shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
       }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+      }
+
+      header {
+        padding: 24px 40px 0;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 22px;
+      }
+
       main {
-        padding: 24px 20px 40px;
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 24px 40px 60px;
+        display: grid;
+        gap: 20px;
       }
-    }
-  </style>
-</head>
-<body>
-  <header>
-    <nav class="nav">
-      <div class="brand">
-        <div class="brand-badge">SG</div>
-        SafeGate
-      </div>
-      <div class="nav-links">
-        <a class="nav-link" href="#">Products</a>
-        <a class="nav-link" href="#">Favorites</a>
-        <a class="nav-link" href="#">Analytics</a>
-        <a class="nav-link" href="#">Settings</a>
-      </div>
-    </nav>
-  </header>
 
-  <main>
-    <section class="panel">
-      <h2>User Product Test View</h2>
-      <div class="form-grid">
-        <label>
-          API Base URL
-          <input id="baseUrl" type="text" value="http://127.0.0.1:8000" />
-        </label>
-        <label>
-          Email
-          <input id="email" type="email" value="test@gamil.com" />
-        </label>
-        <label>
-          Password
-          <input id="password" type="password" value="12345678" />
-        </label>
-        <label>
-          Access Token
-          <input id="token" type="text" placeholder="Bearer token" />
-        </label>
-      </div>
-      <div class="actions">
-        <button class="btn btn-primary" id="loginBtn">Login & Set Token</button>
-        <button class="btn btn-secondary" id="loadBtn">Load My Products</button>
-      </div>
-      <div class="status" id="status">Waiting for action.</div>
-    </section>
-
-    <section>
-      <div class="products" id="products"></div>
-    </section>
-  </main>
-
-  <script>
-    const statusEl = document.getElementById("status");
-    const productsEl = document.getElementById("products");
-    const baseUrlEl = document.getElementById("baseUrl");
-    const emailEl = document.getElementById("email");
-    const passwordEl = document.getElementById("password");
-    const tokenEl = document.getElementById("token");
-    const loginBtn = document.getElementById("loginBtn");
-    const loadBtn = document.getElementById("loadBtn");
-
-    function setStatus(message) {
-      statusEl.textContent = message;
-    }
-
-    function formatPrice(value) {
-      if (value === null || value === undefined) return "Price N/A";
-      const number = Number(value);
-      if (Number.isNaN(number)) return String(value);
-      return `$${number.toFixed(2)}`;
-    }
-
-    function getBaseUrl() {
-      const inputValue = baseUrlEl.value.trim();
-      if (inputValue) {
-        return inputValue.replace(/\/+$/, "");
+      .panel {
+        background: var(--card);
+        border-radius: 16px;
+        box-shadow: var(--shadow);
+        padding: 20px;
+        display: grid;
+        gap: 16px;
       }
-      if (window.location.protocol !== "file:") {
-        return window.location.origin;
-      }
-      return "http://127.0.0.1:8000";
-    }
 
-    function normalizePath(imageUrl) {
-      if (!imageUrl) return "";
-      if (imageUrl.startsWith("storage/")) {
-        return `/${imageUrl}`;
+      .form-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 14px;
       }
-      return imageUrl;
-    }
 
-    function resolveImageUrl(imageUrl) {
-      if (!imageUrl) return "";
-      const normalized = normalizePath(imageUrl);
-      if (normalized.startsWith("http://") || normalized.startsWith("https://")) {
-        try {
-          const parsed = new URL(normalized);
-          const baseUrl = getBaseUrl();
-          if (baseUrl) {
-            const baseParsed = new URL(baseUrl);
-            const isLocalHost = ["localhost", "127.0.0.1"].includes(parsed.hostname);
-            if (isLocalHost && parsed.origin !== baseParsed.origin) {
-              return `${baseParsed.origin}${parsed.pathname}${parsed.search}${parsed.hash}`;
-            }
-          }
-        } catch {
-          return normalized;
+      label {
+        display: grid;
+        gap: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--muted);
+      }
+
+      input,
+      textarea {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 12px 14px;
+        font-size: 14px;
+        outline: none;
+        transition: border 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      input:focus,
+      textarea:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+      }
+
+      textarea {
+        min-height: 110px;
+        resize: vertical;
+        grid-column: 1 / -1;
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      button {
+        border: none;
+        padding: 12px 18px;
+        border-radius: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        background: var(--accent);
+        color: #fff;
+        box-shadow: 0 10px 20px rgba(37, 99, 235, 0.25);
+      }
+
+      .status {
+        font-size: 13px;
+        color: var(--muted);
+      }
+
+      pre {
+        background: #0f172a;
+        color: #e2e8f0;
+        padding: 16px;
+        border-radius: 12px;
+        overflow: auto;
+        font-size: 13px;
+      }
+
+      @media (max-width: 720px) {
+        header,
+        main {
+          padding-left: 20px;
+          padding-right: 20px;
         }
-        return normalized;
       }
-      if (normalized.startsWith("/")) {
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Admin set_university Endpoint Test</h1>
+    </header>
+    <main>
+      <section class="panel">
+        <div class="form-grid">
+          <label>
+            API Base URL
+            <input id="baseUrl" type="text" value="http://127.0.0.1:8000" />
+          </label>
+          <label>
+            Admin Token (optional)
+            <input id="token" type="text" placeholder="Bearer token" />
+          </label>
+          <label>
+            Name
+            <input id="name" type="text" placeholder="University name" />
+          </label>
+          <label>
+            Domain
+            <input id="domain" type="text" placeholder="example.edu" />
+          </label>
+          <label>
+            Latitude
+            <input id="latitude" type="number" step="0.0000001" placeholder="31.2000924" />
+          </label>
+          <label>
+            Longitude
+            <input id="longitude" type="number" step="0.0000001" placeholder="29.9187387" />
+          </label>
+          <label>
+            Address
+            <input id="address" type="text" placeholder="Campus address" />
+          </label>
+          <label>
+            Pic Links (one per line)
+            <textarea id="picLinks" placeholder="https://example.com/logo.png"></textarea>
+          </label>
+        </div>
+        <div class="actions">
+          <button id="submitBtn">Create University</button>
+        </div>
+        <div class="status" id="status">Waiting for input.</div>
+      </section>
+
+      <section class="panel">
+        <div class="status">Response</div>
+        <pre id="responseBody">No response yet.</pre>
+      </section>
+    </main>
+
+    <script>
+      const baseUrlEl = document.getElementById("baseUrl");
+      const tokenEl = document.getElementById("token");
+      const nameEl = document.getElementById("name");
+      const domainEl = document.getElementById("domain");
+      const latitudeEl = document.getElementById("latitude");
+      const longitudeEl = document.getElementById("longitude");
+      const addressEl = document.getElementById("address");
+      const picLinksEl = document.getElementById("picLinks");
+      const submitBtn = document.getElementById("submitBtn");
+      const statusEl = document.getElementById("status");
+      const responseBodyEl = document.getElementById("responseBody");
+
+      function getBaseUrl() {
+        const inputValue = baseUrlEl.value.trim();
+        if (inputValue) {
+          return inputValue.replace(/\/+$/, "");
+        }
+        if (window.location.protocol !== "file:") {
+          return window.location.origin;
+        }
+        return "http://127.0.0.1:8000";
+      }
+
+      function setStatus(message) {
+        statusEl.textContent = message;
+      }
+
+      function parseLinks(rawText) {
+        const lines = rawText
+          .split("\n")
+          .map((line) => line.trim())
+          .filter((line) => line.length > 0);
+        return lines.length ? lines : null;
+      }
+
+      async function submitUniversity() {
         const baseUrl = getBaseUrl();
-        return baseUrl ? `${baseUrl}${normalized}` : normalized;
-      }
-      return normalized;
-    }
+        const payload = {
+          name: nameEl.value.trim(),
+          domain: domainEl.value.trim(),
+          latitude: latitudeEl.value.trim() ? Number(latitudeEl.value) : null,
+          longitude: longitudeEl.value.trim() ? Number(longitudeEl.value) : null,
+          address: addressEl.value.trim() || null,
+          pic: parseLinks(picLinksEl.value),
+        };
 
-    function pickImage(product) {
-      if (product?.images?.length) {
-        const primary = product.images.find((img) => img.is_primary) || product.images[0];
-        return primary.image_url || primary.image_thumbnail_url;
-      }
-      return product?.image_thumbnail_url || product?.image_url || "";
-    }
+        if (!payload.name || !payload.domain) {
+          setStatus("Name and domain are required.");
+          return;
+        }
 
-    function renderProducts(products) {
-      productsEl.innerHTML = "";
-      if (!products || products.length === 0) {
-        productsEl.innerHTML = "<div class='meta'>No products found.</div>";
-        return;
-      }
-      products.forEach((product) => {
-        const imageUrl = resolveImageUrl(pickImage(product));
-        const card = document.createElement("article");
-        card.className = "card";
-        const img = document.createElement("img");
-        img.alt = product.title || "Product image";
-        img.src = imageUrl || "https://via.placeholder.com/640x360?text=No+Image";
-        const body = document.createElement("div");
-        body.className = "card-body";
-        body.innerHTML = `
-          <div class="price">${formatPrice(product.price)}</div>
-          <div>${product.title || "Untitled product"}</div>
-          <div class="meta">Status: ${product.status || "unknown"}</div>
-        `;
-        card.appendChild(img);
-        card.appendChild(body);
-        productsEl.appendChild(card);
-      });
-    }
+        setStatus("Sending request...");
+        responseBodyEl.textContent = "Loading...";
 
-    async function login() {
-      if (!baseUrlEl.value.trim()) {
-        baseUrlEl.value = getBaseUrl();
-      }
-      const baseUrl = baseUrlEl.value.trim();
-      const email = emailEl.value.trim();
-      const password = passwordEl.value.trim();
-      if (!baseUrl || !email || !password) {
-        setStatus("Enter base URL, email, and password.");
-        return;
-      }
-      setStatus("Logging in...");
-      const response = await fetch(`${baseUrl}/api/user/login`, {
-        method: "POST",
-        headers: {
+        const headers = {
           "Content-Type": "application/json",
           Accept: "application/json",
-        },
-        body: JSON.stringify({ email, password }),
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        setStatus(data?.message || "Login failed.");
-        return;
-      }
-      tokenEl.value = data.access_token || "";
-      setStatus("Token set. You can load products now.");
-    }
+        };
 
-    async function loadProducts() {
+        const token = tokenEl.value.trim();
+        if (token) {
+          headers.Authorization = token.startsWith("Bearer ") ? token : `Bearer ${token}`;
+        }
+
+        const response = await fetch(`${baseUrl}/api/admin/set_university`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify(payload),
+        });
+
+        const text = await response.text();
+        try {
+          responseBodyEl.textContent = JSON.stringify(JSON.parse(text), null, 2);
+        } catch {
+          responseBodyEl.textContent = text || "No response body.";
+        }
+
+        if (!response.ok) {
+          setStatus(`Request failed (${response.status}).`);
+          return;
+        }
+
+        setStatus("University created successfully.");
+      }
+
+      submitBtn.addEventListener("click", submitUniversity);
+
       if (!baseUrlEl.value.trim()) {
         baseUrlEl.value = getBaseUrl();
       }
-      const baseUrl = baseUrlEl.value.trim();
-      const token = tokenEl.value.trim();
-      if (!baseUrl || !token) {
-        setStatus("Enter base URL and token.");
-        return;
-      }
-      setStatus("Loading products...");
-      const response = await fetch(`${baseUrl}/api/user/products`, {
-        headers: {
-          Accept: "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        setStatus(data?.message || "Failed to load products.");
-        return;
-      }
-      renderProducts(data.products || []);
-      setStatus(`Loaded ${data.products?.length || 0} products.`);
-    }
-
-    loginBtn.addEventListener("click", login);
-    loadBtn.addEventListener("click", loadProducts);
-
-    if (!baseUrlEl.value.trim()) {
-      baseUrlEl.value = getBaseUrl();
-    }
-  </script>
-</body>
+    </script>
+  </body>
 </html>
