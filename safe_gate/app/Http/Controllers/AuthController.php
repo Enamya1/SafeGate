@@ -181,7 +181,7 @@ class AuthController extends Controller
 
         if ($selectedUniversityId) {
             $dormitories = Dormitory::query()
-                ->select(['id', 'dormitory_name', 'university_id', 'address', 'is_active'])
+                ->select(['id', 'dormitory_name', 'university_id', 'address', 'full_capacity', 'is_active'])
                 ->where('university_id', $selectedUniversityId)
                 ->orderBy('dormitory_name')
                 ->get();
@@ -192,7 +192,7 @@ class AuthController extends Controller
 
         if ($user->dormitory_id) {
             $currentDormitory = Dormitory::query()
-                ->select(['id', 'dormitory_name', 'university_id', 'address', 'is_active'])
+                ->select(['id', 'dormitory_name', 'university_id', 'address', 'full_capacity', 'is_active'])
                 ->whereKey($user->dormitory_id)
                 ->first();
             $currentUniversityId = $currentDormitory?->university_id;

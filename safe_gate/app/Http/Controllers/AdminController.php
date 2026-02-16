@@ -179,15 +179,23 @@ class AdminController extends Controller
 
     public function set_dormitory(Request $request)
     {
+        $admin = $request->user();
+
+        if (! $admin || $admin->role !== 'admin') {
+            return response()->json([
+                'message' => 'Unauthorized: Only administrators can access this endpoint.',
+            ], 403);
+        }
+
         try {
             $validatedData = $request->validate([
-                'dormitory_name' => 'required|string|max:255|unique:dormitories',
+                'name' => 'required|string|max:255|unique:dormitories,dormitory_name',
                 'domain' => 'required|string|max:255|unique:dormitories',
                 'latitude' => 'nullable|numeric|between:-90,90',
                 'longitude' => 'nullable|numeric|between:-180,180',
                 'address' => 'nullable|string',
-                'is_active' => 'boolean',
-                'university_name' => 'required|string|max:255|exists:universities,name',
+                'full_capacity' => 'nullable|integer|min:0',
+                'university_id' => 'required|integer|exists:universities,id',
             ]);
         } catch (ValidationException $e) {
             return response()->json([
@@ -196,7 +204,7 @@ class AdminController extends Controller
             ], 422);
         }
 
-        $university = University::where('name', $validatedData['university_name'])->first();
+        $university = University::find($validatedData['university_id']);
 
         if (! $university) {
             return response()->json([
@@ -205,18 +213,22 @@ class AdminController extends Controller
         }
 
         $dormitory = Dormitory::create([
-            'dormitory_name' => $validatedData['dormitory_name'],
+            'dormitory_name' => $validatedData['name'],
             'domain' => $validatedData['domain'],
             'latitude' => $validatedData['latitude'] ?? null,
             'longitude' => $validatedData['longitude'] ?? null,
             'address' => $validatedData['address'] ?? null,
-            'is_active' => $validatedData['is_active'] ?? true,
+            'full_capacity' => $validatedData['full_capacity'] ?? null,
+            'is_active' => true,
             'university_id' => $university->id,
         ]);
 
+        $payload = $dormitory->toArray();
+        $payload['created_at'] = $dormitory->created_at ? $dormitory->created_at->format('Y.m.d') : null;
+
         return response()->json([
             'message' => 'Dormitory created successfully',
-            'dormitory' => $dormitory,
+            'dormitory' => $payload,
         ], 201);
     }
 
@@ -1198,6 +1210,123 @@ class AdminController extends Controller
         return response()->json([
             'message' => 'User deactivated successfully',
             'user_id' => $user->id,
+        ], 200);
+    }
+
+    public function listAdmins(Request $request)
+    {
+        $admin = $request->user();
+
+        if (! $admin || $admin->role !== 'admin') {
+            return response()->json([
+                'message' => 'Unauthorized: Only administrators can access this endpoint.',
+            ], 403);
+        }
+
+        $admins = User::query()
+            ->select(['id', 'full_name', 'email', 'status', 'role'])
+            ->where('role', 'admin')
+            ->orderBy('id')
+            ->get();
+
+        return response()->json([
+            'message' => 'Admins retrieved successfully',
+            'admins' => $admins,
+        ], 200);
+    }
+
+    public function deleteUniversity(Request $request, string $id)
+    {
+        $admin = $request->user();
+
+        if (! $admin || $admin->role !== 'admin') {
+            return response()->json([
+                'message' => 'Unauthorized: Only administrators can access this endpoint.',
+            ], 403);
+        }
+
+        $university = University::find($id);
+
+        if (! $university) {
+            return response()->json([
+                'message' => 'University not found.',
+            ], 404);
+        }
+
+        $hasDormitories = Dormitory::query()
+            ->where('university_id', $university->id)
+            ->exists();
+
+        if ($hasDormitories) {
+            return response()->json([
+                'message' => 'Cannot delete university with existing dormitories.',
+            ], 409);
+        }
+
+        $university->delete();
+
+        return response()->json([
+            'message' => 'University deleted successfully',
+            'deleted_id' => (int) $id,
+        ], 200);
+    }
+
+    public function listAllDormitories(Request $request)
+    {
+        $admin = $request->user();
+
+        if (! $admin || $admin->role !== 'admin') {
+            return response()->json([
+                'message' => 'Unauthorized: Only administrators can access this endpoint.',
+            ], 403);
+        }
+
+        $rows = Dormitory::query()
+            ->leftJoin('users', 'users.dormitory_id', '=', 'dormitories.id')
+            ->leftJoin('universities', 'dormitories.university_id', '=', 'universities.id')
+            ->select([
+                'dormitories.id',
+                'dormitories.dormitory_name',
+                'dormitories.longitude',
+                'dormitories.latitude',
+                'dormitories.address',
+                'dormitories.full_capacity',
+                'dormitories.created_at',
+                'universities.id as university_id',
+                'universities.name as university_name',
+                DB::raw('COUNT(DISTINCT users.id) as users_count'),
+            ])
+            ->groupBy([
+                'dormitories.id',
+                'dormitories.dormitory_name',
+                'dormitories.longitude',
+                'dormitories.latitude',
+                'dormitories.address',
+                'dormitories.full_capacity',
+                'dormitories.created_at',
+                'universities.id',
+                'universities.name',
+            ])
+            ->orderBy('dormitories.id')
+            ->get()
+            ->map(function ($row) {
+                return [
+                    'id' => $row->id,
+                    'name' => $row->dormitory_name,
+                    'longitude' => $row->longitude,
+                    'latitude' => $row->latitude,
+                    'address' => $row->address,
+                    'users_count' => (int) $row->users_count,
+                    'full_capacity' => $row->full_capacity,
+                    'created_at' => $row->created_at ? $row->created_at->format('Y.m.d') : null,
+                    'university_id' => $row->university_id,
+                    'university_name' => $row->university_name,
+                ];
+            });
+
+        return response()->json([
+            'message' => 'Dormitories retrieved successfully',
+            'dormitories' => $rows,
         ], 200);
     }
 }
