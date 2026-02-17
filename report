@@ -467,6 +467,34 @@ Admin
      }
    - Response 403: {"message":"Unauthorized: Only administrators can access this endpoint."}
 
+34d)  
+   - Auth: token_auth (Sanctum token), role=admin
+   - Response 200:
+     {
+       "message":"Dormitory retrieved successfully",
+       "dormitory":{
+         "id":...,
+         "name":"...",
+         "domain":"...",
+         "longitude":...,
+         "latitude":...,
+         "address":"...",
+         "users_count":...,
+         "residents":...,
+         "description":"...",
+         "full_capacity":...,
+         "created_at":"YYYY.MM.DD",
+         "university_id":...,
+         "university_name":"..."
+       },
+       "recent_listings":[
+         {"id":...,"name":"...","uploader_name":"...","created_at":"YYYY.MM.DD"},
+         ...
+       ],
+       "categories":[{"id":...,"name":"...","product_count":...}]
+     }
+   - Response 404: {"message":"Dormitory not found."}
+   - Response 403: {"message":"Unauthorized: Only administrators can access this endpoint."}
 35) POST /api/admin/categories
    - Auth: token_auth (Sanctum token)
    - Request body:

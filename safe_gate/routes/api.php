@@ -49,6 +49,7 @@ Route::prefix('admin')->group(function () {
     Route::middleware('token_auth')->get('/universities/{id}', [AdminController::class, 'showUniversity']);
     Route::middleware('token_auth')->delete('/universities/{id}', [AdminController::class, 'deleteUniversity']);
     Route::middleware('token_auth')->get('/dormitories', [AdminController::class, 'listAllDormitories']);
+    Route::middleware('token_auth')->get('/dormitories/{id}', [AdminController::class, 'showDormitory']);
     Route::get('/universities', [AdminController::class, 'listUniversities']);
     Route::get('/universities/{university_name}/dormitories', [AdminController::class, 'listDormitoriesByUniversity']);
     Route::middleware('token_auth')->get('/dormitories_and_university_/names', [AdminController::class, 'listDormitoryUniversityNames']);

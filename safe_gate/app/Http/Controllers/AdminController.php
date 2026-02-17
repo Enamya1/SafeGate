@@ -1329,4 +1329,112 @@ class AdminController extends Controller
             'dormitories' => $rows,
         ], 200);
     }
+
+    public function showDormitory(Request $request, string $id)
+    {
+        $admin = $request->user();
+
+        if (! $admin || $admin->role !== 'admin') {
+            return response()->json([
+                'message' => 'Unauthorized: Only administrators can access this endpoint.',
+            ], 403);
+        }
+
+        $row = Dormitory::query()
+            ->leftJoin('users', 'users.dormitory_id', '=', 'dormitories.id')
+            ->leftJoin('universities', 'dormitories.university_id', '=', 'universities.id')
+            ->where('dormitories.id', $id)
+            ->select([
+                'dormitories.id',
+                'dormitories.dormitory_name',
+                'dormitories.domain',
+                'dormitories.longitude',
+                'dormitories.latitude',
+                'dormitories.address',
+                'dormitories.description',
+                'dormitories.full_capacity',
+                'dormitories.created_at',
+                'universities.id as university_id',
+                'universities.name as university_name',
+                DB::raw('COUNT(DISTINCT users.id) as users_count'),
+            ])
+            ->groupBy([
+                'dormitories.id',
+                'dormitories.dormitory_name',
+                'dormitories.domain',
+                'dormitories.longitude',
+                'dormitories.latitude',
+                'dormitories.address',
+                'dormitories.description',
+                'dormitories.full_capacity',
+                'dormitories.created_at',
+                'universities.id',
+                'universities.name',
+            ])
+            ->first();
+
+        if (! $row) {
+            return response()->json([
+                'message' => 'Dormitory not found.',
+            ], 404);
+        }
+
+        $payload = [
+            'id' => $row->id,
+            'name' => $row->dormitory_name,
+            'domain' => $row->domain,
+            'longitude' => $row->longitude,
+            'latitude' => $row->latitude,
+            'address' => $row->address,
+            'users_count' => (int) $row->users_count,
+            'residents' => (int) $row->users_count,
+            'description' => $row->description,
+            'full_capacity' => $row->full_capacity,
+            'created_at' => $row->created_at ? $row->created_at->format('Y.m.d') : null,
+            'university_id' => $row->university_id,
+            'university_name' => $row->university_name,
+        ];
+
+        $recentListings = Product::query()
+            ->join('users', 'products.seller_id', '=', 'users.id')
+            ->where('products.dormitory_id', $row->id)
+            ->whereNull('products.deleted_at')
+            ->orderByDesc('products.created_at')
+            ->limit(5)
+            ->select([
+                'products.id',
+                'products.title',
+                'users.full_name as uploader_name',
+                'products.created_at',
+            ])
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'id' => $item->id,
+                    'name' => $item->title,
+                    'uploader_name' => $item->uploader_name,
+                    'created_at' => $item->created_at ? $item->created_at->format('Y.m.d') : null,
+                ];
+            });
+
+        $categoryCounts = Category::query()
+            ->join('products', 'categories.id', '=', 'products.category_id')
+            ->where('products.dormitory_id', $row->id)
+            ->whereNull('products.deleted_at')
+            ->groupBy('categories.id', 'categories.name')
+            ->orderBy('categories.name')
+            ->select([
+                'categories.id',
+                'categories.name',
+                DB::raw('COUNT(products.id) as product_count'),
+            ])
+            ->get();
+
+        return response()->json([
+            'message' => 'Dormitory retrieved successfully',
+            'dormitory' => $payload,
+            'recent_listings' => $recentListings,
+            'categories' => $categoryCounts,
+        ], 200);
+    }
 }

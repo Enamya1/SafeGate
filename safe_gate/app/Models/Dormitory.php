@@ -14,6 +14,7 @@ class Dormitory extends Model
         'latitude',
         'longitude',
         'address',
+        'description',
         'full_capacity',
         'is_active',
         'university_id',
