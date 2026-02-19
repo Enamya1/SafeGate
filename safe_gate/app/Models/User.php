@@ -55,8 +55,18 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
+            'email_verified' => 'boolean',
             'password' => 'hashed',
         ];
+    }
+
+    protected static function booted()
+    {
+        static::saving(function (self $user) {
+            if (array_key_exists('email_verified_at', $user->getDirty())) {
+                $user->email_verified = $user->email_verified_at !== null;
+            }
+        });
     }
 
     public function dormitory()

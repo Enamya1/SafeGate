@@ -467,7 +467,7 @@ Admin
      }
    - Response 403: {"message":"Unauthorized: Only administrators can access this endpoint."}
 
-34d)  
+34d)  get /api/admin/dormitories/{id}
    - Auth: token_auth (Sanctum token), role=admin
    - Response 200:
      {
@@ -481,6 +481,9 @@ Admin
          "address":"...",
          "users_count":...,
          "residents":...,
+         "verified_users":...,
+         "unverified_users":...,
+         "total_users":...,
          "description":"...",
          "full_capacity":...,
          "created_at":"YYYY.MM.DD",
@@ -494,6 +497,26 @@ Admin
        "categories":[{"id":...,"name":"...","product_count":...}]
      }
    - Response 404: {"message":"Dormitory not found."}
+   - Response 403: {"message":"Unauthorized: Only administrators can access this endpoint."}
+34e) PATCH /api/admin/dormitories/{id}
+   - Auth: token_auth (Sanctum token), role=admin
+   - Request body:
+     - name (optional string, unique by dormitories.dormitory_name)
+     - domain (optional string, unique)
+     - latitude (optional nullable number float, -90 to 90)
+     - longitude (optional nullable number float, -180 to 180)
+     - address (optional nullable string)
+     - description (optional nullable string)
+   - Response 200: {"message":"Dormitory updated successfully","dormitory":{...}}
+   - Response 404: {"message":"Dormitory not found."}
+   - Response 422: {"message":"Validation Error","errors":{...}}
+   - Response 403: {"message":"Unauthorized: Only administrators can access this endpoint."}
+34f) DELETE /api/admin/dormitories/{id}
+   - Auth: token_auth (Sanctum token), role=admin
+   - Response 200: {"message":"Dormitory deleted successfully","deleted_id":...}
+   - Response 404: {"message":"Dormitory not found."}
+   - Response 409: {"message":"Cannot delete dormitory with existing users."}
+   - Response 409: {"message":"Cannot delete dormitory with existing products."}
    - Response 403: {"message":"Unauthorized: Only administrators can access this endpoint."}
 35) POST /api/admin/categories
    - Auth: token_auth (Sanctum token)

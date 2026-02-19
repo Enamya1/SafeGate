@@ -232,6 +232,53 @@ class AdminController extends Controller
         ], 201);
     }
 
+    public function updateDormitory(Request $request, string $id)
+    {
+        $admin = $request->user();
+
+        if (! $admin || $admin->role !== 'admin') {
+            return response()->json([
+                'message' => 'Unauthorized: Only administrators can access this endpoint.',
+            ], 403);
+        }
+
+        $dormitory = Dormitory::find($id);
+
+        if (! $dormitory) {
+            return response()->json([
+                'message' => 'Dormitory not found.',
+            ], 404);
+        }
+
+        try {
+            $validatedData = $request->validate([
+                'name' => 'sometimes|string|max:255|unique:dormitories,dormitory_name,'.$id,
+                'domain' => 'sometimes|string|max:255|unique:dormitories,domain,'.$id,
+                'latitude' => 'sometimes|nullable|numeric|between:-90,90',
+                'longitude' => 'sometimes|nullable|numeric|between:-180,180',
+                'address' => 'sometimes|nullable|string',
+                'description' => 'sometimes|nullable|string',
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation Error',
+                'errors' => $e->errors(),
+            ], 422);
+        }
+
+        if (array_key_exists('name', $validatedData)) {
+            $validatedData['dormitory_name'] = $validatedData['name'];
+            unset($validatedData['name']);
+        }
+
+        $dormitory->update($validatedData);
+
+        return response()->json([
+            'message' => 'Dormitory updated successfully',
+            'dormitory' => $dormitory,
+        ], 200);
+    }
+
     public function updateUniversity(Request $request, string $id)
     {
         $admin = $request->user();
@@ -1271,6 +1318,54 @@ class AdminController extends Controller
         ], 200);
     }
 
+    public function deleteDormitory(Request $request, string $id)
+    {
+        $admin = $request->user();
+
+        if (! $admin || $admin->role !== 'admin') {
+            return response()->json([
+                'message' => 'Unauthorized: Only administrators can access this endpoint.',
+            ], 403);
+        }
+
+        $dormitory = Dormitory::find($id);
+
+        if (! $dormitory) {
+            return response()->json([
+                'message' => 'Dormitory not found.',
+            ], 404);
+        }
+
+        $hasUsers = User::query()
+            ->where('dormitory_id', $dormitory->id)
+            ->whereNull('deleted_at')
+            ->exists();
+
+        if ($hasUsers) {
+            return response()->json([
+                'message' => 'Cannot delete dormitory with existing users.',
+            ], 409);
+        }
+
+        $hasProducts = Product::query()
+            ->where('dormitory_id', $dormitory->id)
+            ->whereNull('deleted_at')
+            ->exists();
+
+        if ($hasProducts) {
+            return response()->json([
+                'message' => 'Cannot delete dormitory with existing products.',
+            ], 409);
+        }
+
+        $dormitory->delete();
+
+        return response()->json([
+            'message' => 'Dormitory deleted successfully',
+            'deleted_id' => (int) $id,
+        ], 200);
+    }
+
     public function listAllDormitories(Request $request)
     {
         $admin = $request->user();
@@ -1379,6 +1474,20 @@ class AdminController extends Controller
             ], 404);
         }
 
+        $verifiedCount = User::query()
+            ->where('dormitory_id', $row->id)
+            ->where('email_verified', true)
+            ->whereNull('deleted_at')
+            ->count();
+
+        $unverifiedCount = User::query()
+            ->where('dormitory_id', $row->id)
+            ->where('email_verified', false)
+            ->whereNull('deleted_at')
+            ->count();
+
+        $totalCount = $verifiedCount + $unverifiedCount;
+
         $payload = [
             'id' => $row->id,
             'name' => $row->dormitory_name,
@@ -1386,13 +1495,16 @@ class AdminController extends Controller
             'longitude' => $row->longitude,
             'latitude' => $row->latitude,
             'address' => $row->address,
-            'users_count' => (int) $row->users_count,
+            'users_count' => $totalCount,
             'residents' => (int) $row->users_count,
             'description' => $row->description,
             'full_capacity' => $row->full_capacity,
             'created_at' => $row->created_at ? $row->created_at->format('Y.m.d') : null,
             'university_id' => $row->university_id,
             'university_name' => $row->university_name,
+            'verified_users' => $verifiedCount,
+            'unverified_users' => $unverifiedCount,
+            'total_users' => $totalCount,
         ];
 
         $recentListings = Product::query()
