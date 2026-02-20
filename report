@@ -285,12 +285,12 @@ User Products
 User Metadata
 21) GET /api/user/meta/options
    - Auth: auth:sanctum, role=user
-   - Response 200: {"message":"Metadata options retrieved successfully","categories":[...],"condition_levels":[...],"tags":[...]}
+   - Response 200: {"message":"Metadata options retrieved successfully","categories":[{"id":...,"name":"...","logo":"...","parent_id":...}],"condition_levels":[...],"tags":[...]}
    - Response 403: {"message":"Unauthorized: Only users can access this endpoint."}
 
 22) GET /api/user/meta/categories
    - Auth: auth:sanctum, role=user
-   - Response 200: {"message":"Categories retrieved successfully","categories":[...]}
+   - Response 200: {"message":"Categories retrieved successfully","categories":[{"id":...,"name":"...","logo":"...","parent_id":...}]}
    - Response 403: {"message":"Unauthorized: Only users can access this endpoint."}
 
 23) GET /api/user/meta/condition-levels
@@ -401,6 +401,11 @@ Admin
      - per_page (optional integer 1-100, default 10)
    - Response 200: {"message":"Universities retrieved successfully","universities":{pagination with data items containing id, name, address, created_at (YYYY-MM-DD), dormitories_count, users_count}}
 
+33a) GET /api/admin/universities/options
+   - Auth: token_auth (Sanctum token), role=admin
+   - Response 200: {"message":"University options retrieved successfully","universities":[{"id":...,"name":"..."}]}
+   - Response 403: {"message":"Unauthorized: Only administrators can access this endpoint."}
+
 33b) GET /api/admin/universities/{id}
    - Auth: token_auth (Sanctum token)
    - Response 200:
@@ -484,6 +489,7 @@ Admin
          "verified_users":...,
          "unverified_users":...,
          "total_users":...,
+       "top_category":"...",
          "description":"...",
          "full_capacity":...,
          "created_at":"YYYY.MM.DD",
@@ -522,6 +528,7 @@ Admin
    - Auth: token_auth (Sanctum token)
    - Request body:
      - name (required string)
+     - logo (nullable string)
      - parent_id (nullable integer, exists categories.id)
    - Response 201: {"message":"Category created successfully","category":{...}}
    - Response 422: {"message":"Validation Error","errors":{...}}

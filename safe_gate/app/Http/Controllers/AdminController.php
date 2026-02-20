@@ -476,6 +476,7 @@ class AdminController extends Controller
         try {
             $validatedData = $request->validate([
                 'name' => 'required|string|max:255',
+                'logo' => 'nullable|string|max:20',
                 'parent_id' => 'nullable|integer|exists:categories,id',
             ]);
         } catch (ValidationException $e) {
@@ -487,6 +488,7 @@ class AdminController extends Controller
 
         $category = Category::create([
             'name' => $validatedData['name'],
+            'logo' => $validatedData['logo'] ?? null,
             'parent_id' => $validatedData['parent_id'] ?? null,
         ]);
 
@@ -579,6 +581,27 @@ class AdminController extends Controller
         return response()->json([
             'message' => 'Universities retrieved successfully',
             'universities' => $paginator,
+        ], 200);
+    }
+
+    public function listUniversityOptions(Request $request)
+    {
+        $admin = $request->user();
+
+        if (! $admin || $admin->role !== 'admin') {
+            return response()->json([
+                'message' => 'Unauthorized: Only administrators can access this endpoint.',
+            ], 403);
+        }
+
+        $universities = University::query()
+            ->select(['id', 'name'])
+            ->orderBy('name')
+            ->get();
+
+        return response()->json([
+            'message' => 'University options retrieved successfully',
+            'universities' => $universities,
         ], 200);
     }
 
@@ -1541,6 +1564,14 @@ class AdminController extends Controller
                 DB::raw('COUNT(products.id) as product_count'),
             ])
             ->get();
+
+        $topCategory = $categoryCounts
+            ->sortByDesc(function ($item) {
+                return (int) $item->product_count;
+            })
+            ->first();
+
+        $payload['top_category'] = $topCategory ? $topCategory->name : null;
 
         return response()->json([
             'message' => 'Dormitory retrieved successfully',

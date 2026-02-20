@@ -45,14 +45,15 @@ Route::prefix('admin')->group(function () {
     Route::middleware('token_auth')->post('/logout', [AdminController::class, 'logout']);
     Route::post('/set_university', [AdminController::class, 'set_university']);
     Route::middleware('token_auth')->post('/set_dormitory', [AdminController::class, 'set_dormitory']);
-    Route::middleware('token_auth')->patch('/universities/{id}', [AdminController::class, 'updateUniversity']);
-    Route::middleware('token_auth')->get('/universities/{id}', [AdminController::class, 'showUniversity']);
-    Route::middleware('token_auth')->delete('/universities/{id}', [AdminController::class, 'deleteUniversity']);
+    Route::middleware('token_auth')->patch('/universities/{id}', [AdminController::class, 'updateUniversity'])->whereNumber('id');
+    Route::middleware('token_auth')->get('/universities/{id}', [AdminController::class, 'showUniversity'])->whereNumber('id');
+    Route::middleware('token_auth')->delete('/universities/{id}', [AdminController::class, 'deleteUniversity'])->whereNumber('id');
     Route::middleware('token_auth')->get('/dormitories', [AdminController::class, 'listAllDormitories']);
     Route::middleware('token_auth')->get('/dormitories/{id}', [AdminController::class, 'showDormitory']);
     Route::middleware('token_auth')->patch('/dormitories/{id}', [AdminController::class, 'updateDormitory']);
     Route::middleware('token_auth')->delete('/dormitories/{id}', [AdminController::class, 'deleteDormitory']);
     Route::get('/universities', [AdminController::class, 'listUniversities']);
+    Route::middleware('token_auth')->get('/universities/options', [AdminController::class, 'listUniversityOptions']);
     Route::get('/universities/{university_name}/dormitories', [AdminController::class, 'listDormitoriesByUniversity']);
     Route::middleware('token_auth')->get('/dormitories_and_university_/names', [AdminController::class, 'listDormitoryUniversityNames']);
     Route::middleware('token_auth')->post('/categories', [AdminController::class, 'createCategory']);

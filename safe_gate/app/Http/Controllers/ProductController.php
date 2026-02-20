@@ -70,7 +70,7 @@ class ProductController extends Controller
         }
 
         $categories = Category::query()
-            ->select(['id', 'name', 'parent_id'])
+            ->select(['id', 'name', 'logo', 'parent_id'])
             ->orderBy('id')
             ->get();
 
@@ -134,7 +134,7 @@ class ProductController extends Controller
         }
 
         $categories = Category::query()
-            ->select(['id', 'name', 'parent_id'])
+            ->select(['id', 'name', 'logo', 'parent_id'])
             ->orderBy('id')
             ->get();
 
@@ -860,6 +860,7 @@ class ProductController extends Controller
             'category' => [
                 'id' => $category->id,
                 'name' => $category->name,
+                'logo' => $category->logo,
                 'parent_id' => $category->parent_id,
             ],
             'products' => $payload,
