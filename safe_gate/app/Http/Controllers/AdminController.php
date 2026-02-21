@@ -476,6 +476,7 @@ class AdminController extends Controller
         try {
             $validatedData = $request->validate([
                 'name' => 'required|string|max:255',
+                'description' => 'nullable|string',
                 'logo' => 'nullable|string|max:20',
                 'parent_id' => 'nullable|integer|exists:categories,id',
             ]);
@@ -488,6 +489,7 @@ class AdminController extends Controller
 
         $category = Category::create([
             'name' => $validatedData['name'],
+            'description' => $validatedData['description'] ?? null,
             'logo' => $validatedData['logo'] ?? null,
             'parent_id' => $validatedData['parent_id'] ?? null,
         ]);
@@ -496,6 +498,44 @@ class AdminController extends Controller
             'message' => 'Category created successfully',
             'category' => $category,
         ], 201);
+    }
+
+    public function listCategories(Request $request)
+    {
+        $admin = $request->user();
+
+        if (! $admin || $admin->role !== 'admin') {
+            return response()->json([
+                'message' => 'Unauthorized: Only administrators can access this endpoint.',
+            ], 403);
+        }
+
+        $categories = Category::query()
+            ->leftJoin('products', function ($join) {
+                $join->on('categories.id', '=', 'products.category_id')
+                    ->whereNull('products.deleted_at');
+            })
+            ->groupBy('categories.id', 'categories.name', 'categories.description', 'categories.logo', 'categories.parent_id')
+            ->orderBy('categories.id')
+            ->select([
+                'categories.id',
+                'categories.name',
+                'categories.description',
+                'categories.logo',
+                'categories.parent_id',
+                DB::raw('COUNT(products.id) as product_count'),
+            ])
+            ->get();
+
+        $totalCategories = $categories->count();
+        $totalProducts = Product::query()->whereNull('deleted_at')->count();
+
+        return response()->json([
+            'message' => 'Categories retrieved successfully',
+            'total_categories' => $totalCategories,
+            'total_products' => $totalProducts,
+            'categories' => $categories,
+        ], 200);
     }
 
     public function createConditionLevel(Request $request)
@@ -512,7 +552,7 @@ class AdminController extends Controller
             $validatedData = $request->validate([
                 'name' => 'required|string|max:255|unique:condition_levels,name',
                 'description' => 'nullable|string',
-                'sort_order' => 'nullable|integer|min:0',
+                'level' => 'nullable|integer|min:0|max:10',
             ]);
         } catch (ValidationException $e) {
             return response()->json([
@@ -524,13 +564,47 @@ class AdminController extends Controller
         $conditionLevel = ConditionLevel::create([
             'name' => $validatedData['name'],
             'description' => $validatedData['description'] ?? null,
-            'sort_order' => $validatedData['sort_order'] ?? 0,
+            'level' => $validatedData['level'] ?? 0,
         ]);
 
         return response()->json([
             'message' => 'Condition level created successfully',
             'condition_level' => $conditionLevel,
         ], 201);
+    }
+
+    public function listConditionLevels(Request $request)
+    {
+        $admin = $request->user();
+
+        if (! $admin || $admin->role !== 'admin') {
+            return response()->json([
+                'message' => 'Unauthorized: Only administrators can access this endpoint.',
+            ], 403);
+        }
+
+        $conditionLevels = ConditionLevel::query()
+            ->select(['id', 'name', 'description', 'level', 'created_at'])
+            ->orderBy('level')
+            ->orderBy('id')
+            ->get()
+            ->map(function ($conditionLevel) {
+                return [
+                    'id' => $conditionLevel->id,
+                    'name' => $conditionLevel->name,
+                    'description' => $conditionLevel->description,
+                    'level' => $conditionLevel->level,
+                    'created_at' => $conditionLevel->created_at
+                        ? $conditionLevel->created_at->format('Y.m.d')
+                        : null,
+                ];
+            })
+            ->values();
+
+        return response()->json([
+            'message' => 'Condition levels retrieved successfully',
+            'condition_levels' => $conditionLevels,
+        ], 200);
     }
 
     public function listUniversities(Request $request)
@@ -864,7 +938,7 @@ class AdminController extends Controller
             ->first();
 
         $conditionLevel = ConditionLevel::query()
-            ->select(['id', 'name', 'description', 'sort_order'])
+            ->select(['id', 'name', 'description', 'sort_order', 'level'])
             ->whereKey($product->condition_level_id)
             ->first();
 

@@ -10,5 +10,6 @@ class ConditionLevel extends Model
         'name',
         'description',
         'sort_order',
+        'level',
     ];
 }

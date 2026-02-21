@@ -70,7 +70,7 @@ class ProductController extends Controller
         }
 
         $categories = Category::query()
-            ->select(['id', 'name', 'logo', 'parent_id'])
+            ->select(['id', 'name', 'description', 'logo', 'parent_id'])
             ->orderBy('id')
             ->get();
 
@@ -91,7 +91,7 @@ class ProductController extends Controller
         }
 
         $conditionLevels = ConditionLevel::query()
-            ->select(['id', 'name', 'description', 'sort_order'])
+            ->select(['id', 'name', 'description', 'sort_order', 'level'])
             ->orderBy('sort_order')
             ->orderBy('id')
             ->get();
@@ -134,12 +134,12 @@ class ProductController extends Controller
         }
 
         $categories = Category::query()
-            ->select(['id', 'name', 'logo', 'parent_id'])
+            ->select(['id', 'name', 'description', 'logo', 'parent_id'])
             ->orderBy('id')
             ->get();
 
         $conditionLevels = ConditionLevel::query()
-            ->select(['id', 'name', 'description', 'sort_order'])
+            ->select(['id', 'name', 'description', 'sort_order', 'level'])
             ->orderBy('sort_order')
             ->orderBy('id')
             ->get();
@@ -394,7 +394,7 @@ class ProductController extends Controller
 
         if (count($categoryIds) > 0) {
             $categoriesById = Category::query()
-                ->select(['id', 'name', 'parent_id'])
+                ->select(['id', 'name', 'description', 'parent_id'])
                 ->whereIn('id', $categoryIds)
                 ->get()
                 ->keyBy('id');
@@ -402,7 +402,7 @@ class ProductController extends Controller
 
         if (count($conditionLevelIds) > 0) {
             $conditionLevelsById = ConditionLevel::query()
-                ->select(['id', 'name', 'description', 'sort_order'])
+                ->select(['id', 'name', 'description', 'sort_order', 'level'])
                 ->whereIn('id', $conditionLevelIds)
                 ->get()
                 ->keyBy('id');
@@ -491,7 +491,7 @@ class ProductController extends Controller
             ->first();
 
         $conditionLevel = ConditionLevel::query()
-            ->select(['id', 'name', 'description', 'sort_order'])
+            ->select(['id', 'name', 'description', 'sort_order', 'level'])
             ->whereKey($product->condition_level_id)
             ->first();
 
@@ -860,6 +860,7 @@ class ProductController extends Controller
             'category' => [
                 'id' => $category->id,
                 'name' => $category->name,
+                'description' => $category->description,
                 'logo' => $category->logo,
                 'parent_id' => $category->parent_id,
             ],

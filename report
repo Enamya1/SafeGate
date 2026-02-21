@@ -284,18 +284,18 @@ User Products
 
 User Metadata
 21) GET /api/user/meta/options
-   - Auth: auth:sanctum, role=user
-   - Response 200: {"message":"Metadata options retrieved successfully","categories":[{"id":...,"name":"...","logo":"...","parent_id":...}],"condition_levels":[...],"tags":[...]}
+  - Auth: auth:sanctum, role=user
+  - Response 200: {"message":"Metadata options retrieved successfully","categories":[{"id":...,"name":"...","description":"...","logo":"...","parent_id":...}],"condition_levels":[{"id":...,"name":"...","description":"...","sort_order":...,"level":...}],"tags":[...]}
    - Response 403: {"message":"Unauthorized: Only users can access this endpoint."}
 
 22) GET /api/user/meta/categories
-   - Auth: auth:sanctum, role=user
-   - Response 200: {"message":"Categories retrieved successfully","categories":[{"id":...,"name":"...","logo":"...","parent_id":...}]}
+  - Auth: auth:sanctum, role=user
+  - Response 200: {"message":"Categories retrieved successfully","categories":[{"id":...,"name":"...","description":"...","logo":"...","parent_id":...}]}
    - Response 403: {"message":"Unauthorized: Only users can access this endpoint."}
 
 23) GET /api/user/meta/condition-levels
    - Auth: auth:sanctum, role=user
-   - Response 200: {"message":"Condition levels retrieved successfully","condition_levels":[...]}
+   - Response 200: {"message":"Condition levels retrieved successfully","condition_levels":[{"id":...,"name":"...","description":"...","sort_order":...,"level":...}]}
    - Response 403: {"message":"Unauthorized: Only users can access this endpoint."}
 
 24) GET /api/user/meta/tags
@@ -405,6 +405,7 @@ Admin
    - Auth: token_auth (Sanctum token), role=admin
    - Response 200: {"message":"University options retrieved successfully","universities":[{"id":...,"name":"..."}]}
    - Response 403: {"message":"Unauthorized: Only administrators can access this endpoint."}
+  - Notes: /api/admin/universities/{id} only matches numeric ids
 
 33b) GET /api/admin/universities/{id}
    - Auth: token_auth (Sanctum token)
@@ -528,21 +529,32 @@ Admin
    - Auth: token_auth (Sanctum token)
    - Request body:
      - name (required string)
-     - logo (nullable string)
+    - description (nullable string)
+    - logo (nullable string, emoji)
      - parent_id (nullable integer, exists categories.id)
    - Response 201: {"message":"Category created successfully","category":{...}}
    - Response 422: {"message":"Validation Error","errors":{...}}
    - Response 403: {"message":"Unauthorized: Only administrators can access this endpoint."}
+
+35a) GET /api/admin/categories
+  - Auth: token_auth (Sanctum token)
+  - Response 200: {"message":"Categories retrieved successfully","total_categories":...,"total_products":...,"categories":[{"id":...,"name":"...","description":"...","logo":"...","parent_id":...,"product_count":...}]}
+  - Response 403: {"message":"Unauthorized: Only administrators can access this endpoint."}
 
 36) POST /api/admin/condition-levels
    - Auth: token_auth (Sanctum token)
    - Request body:
      - name (required string, unique condition_levels.name)
      - description (nullable string)
-     - sort_order (nullable integer min 0)
-   - Response 201: {"message":"Condition level created successfully","condition_level":{...}}
+     - level (nullable integer min 0 max 10)
+   - Response 201: {"message":"Condition level created successfully","condition_level":{"id":...,"name":"...","description":"...","sort_order":...,"level":...}}
    - Response 422: {"message":"Validation Error","errors":{...}}
    - Response 403: {"message":"Unauthorized: Only administrators can access this endpoint."}
+
+36a) GET /api/admin/condition-levels
+  - Auth: token_auth (Sanctum token)
+  - Response 200: {"message":"Condition levels retrieved successfully","condition_levels":[{"id":...,"name":"...","description":"...","level":...,"created_at":"YYYY.MM.DD"}]}
+  - Response 403: {"message":"Unauthorized: Only administrators can access this endpoint."}
 
 37) GET /api/admin/get_all_users
    - Auth: token_auth (Sanctum token)

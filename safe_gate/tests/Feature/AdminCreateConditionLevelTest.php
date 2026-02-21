@@ -30,18 +30,18 @@ class AdminCreateConditionLevelTest extends TestCase
             ->postJson('/api/admin/condition-levels', [
                 'name' => 'Good',
                 'description' => 'Minor wear, fully functional.',
-                'sort_order' => 1,
+                'level' => 7,
             ]);
 
         $response
             ->assertStatus(201)
             ->assertJsonPath('message', 'Condition level created successfully')
             ->assertJsonPath('condition_level.name', 'Good')
-            ->assertJsonPath('condition_level.sort_order', 1);
+            ->assertJsonPath('condition_level.level', 7);
 
         $this->assertDatabaseHas('condition_levels', [
             'name' => 'Good',
-            'sort_order' => 1,
+            'level' => 7,
         ]);
     }
 }
