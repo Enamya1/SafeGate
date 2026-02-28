@@ -32,6 +32,7 @@ class User extends Authenticatable
         'timezone',
         'password',
         'dormitory_id',
+        'account_completed',
         'role',
         'status',
     ];
@@ -56,6 +57,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'email_verified' => 'boolean',
+            'account_completed' => 'boolean',
             'password' => 'hashed',
         ];
     }

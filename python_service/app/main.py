@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 
-from app.api.router import router as api_router
+from app.api.router import py_router, router as api_router
 
 app = FastAPI(title="SafeGate Python Service")
 
@@ -11,4 +11,4 @@ def health() -> dict:
 
 
 app.include_router(api_router, prefix="/api")
-
+app.include_router(py_router)

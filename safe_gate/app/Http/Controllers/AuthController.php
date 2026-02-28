@@ -32,6 +32,21 @@ class AuthController extends Controller
         return $this->publicDiskUrl($path);
     }
 
+    private function hasValue($value): bool
+    {
+        return $value !== null && $value !== '';
+    }
+
+    private function isAccountCompleted(User $user): bool
+    {
+        return $this->hasValue($user->phone_number)
+            && $this->hasValue($user->dormitory_id)
+            && $this->hasValue($user->student_id)
+            && $this->hasValue($user->date_of_birth)
+            && $this->hasValue($user->gender)
+            && $this->hasValue($user->language);
+    }
+
     public function signup(Request $request)
     {
         try {
@@ -58,6 +73,11 @@ class AuthController extends Controller
             'password' => Hash::make($validatedData['password']),
             'dormitory_id' => data_get($validatedData, 'dormitory_id', null),
         ]);
+        $accountCompleted = $this->isAccountCompleted($user);
+        if ($user->account_completed !== $accountCompleted) {
+            $user->account_completed = $accountCompleted;
+            $user->save();
+        }
 
         return response()->json([
             'message' => 'User registered successfully',
@@ -94,6 +114,7 @@ class AuthController extends Controller
         }
 
         $user->last_login_at = now();
+        $user->account_completed = $this->isAccountCompleted($user);
         $user->save();
 
         $token = $user->createToken('auth_token')->plainTextToken;
@@ -102,6 +123,7 @@ class AuthController extends Controller
             'message' => 'Login successful',
             'access_token' => $token,
             'token_type' => 'Bearer',
+            'account_completed' => (bool) $user->account_completed,
         ]);
     }
 
@@ -136,6 +158,7 @@ class AuthController extends Controller
             }
 
             $user->fill($validatedData);
+            $user->account_completed = $this->isAccountCompleted($user);
             $user->save();
 
             return response()->json([
@@ -176,17 +199,6 @@ class AuthController extends Controller
             ->orderBy('name')
             ->get();
 
-        $selectedUniversityId = $validated['university_id'] ?? null;
-        $dormitories = collect();
-
-        if ($selectedUniversityId) {
-            $dormitories = Dormitory::query()
-                ->select(['id', 'dormitory_name', 'university_id', 'address', 'full_capacity', 'is_active'])
-                ->where('university_id', $selectedUniversityId)
-                ->orderBy('dormitory_name')
-                ->get();
-        }
-
         $currentDormitory = null;
         $currentUniversityId = null;
 
@@ -196,6 +208,17 @@ class AuthController extends Controller
                 ->whereKey($user->dormitory_id)
                 ->first();
             $currentUniversityId = $currentDormitory?->university_id;
+        }
+
+        $selectedUniversityId = $validated['university_id'] ?? $currentUniversityId;
+        $dormitories = collect();
+
+        if ($selectedUniversityId) {
+            $dormitories = Dormitory::query()
+                ->select(['id', 'dormitory_name', 'university_id', 'address', 'full_capacity', 'is_active'])
+                ->where('university_id', $selectedUniversityId)
+                ->orderBy('dormitory_name')
+                ->get();
         }
 
         return response()->json([

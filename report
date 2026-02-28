@@ -30,7 +30,6 @@ User Authentication
      - email (string email, required, unique users.email)
      - phone_number (string, nullable)
      - password (string, required, min 8)
-     - dormitory_id (integer, nullable, exists dormitories.id)
    - Response 201: {"message":"User registered successfully","user":{...}}
    - Response 422: {"message":"Validation Error","errors":{...}}
 
@@ -38,7 +37,7 @@ User Authentication
    - Request body:
      - email (string email, required)
      - password (string, required)
-   - Response 200: {"message":"Login successful","access_token":"<token>","token_type":"Bearer"}
+   - Response 200: {"message":"Login successful","access_token":"<token>","token_type":"Bearer","account_completed":true}
    - Response 401: {"message":"Invalid login details"}
    - Response 403: {"message":"Your account is deactivated. Please contact support."}
    - Response 422: {"message":"Validation Error","errors":{...}}
@@ -667,7 +666,7 @@ Python Service
    - Response 401: {"detail":{"message":"Unauthenticated."}} (when Laravel /api/user/me fails)
    - Response 502: {"detail":"Could not reach Laravel"}
 
-51) GET /api/recommendations/products
+51) GET /py/api/user/recommendations/products
    - Headers:
      - Authorization: Bearer <Laravel token> (required)
    - Query params:
@@ -689,7 +688,8 @@ Python Service
        "products":[...]
      }
    - Response 401: {"detail":"Missing Authorization header"}
-   - Response 401: {"detail":"Invalid user"}
+  - Response 401: {"detail":"Invalid user"}
+  - Response 403: {"detail":"Only users can access this endpoint"}
    - Response 503: {"detail":"Database unavailable"}
    - Response 503: {"detail":"Database '<name>' missing table: <table>. Check DB_* env or run Laravel migrations."}
    - Response 502: {"detail":"Could not reach Laravel"}

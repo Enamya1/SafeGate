@@ -13,6 +13,7 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.exc import ProgrammingError
 
 router = APIRouter()
+py_router = APIRouter()
 
 _engine: Optional[Engine] = None
 
@@ -34,7 +35,7 @@ def _get_db_engine() -> Engine:
 
     host = os.environ.get("DB_HOST", "127.0.0.1")
     port = _get_env_int("DB_PORT", 3306)
-    database = os.environ.get("DB_DATABASE", "safegate")
+    database = os.environ.get("DB_DATABASE", "suki_db")
     username = os.environ.get("DB_USERNAME", "root")
     password = os.environ.get("DB_PASSWORD", "")
 
@@ -105,6 +106,17 @@ def _parse_lat_lng_from_location(location: Any) -> Optional[Tuple[float, float]]
                 except Exception:
                     pass
 
+    return None
+
+
+def _parse_lat_lng(lat: Any, lng: Any, location: Any = None) -> Optional[Tuple[float, float]]:
+    if lat is not None and lng is not None:
+        try:
+            return float(lat), float(lng)
+        except Exception:
+            pass
+    if location is not None:
+        return _parse_lat_lng_from_location(location)
     return None
 
 
@@ -202,7 +214,7 @@ def hi(authorization: Optional[str] = Header(default=None)) -> dict:
     return {"message": f"hi {username}"}
 
 
-@router.get("/recommendations/products")
+@py_router.get("/py/api/user/recommendations/products")
 def recommend_products(
     authorization: Optional[str] = Header(default=None),
     page: int = Query(default=1, ge=1),
@@ -221,6 +233,9 @@ def recommend_products(
     user = me.get("user") if isinstance(me, dict) else None
     if not isinstance(user, dict) or not user.get("id"):
         raise HTTPException(status_code=401, detail="Invalid user")
+    role = user.get("role")
+    if role is not None and str(role).lower() != "user":
+        raise HTTPException(status_code=403, detail="Only users can access this endpoint")
 
     user_id = int(user["id"])
     buyer_dormitory_id = user.get("dormitory_id")
@@ -243,7 +258,7 @@ def recommend_products(
                 buyer_dorm = conn.execute(
                     text(
                         """
-                        SELECT id, dormitory_name, domain, location, is_active, university_id
+                        SELECT id, dormitory_name, domain, latitude, longitude, is_active, university_id
                         FROM dormitories
                         WHERE id = :id
                         LIMIT 1
@@ -256,7 +271,7 @@ def recommend_products(
                     table = _missing_table_name_from_programming_error(e) or "unknown"
                     raise HTTPException(
                         status_code=503,
-                        detail=f"Database '{os.environ.get('DB_DATABASE', 'safegate')}' missing table: {table}. Check DB_* env or run Laravel migrations.",
+                        detail=f"Database '{os.environ.get('DB_DATABASE', 'suki_db')}' missing table: {table}. Check DB_* env or run Laravel migrations.",
                     )
                 raise
             if buyer_dorm is not None:
@@ -281,6 +296,7 @@ def recommend_products(
                 events = []
             else:
                 raise
+        low_behavior = len(events) < 5
 
         last_event_id = 0
         last_event_at: Optional[str] = None
@@ -379,7 +395,8 @@ def recommend_products(
                 p.id, p.seller_id, p.dormitory_id, p.category_id, p.condition_level_id,
                 p.title, p.price, p.status, p.created_at,
                 d.id AS dormitory__id, d.dormitory_name AS dormitory__dormitory_name,
-                d.location AS dormitory__location, d.university_id AS dormitory__university_id,
+                d.latitude AS dormitory__latitude, d.longitude AS dormitory__longitude,
+                d.university_id AS dormitory__university_id,
                 u.id AS seller__id, u.username AS seller__username, u.profile_picture AS seller__profile_picture,
                 CASE WHEN pl.id IS NULL THEN 0 ELSE 1 END AS is_promoted
             FROM products p
@@ -435,7 +452,7 @@ def recommend_products(
                 table = _missing_table_name_from_programming_error(e) or "unknown"
                 raise HTTPException(
                     status_code=503,
-                    detail=f"Database '{os.environ.get('DB_DATABASE', 'safegate')}' missing table: {table}. Check DB_* env or run Laravel migrations.",
+                    detail=f"Database '{os.environ.get('DB_DATABASE', 'suki_db')}' missing table: {table}. Check DB_* env or run Laravel migrations.",
                 )
             raise
 
@@ -450,7 +467,7 @@ def recommend_products(
                     table = _missing_table_name_from_programming_error(e) or "unknown"
                     raise HTTPException(
                         status_code=503,
-                        detail=f"Database '{os.environ.get('DB_DATABASE', 'safegate')}' missing table: {table}. Check DB_* env or run Laravel migrations.",
+                        detail=f"Database '{os.environ.get('DB_DATABASE', 'suki_db')}' missing table: {table}. Check DB_* env or run Laravel migrations.",
                     )
                 raise
             known = {int(r["id"]) for r in rows}
@@ -462,7 +479,11 @@ def recommend_products(
                 if len(rows) >= 600:
                     break
 
-        buyer_coords = _parse_lat_lng_from_location(buyer_dorm.get("location") if buyer_dorm else None)
+        buyer_coords = _parse_lat_lng(
+            buyer_dorm.get("latitude") if buyer_dorm else None,
+            buyer_dorm.get("longitude") if buyer_dorm else None,
+            buyer_dorm.get("location") if buyer_dorm else None,
+        )
 
         scored: List[Tuple[float, Dict[str, Any]]] = []
         for r in rows:
@@ -504,7 +525,11 @@ def recommend_products(
                     if buyer_university_id is not None and uni == buyer_university_id:
                         score += 20.0
 
-            product_coords = _parse_lat_lng_from_location(r.get("dormitory__location"))
+            product_coords = _parse_lat_lng(
+                r.get("dormitory__latitude"),
+                r.get("dormitory__longitude"),
+                r.get("dormitory__location"),
+            )
             distance_km: Optional[float] = None
             if buyer_coords is not None and product_coords is not None:
                 distance_km = _haversine_km(buyer_coords, product_coords)
@@ -514,8 +539,37 @@ def recommend_products(
             r_dict["_distance_km"] = distance_km
             scored.append((score, r_dict))
 
-        scored.sort(key=lambda x: (x[0], x[1].get("created_at") or ""), reverse=True)
-        ranked = [r for _, r in scored]
+        if low_behavior:
+            def _local_rank_key(item: Tuple[float, Dict[str, Any]]) -> Tuple[int, float, float]:
+                r = item[1]
+                priority = 2
+                if buyer_dormitory_id is not None and int(r.get("dormitory_id") or 0) == buyer_dormitory_id:
+                    priority = 0
+                else:
+                    uni = r.get("dormitory__university_id")
+                    uni = int(uni) if uni is not None else None
+                    if buyer_university_id is not None and uni == buyer_university_id:
+                        priority = 1
+
+                distance = r.get("_distance_km")
+                distance_sort = float(distance) if distance is not None else 1.0e9
+
+                created_at = r.get("created_at")
+                created_ts = 0.0
+                if isinstance(created_at, str):
+                    try:
+                        created_at = datetime.fromisoformat(created_at.replace("Z", "+00:00")).replace(tzinfo=None)
+                    except Exception:
+                        created_at = None
+                if isinstance(created_at, datetime):
+                    created_ts = created_at.timestamp()
+
+                return priority, distance_sort, -created_ts
+
+            ranked = [r for _, r in sorted(scored, key=_local_rank_key)]
+        else:
+            scored.sort(key=lambda x: (x[0], x[1].get("created_at") or ""), reverse=True)
+            ranked = [r for _, r in scored]
 
         deterministic_count = max(0, page_size - random_count)
         start = (page - 1) * deterministic_count if deterministic_count > 0 else 0
