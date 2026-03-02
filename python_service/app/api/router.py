@@ -394,14 +394,18 @@ def recommend_products(
             SELECT
                 p.id, p.seller_id, p.dormitory_id, p.category_id, p.condition_level_id,
                 p.title, p.price, p.status, p.created_at,
-                d.id AS dormitory__id, d.dormitory_name AS dormitory__dormitory_name,
-                d.latitude AS dormitory__latitude, d.longitude AS dormitory__longitude,
-                d.university_id AS dormitory__university_id,
+                COALESCE(d_user.latitude, d_product.latitude) AS dormitory__latitude,
+                COALESCE(d_user.longitude, d_product.longitude) AS dormitory__longitude,
+                COALESCE(d_user.university_id, d_product.university_id) AS dormitory__university_id,
+                cl.id AS condition_level__id, cl.name AS condition_level__name,
+                cl.level AS condition_level__level,
                 u.id AS seller__id, u.username AS seller__username, u.profile_picture AS seller__profile_picture,
                 CASE WHEN pl.id IS NULL THEN 0 ELSE 1 END AS is_promoted
             FROM products p
-            JOIN dormitories d ON d.id = p.dormitory_id
             JOIN users u ON u.id = p.seller_id
+            LEFT JOIN dormitories d_user ON d_user.id = u.dormitory_id
+            LEFT JOIN dormitories d_product ON d_product.id = p.dormitory_id
+            LEFT JOIN condition_levels cl ON cl.id = p.condition_level_id
             LEFT JOIN promoted_listings pl ON pl.product_id = p.id AND pl.promoted_until > NOW()
             WHERE p.status = 'available' AND p.deleted_at IS NULL
         """
@@ -433,7 +437,7 @@ def recommend_products(
                 or_parts.append("p.dormitory_id = :buyer_dormitory_id")
                 params["buyer_dormitory_id"] = buyer_dormitory_id
             if buyer_university_id is not None:
-                or_parts.append("d.university_id = :buyer_university_id")
+                or_parts.append("COALESCE(d_user.university_id, d_product.university_id) = :buyer_university_id")
                 params["buyer_university_id"] = buyer_university_id
 
             where_parts.append("(" + " OR ".join(or_parts) + " OR pl.id IS NOT NULL" + ")")
@@ -656,15 +660,18 @@ def recommend_products(
             "condition_level_id": p.get("condition_level_id"),
             "is_promoted": int(p.get("is_promoted") or 0),
             "dormitory": {
-                "id": p.get("dormitory__id"),
-                "dormitory_name": p.get("dormitory__dormitory_name"),
-                "university_id": p.get("dormitory__university_id"),
+                "latitude": p.get("dormitory__latitude"),
+                "longitude": p.get("dormitory__longitude"),
+            },
+            "condition_level": {
+                "id": p.get("condition_level__id"),
+                "name": p.get("condition_level__name"),
+                "level": p.get("condition_level__level"),
             },
             "image_thumbnail_url": image_thumbnail_url,
             "tags": [
                 {"id": t.get("id"), "name": t.get("name")} for t in tag_rows_by_product.get(pid, [])
             ],
-            "distance_km": p.get("_distance_km"),
         }
         payload_products.append(prod)
 
