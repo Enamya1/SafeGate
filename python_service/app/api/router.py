@@ -652,6 +652,7 @@ def recommend_products(
             first = imgs[0]
             image_thumbnail_url = first.get("image_thumbnail_url")
         prod: Dict[str, Any] = {
+            "id": pid,
             "title": p.get("title"),
             "price": float(p["price"]) if p.get("price") is not None else None,
             "status": p.get("status"),
@@ -880,6 +881,7 @@ def similar_products(
             first = imgs[0]
             image_thumbnail_url = first.get("image_thumbnail_url")
         prod: Dict[str, Any] = {
+            "id": pid,
             "title": p.get("title"),
             "price": float(p["price"]) if p.get("price") is not None else None,
             "status": p.get("status"),

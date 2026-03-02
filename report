@@ -734,6 +734,7 @@ Python Service
       "total_pages":1,
       "products":[
         {
+          "id":...,
           "title":"...",
           "price":...,
           "status":"...",
