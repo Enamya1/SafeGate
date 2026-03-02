@@ -715,3 +715,50 @@ Python Service
    - Response 503: {"detail":"Database unavailable"}
    - Response 503: {"detail":"Database '<name>' missing table: <table>. Check DB_* env or run Laravel migrations."}
    - Response 502: {"detail":"Could not reach Laravel"}
+
+52) GET /py/api/user/products/{product_id}/similar
+  - Headers:
+    - Authorization: Bearer <Laravel token> (required)
+  - Path params:
+    - product_id (required integer)
+  - Query params:
+    - page (default 1, min 1)
+    - page_size (default 10, min 1, max 50)
+  - Response 200:
+    {
+      "message":"Similar products retrieved successfully",
+      "product_id":1,
+      "page":1,
+      "page_size":10,
+      "total":0,
+      "total_pages":1,
+      "products":[
+        {
+          "title":"...",
+          "price":...,
+          "status":"...",
+          "created_at":"...",
+          "category_id":...,
+          "condition_level_id":...,
+          "is_promoted":0,
+          "dormitory":{
+            "latitude":...,
+            "longitude":...
+          },
+          "condition_level":{
+            "id":...,
+            "name":"...",
+            "level":...
+          },
+          "image_thumbnail_url":"...",
+          "tags":[{"id":...,"name":"..."}]
+        }
+      ]
+    }
+  - Response 401: {"detail":"Missing Authorization header"}
+  - Response 401: {"detail":"Invalid user"}
+  - Response 403: {"detail":"Only users can access this endpoint"}
+  - Response 404: {"detail":"Product not found"}
+  - Response 503: {"detail":"Database unavailable"}
+  - Response 503: {"detail":"Database '<name>' missing table: <table>. Check DB_* env or run Laravel migrations."}
+  - Response 502: {"detail":"Could not reach Laravel"}

@@ -686,3 +686,229 @@ def recommend_products(
         "last_product_at": last_product_at,
         "products": payload_products[:page_size],
     }
+
+
+@py_router.get("/py/api/user/products/{product_id}/similar")
+def similar_products(
+    product_id: int,
+    authorization: Optional[str] = Header(default=None),
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=10, ge=1, le=50),
+) -> dict:
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Missing Authorization header")
+
+    me = _laravel_get_json(authorization, "/api/user/me")
+    user = me.get("user") if isinstance(me, dict) else None
+    if not isinstance(user, dict) or not user.get("id"):
+        raise HTTPException(status_code=401, detail="Invalid user")
+    role = user.get("role")
+    if role is not None and str(role).lower() != "user":
+        raise HTTPException(status_code=403, detail="Only users can access this endpoint")
+
+    engine = _get_db_engine()
+
+    try:
+        conn = engine.connect()
+    except Exception:
+        raise HTTPException(status_code=503, detail="Database unavailable")
+
+    with conn:
+        try:
+            base_product = conn.execute(
+                text(
+                    """
+                    SELECT p.id, p.category_id, p.condition_level_id, p.dormitory_id, p.seller_id
+                    FROM products p
+                    WHERE p.id = :product_id AND p.deleted_at IS NULL
+                    LIMIT 1
+                    """
+                ),
+                {"product_id": product_id},
+            ).mappings().first()
+        except ProgrammingError as e:
+            if getattr(e.orig, "args", None) and len(e.orig.args) >= 1 and int(e.orig.args[0]) == 1146:
+                table = _missing_table_name_from_programming_error(e) or "unknown"
+                raise HTTPException(
+                    status_code=503,
+                    detail=f"Database '{os.environ.get('DB_DATABASE', 'suki_db')}' missing table: {table}. Check DB_* env or run Laravel migrations.",
+                )
+            raise
+
+        if not base_product:
+            raise HTTPException(status_code=404, detail="Product not found")
+
+        category_id = base_product.get("category_id")
+        condition_level_id = base_product.get("condition_level_id")
+        dormitory_id = base_product.get("dormitory_id")
+        seller_id = base_product.get("seller_id")
+
+        filters: List[str] = []
+        params: Dict[str, Any] = {"product_id": product_id}
+
+        if category_id is not None:
+            filters.append("p.category_id = :category_id")
+            params["category_id"] = category_id
+        if condition_level_id is not None:
+            filters.append("p.condition_level_id = :condition_level_id")
+            params["condition_level_id"] = condition_level_id
+        if dormitory_id is not None:
+            filters.append("p.dormitory_id = :dormitory_id")
+            params["dormitory_id"] = dormitory_id
+        if seller_id is not None:
+            filters.append("p.seller_id = :seller_id")
+            params["seller_id"] = seller_id
+
+        if not filters:
+            filters.append("1 = 1")
+
+        filter_sql = " OR ".join(filters)
+
+        try:
+            total_row = conn.execute(
+                text(
+                    f"""
+                    SELECT COUNT(*) AS total
+                    FROM products p
+                    WHERE p.status = 'available' AND p.deleted_at IS NULL
+                      AND p.id <> :product_id
+                      AND ({filter_sql})
+                    """
+                ),
+                params,
+            ).mappings().first()
+        except ProgrammingError as e:
+            if getattr(e.orig, "args", None) and len(e.orig.args) >= 1 and int(e.orig.args[0]) == 1146:
+                table = _missing_table_name_from_programming_error(e) or "unknown"
+                raise HTTPException(
+                    status_code=503,
+                    detail=f"Database '{os.environ.get('DB_DATABASE', 'suki_db')}' missing table: {table}. Check DB_* env or run Laravel migrations.",
+                )
+            raise
+
+        total = int(total_row.get("total") or 0) if total_row else 0
+        total_pages = max(1, math.ceil(total / page_size)) if page_size > 0 else 1
+        offset = (page - 1) * page_size
+
+        try:
+            rows = conn.execute(
+                text(
+                    f"""
+                    SELECT
+                        p.id, p.seller_id, p.dormitory_id, p.category_id, p.condition_level_id,
+                        p.title, p.price, p.status, p.created_at,
+                        COALESCE(d_user.latitude, d_product.latitude) AS dormitory__latitude,
+                        COALESCE(d_user.longitude, d_product.longitude) AS dormitory__longitude,
+                        cl.id AS condition_level__id, cl.name AS condition_level__name,
+                        cl.level AS condition_level__level,
+                        CASE WHEN pl.id IS NULL THEN 0 ELSE 1 END AS is_promoted
+                    FROM products p
+                    JOIN users u ON u.id = p.seller_id
+                    LEFT JOIN dormitories d_user ON d_user.id = u.dormitory_id
+                    LEFT JOIN dormitories d_product ON d_product.id = p.dormitory_id
+                    LEFT JOIN condition_levels cl ON cl.id = p.condition_level_id
+                    LEFT JOIN promoted_listings pl ON pl.product_id = p.id AND pl.promoted_until > NOW()
+                    WHERE p.status = 'available' AND p.deleted_at IS NULL
+                      AND p.id <> :product_id
+                      AND ({filter_sql})
+                    ORDER BY p.created_at DESC, p.id DESC
+                    LIMIT :limit OFFSET :offset
+                    """
+                ),
+                {**params, "limit": page_size, "offset": offset},
+            ).mappings().all()
+        except ProgrammingError as e:
+            if getattr(e.orig, "args", None) and len(e.orig.args) >= 1 and int(e.orig.args[0]) == 1146:
+                table = _missing_table_name_from_programming_error(e) or "unknown"
+                raise HTTPException(
+                    status_code=503,
+                    detail=f"Database '{os.environ.get('DB_DATABASE', 'suki_db')}' missing table: {table}. Check DB_* env or run Laravel migrations.",
+                )
+            raise
+
+        product_ids = [int(r["id"]) for r in rows]
+        images = []
+        tags = []
+        if product_ids:
+            placeholders = ", ".join([f":pid_{i}" for i in range(len(product_ids))])
+            pid_params = {f"pid_{i}": v for i, v in enumerate(product_ids)}
+
+            try:
+                images = conn.execute(
+                    text(
+                        f"""
+                        SELECT product_id, image_url, image_thumbnail_url, is_primary
+                        FROM product_images
+                        WHERE product_id IN ({placeholders})
+                        ORDER BY is_primary DESC, id ASC
+                        """
+                    ),
+                    pid_params,
+                ).mappings().all()
+            except ProgrammingError as e:
+                if not (getattr(e.orig, "args", None) and len(e.orig.args) >= 1 and int(e.orig.args[0]) == 1146):
+                    raise
+                images = []
+
+            try:
+                tags = conn.execute(
+                    text(
+                        f"""
+                        SELECT pt.product_id, t.id, t.name
+                        FROM product_tags pt
+                        JOIN tags t ON t.id = pt.tag_id
+                        WHERE pt.product_id IN ({placeholders})
+                        ORDER BY t.id ASC
+                        """
+                    ),
+                    pid_params,
+                ).mappings().all()
+            except ProgrammingError as e:
+                if not (getattr(e.orig, "args", None) and len(e.orig.args) >= 1 and int(e.orig.args[0]) == 1146):
+                    raise
+                tags = []
+
+    images_by_product = _group_by_key([dict(x) for x in images], "product_id")
+    tag_rows_by_product = _group_by_key([dict(x) for x in tags], "product_id")
+
+    payload_products = []
+    for p in rows:
+        pid = int(p["id"])
+        imgs = images_by_product.get(pid, [])
+        image_thumbnail_url = None
+        if imgs:
+            first = imgs[0]
+            image_thumbnail_url = first.get("image_thumbnail_url")
+        prod: Dict[str, Any] = {
+            "title": p.get("title"),
+            "price": float(p["price"]) if p.get("price") is not None else None,
+            "status": p.get("status"),
+            "created_at": p.get("created_at"),
+            "category_id": p.get("category_id"),
+            "condition_level_id": p.get("condition_level_id"),
+            "is_promoted": int(p.get("is_promoted") or 0),
+            "dormitory": {
+                "latitude": p.get("dormitory__latitude"),
+                "longitude": p.get("dormitory__longitude"),
+            },
+            "condition_level": {
+                "id": p.get("condition_level__id"),
+                "name": p.get("condition_level__name"),
+                "level": p.get("condition_level__level"),
+            },
+            "image_thumbnail_url": image_thumbnail_url,
+            "tags": [
+                {"id": t.get("id"), "name": t.get("name")} for t in tag_rows_by_product.get(pid, [])
+            ],
+        }
+        payload_products.append(prod)
+
+    return {
+        "message": "Similar products retrieved successfully",
+        "product_id": product_id,
+        "page": page,
+        "page_size": page_size,
+        "total": total,
+        "total_pages": total_pages,
+        "products": payload_products,
+    }
