@@ -170,6 +170,54 @@ User Products
    - Response 422: {"message":"Validation Error","errors":{...}}
    - Response 403: {"message":"Unauthorized: Only users can access this endpoint."}
 
+12a) GET /api/user/sellers/{seller_id}
+  - Auth: auth:sanctum, role=user
+  - Path params:
+    - seller_id (required integer)
+  - Query params:
+    - page (default 1, min 1)
+    - page_size (default 10, min 1, max 50)
+  - Response 200:
+    {
+      "message":"Seller profile retrieved successfully",
+      "seller":{
+        "id":1,
+        "name":"...",
+        "email_verified":true,
+        "member_since":"2026.03.02",
+        "dorm_name":"...",
+        "uni_name":"...",
+        "uni_address":"...",
+        "bio":"...",
+        "language":"...",
+        "timezone":"...",
+        "last_login":"2026-03-02 10:12:00",
+        "listed_products_count":3,
+        "average_condition_level":4.5
+      },
+      "page":1,
+      "page_size":10,
+      "total":3,
+      "total_pages":1,
+      "products":[
+        {
+          "id":1,
+          "name":"...",
+          "price":85,
+          "condition_name":"...",
+          "location":{
+            "dormitory_name":"...",
+            "latitude":38.970572,
+            "longitude":121.536352
+          }
+        }
+      ]
+    }
+  - Note: average_condition_level = (sum(condition_levels.level) / product_count) / 2
+  - Response 404: {"message":"Seller not found."}
+  - Response 422: {"message":"Validation Error","errors":{...}}
+  - Response 403: {"message":"Unauthorized: Only users can access this endpoint."}
+
 13) GET /api/user/products/{product_id}/edit
    - Auth: auth:sanctum, role=user
    - Path params:

@@ -11,7 +11,9 @@ use App\Models\ProductImage;
 use App\Models\ProductTag;
 use App\Models\Tag;
 use App\Models\User;
+use App\Models\University;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -543,6 +545,169 @@ class ProductController extends Controller
         return response()->json([
             'message' => 'Product retrieved successfully',
             'product' => $payload,
+        ], 200);
+    }
+
+    public function sellerProfile(Request $request, string $seller_id)
+    {
+        $user = $request->user();
+
+        if (($user->role ?? 'user') !== 'user') {
+            return response()->json([
+                'message' => 'Unauthorized: Only users can access this endpoint.',
+            ], 403);
+        }
+
+        $sellerId = trim($seller_id);
+
+        try {
+            $validated = validator([
+                'seller_id' => $sellerId,
+                'page' => $request->input('page'),
+                'page_size' => $request->input('page_size'),
+            ], [
+                'seller_id' => 'required|integer|min:1',
+                'page' => 'nullable|integer|min:1',
+                'page_size' => 'nullable|integer|min:1|max:50',
+            ])->validate();
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation Error',
+                'errors' => $e->errors(),
+            ], 422);
+        }
+
+        $seller = User::query()
+            ->select([
+                'id',
+                'full_name',
+                'email_verified',
+                'created_at',
+                'dormitory_id',
+                'bio',
+                'language',
+                'timezone',
+                'last_login_at',
+                'role',
+            ])
+            ->whereKey((int) $validated['seller_id'])
+            ->whereNull('deleted_at')
+            ->first();
+
+        if (! $seller || ($seller->role ?? 'user') !== 'user') {
+            return response()->json([
+                'message' => 'Seller not found.',
+            ], 404);
+        }
+
+        $page = (int) ($validated['page'] ?? 1);
+        $pageSize = (int) ($validated['page_size'] ?? 10);
+
+        $dormitory = null;
+        $university = null;
+
+        if ($seller->dormitory_id) {
+            $dormitory = Dormitory::query()
+                ->select(['id', 'dormitory_name', 'latitude', 'longitude', 'university_id'])
+                ->whereKey($seller->dormitory_id)
+                ->first();
+
+            if ($dormitory?->university_id) {
+                $university = University::query()
+                    ->select(['id', 'name', 'address'])
+                    ->whereKey($dormitory->university_id)
+                    ->first();
+            }
+        }
+
+        $listedCount = Product::query()
+            ->where('seller_id', $seller->id)
+            ->whereNull('deleted_at')
+            ->where('status', '!=', 'sold')
+            ->count();
+
+        $conditionStats = Product::query()
+            ->join('condition_levels', 'products.condition_level_id', '=', 'condition_levels.id')
+            ->where('products.seller_id', $seller->id)
+            ->whereNull('products.deleted_at')
+            ->select([
+                DB::raw('COUNT(products.id) as product_count'),
+                DB::raw('SUM(condition_levels.level) as level_sum'),
+            ])
+            ->first();
+
+        $averageConditionLevel = null;
+        $productCount = (int) ($conditionStats->product_count ?? 0);
+        $levelSum = $conditionStats->level_sum;
+        if ($productCount > 0 && $levelSum !== null) {
+            $averageConditionLevel = ($levelSum / $productCount) / 2;
+        }
+
+        $paginator = Product::query()
+            ->leftJoin('condition_levels', 'products.condition_level_id', '=', 'condition_levels.id')
+            ->leftJoin('dormitories', 'products.dormitory_id', '=', 'dormitories.id')
+            ->where('products.seller_id', $seller->id)
+            ->whereNull('products.deleted_at')
+            ->select([
+                'products.id',
+                'products.title',
+                'products.price',
+                'products.created_at',
+                'products.status',
+                'condition_levels.name as condition_name',
+                'dormitories.dormitory_name as dormitory_name',
+                'dormitories.latitude as dormitory_latitude',
+                'dormitories.longitude as dormitory_longitude',
+            ])
+            ->orderByDesc('products.id')
+            ->paginate($pageSize, ['*'], 'page', $page);
+
+        $products = $paginator->getCollection()
+            ->map(function ($row) {
+                return [
+                    'id' => $row->id,
+                    'name' => $row->title,
+                    'price' => $row->price !== null ? (float) $row->price : null,
+                    'condition_name' => $row->condition_name,
+                    'location' => [
+                        'dormitory_name' => $row->dormitory_name,
+                        'latitude' => $row->dormitory_latitude,
+                        'longitude' => $row->dormitory_longitude,
+                    ],
+                ];
+            })
+            ->values();
+
+        $lastLogin = $seller->last_login_at;
+        $lastLoginFormatted = null;
+        if ($lastLogin) {
+            $lastLoginFormatted = $lastLogin instanceof \DateTimeInterface
+                ? $lastLogin->format('Y-m-d H:i:s')
+                : Carbon::parse($lastLogin)->format('Y-m-d H:i:s');
+        }
+
+        return response()->json([
+            'message' => 'Seller profile retrieved successfully',
+            'seller' => [
+                'id' => $seller->id,
+                'name' => $seller->full_name,
+                'email_verified' => (bool) $seller->email_verified,
+                'member_since' => $seller->created_at ? $seller->created_at->format('Y.m.d') : null,
+                'dorm_name' => $dormitory?->dormitory_name,
+                'uni_name' => $university?->name,
+                'uni_address' => $university?->address,
+                'bio' => $seller->bio,
+                'language' => $seller->language,
+                'timezone' => $seller->timezone,
+                'last_login' => $lastLoginFormatted,
+                'listed_products_count' => $listedCount,
+                'average_condition_level' => $averageConditionLevel,
+            ],
+            'page' => $paginator->currentPage(),
+            'page_size' => $paginator->perPage(),
+            'total' => $paginator->total(),
+            'total_pages' => $paginator->lastPage(),
+            'products' => $products,
         ], 200);
     }
 
