@@ -581,6 +581,7 @@ class ProductController extends Controller
             ->select([
                 'id',
                 'full_name',
+                'profile_picture',
                 'email_verified',
                 'created_at',
                 'dormitory_id',
@@ -626,6 +627,12 @@ class ProductController extends Controller
             ->where('status', '!=', 'sold')
             ->count();
 
+        $salesCount = Product::query()
+            ->where('seller_id', $seller->id)
+            ->whereNull('deleted_at')
+            ->where('status', 'sold')
+            ->count();
+
         $conditionStats = Product::query()
             ->join('condition_levels', 'products.condition_level_id', '=', 'condition_levels.id')
             ->where('products.seller_id', $seller->id)
@@ -662,13 +669,32 @@ class ProductController extends Controller
             ->orderByDesc('products.id')
             ->paginate($pageSize, ['*'], 'page', $page);
 
-        $products = $paginator->getCollection()
-            ->map(function ($row) {
+        $productRows = $paginator->getCollection();
+        $productIds = $productRows->pluck('id')->all();
+        $imagesByProductId = [];
+
+        if (count($productIds) > 0) {
+            $imagesByProductId = ProductImage::query()
+                ->whereIn('product_id', $productIds)
+                ->orderByDesc('is_primary')
+                ->orderBy('id')
+                ->get()
+                ->groupBy('product_id')
+                ->all();
+        }
+
+        $products = $productRows
+            ->map(function ($row) use ($imagesByProductId) {
+                $images = $imagesByProductId[$row->id] ?? collect();
+                $primaryImage = $images->first();
+                $imageThumbnailUrl = $primaryImage?->image_thumbnail_url ?? $primaryImage?->image_url;
+
                 return [
                     'id' => $row->id,
                     'name' => $row->title,
                     'price' => $row->price !== null ? (float) $row->price : null,
                     'condition_name' => $row->condition_name,
+                    'image_thumbnail_url' => $imageThumbnailUrl,
                     'location' => [
                         'dormitory_name' => $row->dormitory_name,
                         'latitude' => $row->dormitory_latitude,
@@ -691,6 +717,7 @@ class ProductController extends Controller
             'seller' => [
                 'id' => $seller->id,
                 'name' => $seller->full_name,
+                'profile_picture' => $seller->profile_picture,
                 'email_verified' => (bool) $seller->email_verified,
                 'member_since' => $seller->created_at ? $seller->created_at->format('Y.m.d') : null,
                 'dorm_name' => $dormitory?->dormitory_name,
@@ -701,6 +728,7 @@ class ProductController extends Controller
                 'timezone' => $seller->timezone,
                 'last_login' => $lastLoginFormatted,
                 'listed_products_count' => $listedCount,
+                'sales_count' => $salesCount,
                 'average_condition_level' => $averageConditionLevel,
             ],
             'page' => $paginator->currentPage(),
