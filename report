@@ -293,14 +293,44 @@ User Products
      - conversation_id (required integer, exists conversations.id)
      - limit (optional integer 1-100, default 50)
      - before_id (optional integer; pagination for older messages)
+  - Side effect: marks unread messages in the conversation as read
+  - Note: message items do not include conversation_id
    - Response 200:
      {
        "message":"Messages retrieved successfully",
-       "conversation":{"id":...,"other_user":{"id":...,"username":"...","full_name":"...","profile_picture":"..."}},
-       "messages":[{"id":...,"sender_id":...,"sender_username":"...","message_text":"...","created_at":"..."}]
+      "conversation":{"id":...,"other_user":{"id":...,"username":"..."}},
+     "messages":[{"id":...,"sender_id":...,"sender_username":"...","message_text":"...","read_at":"...","created_at":"..."}]
      }
    - Response 403: {"message":"Unauthorized: You are not part of this conversation."}
    - Response 422: {"message":"Validation Error","errors":{...}}
+
+18c) GET /api/user/messages/notification
+  - Auth: auth:sanctum, role=user
+  - Query:
+    - limit (optional integer 1-100, default 20)
+  - Note: groups notifications by sender and type
+  - Response 200:
+    {
+      "message":"Unread messages retrieved successfully",
+      "total":2,
+      "messages":[{"id":...,"conversation_id":...,"sender_id":...,"sender_username":"...","sender_profile_picture":"...","product_id":...,"notification_type":"...","notification_text":"...","notification_count":2,"created_at":"..."}]
+    }
+  - Response 422: {"message":"Validation Error","errors":{...}}
+  - Response 403: {"message":"Unauthorized: Only users can access this endpoint."}
+
+18d) GET /api/user/messages/contacts
+  - Auth: auth:sanctum, role=user
+  - Description: returns users who have sent or received messages with the current user
+  - Query:
+    - limit (optional integer 1-100, default 20)
+  - Response 200:
+    {
+      "message":"Message contacts retrieved successfully",
+      "total":2,
+      "contacts":[{"conversation_id":...,"user":{"id":...,"username":"...","profile_picture":"..."},"last_message":{"id":...,"message_text":"...","created_at":"..."}}]
+    }
+  - Response 422: {"message":"Validation Error","errors":{...}}
+  - Response 403: {"message":"Unauthorized: Only users can access this endpoint."}
 
 19) POST /api/user/products/{product_id}/images
    - Auth: auth:sanctum, role=user (must be product seller)

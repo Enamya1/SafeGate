@@ -19,6 +19,8 @@ Route::middleware('auth:sanctum')->get('/user/settings/university-options', [Aut
 Route::middleware('auth:sanctum')->patch('/user/settings/university', [AuthController::class, 'updateUniversitySettings']);
 Route::middleware('auth:sanctum')->post('/user/messages', [AuthController::class, 'sendMessage']);
 Route::middleware('auth:sanctum')->get('/user/messages', [AuthController::class, 'myMessages']);
+Route::middleware('auth:sanctum')->get('/user/messages/notification', [AuthController::class, 'unreadMessages']);
+Route::middleware('auth:sanctum')->get('/user/messages/contacts', [AuthController::class, 'messageContacts']);
 Route::middleware('auth:sanctum')->post('/user/products', [ProductController::class, 'store']);
 Route::middleware('auth:sanctum')->get('/user/products', [ProductController::class, 'myProducts']);
 Route::middleware('auth:sanctum')->get('/user/products/cards', [ProductController::class, 'myProductCards']);

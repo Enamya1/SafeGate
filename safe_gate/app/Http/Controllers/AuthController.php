@@ -404,11 +404,8 @@ class AuthController extends Controller
             ->where('messages.conversation_id', (int) $conversation->id)
             ->select([
                 'messages.id',
-                'messages.conversation_id',
                 'messages.sender_id',
                 'users.username as sender_username',
-                'users.full_name as sender_full_name',
-                'users.profile_picture as sender_profile_picture',
                 'messages.message_text',
                 'messages.read_at',
                 'messages.created_at',
@@ -422,12 +419,35 @@ class AuthController extends Controller
 
         $messages = $messagesQuery->get()->reverse()->values();
 
+        $readAt = now();
+        $unreadIds = $messages
+            ->filter(fn ($message) => (int) $message->sender_id !== (int) $user->id && $message->read_at === null)
+            ->pluck('id')
+            ->values();
+
+        if ($unreadIds->isNotEmpty()) {
+            DB::table('messages')
+                ->whereIn('id', $unreadIds->all())
+                ->update([
+                    'read_at' => $readAt,
+                    'updated_at' => now(),
+                ]);
+
+            $messages = $messages->map(function ($message) use ($unreadIds, $readAt) {
+                if ($unreadIds->contains($message->id)) {
+                    $message->read_at = $readAt;
+                }
+
+                return $message;
+            })->values();
+        }
+
         $otherUserId = (int) $conversation->buyer_id === (int) $user->id
             ? (int) $conversation->seller_id
             : (int) $conversation->buyer_id;
 
         $otherUser = DB::table('users')
-            ->select(['id', 'username', 'full_name', 'profile_picture'])
+            ->select(['id', 'username'])
             ->where('id', $otherUserId)
             ->first();
 
@@ -438,6 +458,178 @@ class AuthController extends Controller
                 'other_user' => $otherUser,
             ],
             'messages' => $messages,
+        ], 200);
+    }
+
+    public function unreadMessages(Request $request)
+    {
+        $user = $request->user();
+
+        if (($user->role ?? 'user') !== 'user') {
+            return response()->json([
+                'message' => 'Unauthorized: Only users can access this endpoint.',
+            ], 403);
+        }
+
+        try {
+            $validated = $request->validate([
+                'limit' => 'nullable|integer|min:1|max:100',
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation Error',
+                'errors' => $e->errors(),
+            ], 422);
+        }
+
+        $limit = (int) ($validated['limit'] ?? 20);
+
+        $rawMessages = DB::table('messages')
+            ->join('conversations', 'messages.conversation_id', '=', 'conversations.id')
+            ->join('users', 'messages.sender_id', '=', 'users.id')
+            ->whereNull('messages.read_at')
+            ->where('messages.sender_id', '!=', (int) $user->id)
+            ->where(function ($query) use ($user) {
+                $query->where('conversations.buyer_id', (int) $user->id)
+                    ->orWhere('conversations.seller_id', (int) $user->id);
+            })
+            ->select([
+                'messages.id',
+                'messages.conversation_id',
+                'messages.sender_id',
+                'users.username as sender_username',
+                'users.profile_picture as sender_profile_picture',
+                'conversations.product_id',
+                'messages.created_at',
+            ])
+            ->orderByDesc('messages.id')
+            ->limit($limit)
+            ->get()
+            ->values();
+
+        $messages = $rawMessages
+            ->groupBy(function ($message) {
+                return $message->sender_id.'|'.($message->product_id ?? 'none');
+            })
+            ->map(function ($group) {
+                $latest = $group->first();
+                $count = $group->count();
+                $notificationType = $latest->product_id ? 'product_message_received' : 'message_received';
+                $notificationText = $latest->product_id
+                    ? ($count > 1
+                        ? "{$latest->sender_username} sent you {$count} messages about a product"
+                        : "{$latest->sender_username} sent you a message about a product")
+                    : ($count > 1
+                        ? "{$latest->sender_username} sent you {$count} messages"
+                        : "{$latest->sender_username} sent you a message");
+
+                return [
+                    'id' => (int) $latest->id,
+                    'conversation_id' => (int) $latest->conversation_id,
+                    'sender_id' => (int) $latest->sender_id,
+                    'sender_username' => $latest->sender_username,
+                    'sender_profile_picture' => $latest->sender_profile_picture,
+                    'product_id' => $latest->product_id ? (int) $latest->product_id : null,
+                    'notification_type' => $notificationType,
+                    'notification_text' => $notificationText,
+                    'notification_count' => $count,
+                    'created_at' => $latest->created_at,
+                ];
+            })
+            ->values();
+
+        return response()->json([
+            'message' => 'Unread messages retrieved successfully',
+            'total' => $messages->count(),
+            'messages' => $messages,
+        ], 200);
+    }
+
+    public function messageContacts(Request $request)
+    {
+        $user = $request->user();
+
+        if (($user->role ?? 'user') !== 'user') {
+            return response()->json([
+                'message' => 'Unauthorized: Only users can access this endpoint.',
+            ], 403);
+        }
+
+        try {
+            $validated = $request->validate([
+                'limit' => 'nullable|integer|min:1|max:100',
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation Error',
+                'errors' => $e->errors(),
+            ], 422);
+        }
+
+        $userId = (int) $user->id;
+        $limit = (int) ($validated['limit'] ?? 20);
+
+        $latestMessages = DB::table('messages')
+            ->select(['conversation_id', DB::raw('MAX(id) as last_message_id')])
+            ->groupBy('conversation_id');
+
+        $conversations = DB::table('conversations')
+            ->joinSub($latestMessages, 'latest_messages', function ($join) {
+                $join->on('conversations.id', '=', 'latest_messages.conversation_id');
+            })
+            ->join('messages', 'messages.id', '=', 'latest_messages.last_message_id')
+            ->where(function ($query) use ($userId) {
+                $query->where('conversations.buyer_id', $userId)
+                    ->orWhere('conversations.seller_id', $userId);
+            })
+            ->select([
+                'conversations.id as conversation_id',
+                'conversations.buyer_id',
+                'conversations.seller_id',
+                'messages.id as last_message_id',
+                'messages.message_text as last_message_text',
+                'messages.created_at as last_message_created_at',
+            ])
+            ->orderByDesc('messages.id')
+            ->limit($limit)
+            ->get();
+
+        $otherUserIds = $conversations
+            ->map(fn ($row) => (int) ($row->buyer_id === $userId ? $row->seller_id : $row->buyer_id))
+            ->unique()
+            ->values();
+
+        $usersById = DB::table('users')
+            ->select(['id', 'username', 'profile_picture'])
+            ->whereIn('id', $otherUserIds->all())
+            ->get()
+            ->keyBy('id');
+
+        $contacts = $conversations
+            ->map(function ($row) use ($usersById, $userId) {
+                $otherUserId = (int) ($row->buyer_id === $userId ? $row->seller_id : $row->buyer_id);
+                $otherUser = $usersById->get($otherUserId);
+
+                return [
+                    'conversation_id' => (int) $row->conversation_id,
+                    'user' => $otherUser ? [
+                        'id' => (int) $otherUser->id,
+                        'username' => $otherUser->username,
+                        'profile_picture' => $otherUser->profile_picture,
+                    ] : null,
+                    'last_message' => [
+                        'id' => (int) $row->last_message_id,
+                        'message_text' => $row->last_message_text,
+                        'created_at' => $row->last_message_created_at,
+                    ],
+                ];
+            })
+            ->values();
+
+        return response()->json([
+            'message' => 'Message contacts retrieved successfully',
+            'total' => $contacts->count(),
+            'contacts' => $contacts,
         ], 200);
     }
 
