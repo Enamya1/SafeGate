@@ -4,7 +4,7 @@ import sys
 import urllib.request
 import urllib.error
 
-QWEN_API_KEY = os.environ.get("QWEN_API_KEY", "sk-ceb4ec6bf8ca48d4a0ab2955c04eaaf5")
+QWEN_API_KEY = os.environ.get("QWEN_API_KEY", "sk.....")
 MODEL = "qwen-turbo"
 
 
