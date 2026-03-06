@@ -704,6 +704,7 @@ class AuthController extends Controller
                 'username' => $user->username,
                 'email' => $user->email,
                 'profile_picture' => $user->profile_picture,
+                'dormitory_id' => $user->dormitory_id,
                 'role' => $user->role,
             ],
         ], 200);

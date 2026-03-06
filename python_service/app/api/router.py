@@ -1,16 +1,20 @@
 import json
+import hmac
 import math
 import os
 import random
+import re
 import urllib.error
 import urllib.request
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-from fastapi import APIRouter, Header, HTTPException, Query
+from fastapi import APIRouter, Header, HTTPException, Query, Request
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import ProgrammingError
+
+from app.ai_manager import AIModelManager
 
 router = APIRouter()
 py_router = APIRouter()
@@ -50,32 +54,44 @@ def _get_db_engine() -> Engine:
 
 
 def _laravel_get_json(authorization: str, path: str) -> Dict[str, Any]:
-    base_url = os.environ.get("LARAVEL_BASE_URL", "http://127.0.0.1:8000").rstrip("/")
-    url = f"{base_url}{path}"
+    configured = (os.environ.get("LARAVEL_BASE_URL") or "").strip().rstrip("/")
+    base_candidates = [configured, "http://127.0.0.1:8000", "http://localhost:8000"]
+    tried = set()
+    last_error: Optional[Exception] = None
 
-    req = urllib.request.Request(
-        url,
-        headers={
-            "Accept": "application/json",
-            "Authorization": authorization,
-        },
-        method="GET",
-    )
-
-    try:
-        with urllib.request.urlopen(req, timeout=8) as resp:
-            body = resp.read().decode("utf-8")
-            data = json.loads(body) if body else {}
-            return data if isinstance(data, dict) else {}
-    except urllib.error.HTTPError as e:
-        body = e.read().decode("utf-8") if hasattr(e, "read") else ""
+    for base_url in base_candidates:
+        if not base_url or base_url in tried:
+            continue
+        tried.add(base_url)
+        url = f"{base_url}{path}"
+        req = urllib.request.Request(
+            url,
+            headers={
+                "Accept": "application/json",
+                "Authorization": authorization,
+            },
+            method="GET",
+        )
         try:
-            data = json.loads(body) if body else {}
-        except Exception:
-            data = {}
-        raise HTTPException(status_code=e.code, detail=data or {"message": "Laravel request failed"})
-    except Exception:
-        raise HTTPException(status_code=502, detail="Could not reach Laravel")
+            with urllib.request.urlopen(req, timeout=8) as resp:
+                body = resp.read().decode("utf-8")
+                data = json.loads(body) if body else {}
+                return data if isinstance(data, dict) else {}
+        except urllib.error.HTTPError as e:
+            body = e.read().decode("utf-8") if hasattr(e, "read") else ""
+            try:
+                data = json.loads(body) if body else {}
+            except Exception:
+                data = {}
+            raise HTTPException(status_code=e.code, detail=data or {"message": "Laravel request failed"})
+        except Exception as e:
+            last_error = e
+            continue
+
+    detail = "Could not reach Laravel"
+    if last_error is not None:
+        detail = f"Could not reach Laravel: {type(last_error).__name__}"
+    raise HTTPException(status_code=502, detail=detail)
 
 
 def _parse_lat_lng_from_location(location: Any) -> Optional[Tuple[float, float]]:
@@ -182,6 +198,586 @@ def _missing_table_name_from_programming_error(e: ProgrammingError) -> Optional[
     if "." in full:
         return full.split(".", 1)[1]
     return full
+
+
+def _extract_price_cap(message: str) -> Optional[float]:
+    patterns = [
+        r"(?:under|below|less than|<=)\s*\$?\s*(\d+(?:\.\d+)?)",
+        r"\$?\s*(\d+(?:\.\d+)?)\s*(?:or less|max(?:imum)?)",
+    ]
+    for pattern in patterns:
+        m = re.search(pattern, message, re.IGNORECASE)
+        if m:
+            try:
+                value = float(m.group(1))
+                if value > 0:
+                    return value
+            except Exception:
+                continue
+    return None
+
+
+def _extract_product_id(message: str) -> Optional[int]:
+    patterns = [
+        r"(?:product\s*id|id)\s*[:#]?\s*(\d+)",
+        r"\bproduct\s+(\d+)\b",
+    ]
+    for pattern in patterns:
+        m = re.search(pattern, message, re.IGNORECASE)
+        if m:
+            try:
+                value = int(m.group(1))
+                if value > 0:
+                    return value
+            except Exception:
+                continue
+    return None
+
+
+def _normalize_text(value: str) -> str:
+    return re.sub(r"\s+", " ", value.strip().lower())
+
+
+def _load_category_names(conn) -> List[str]:
+    try:
+        rows = conn.execute(text("SELECT name FROM categories ORDER BY id ASC")).mappings().all()
+    except Exception:
+        return []
+    out: List[str] = []
+    for row in rows:
+        name = row.get("name")
+        if isinstance(name, str) and name.strip():
+            out.append(name.strip())
+    return out
+
+
+def _infer_category_name(message: str, category_names: List[str]) -> Optional[str]:
+    haystack = _normalize_text(message)
+    for name in category_names:
+        escaped = re.escape(_normalize_text(name))
+        if re.search(rf"\b{escaped}\b", haystack):
+            return name
+    return None
+
+
+def _visibility_clause(user_dormitory_id: Optional[int]) -> Tuple[str, Dict[str, Any]]:
+    if user_dormitory_id is None:
+        return "p.dormitory_id IS NULL", {}
+    return "(p.dormitory_id = :user_dormitory_id OR p.dormitory_id IS NULL)", {"user_dormitory_id": user_dormitory_id}
+
+
+def _serialize_product_row(row: Dict[str, Any]) -> Dict[str, Any]:
+    created_at = row.get("created_at")
+    if isinstance(created_at, datetime):
+        created_at = created_at.isoformat()
+    price = row.get("price")
+    try:
+        price = float(price) if price is not None else None
+    except Exception:
+        price = None
+    return {
+        "id": row.get("id"),
+        "title": row.get("title"),
+        "description": row.get("description"),
+        "price": price,
+        "status": row.get("status"),
+        "created_at": created_at,
+        "category": row.get("category_name"),
+        "condition_level": row.get("condition_level_name"),
+        "image_thumbnail_url": row.get("image_thumbnail_url"),
+        "tags": row.get("tags") or [],
+    }
+
+
+def _fetch_tags_for_products(conn, product_ids: List[int]) -> Dict[int, List[str]]:
+    if not product_ids:
+        return {}
+    placeholders = ", ".join([f":pid_{i}" for i in range(len(product_ids))])
+    params = {f"pid_{i}": v for i, v in enumerate(product_ids)}
+    rows = conn.execute(
+        text(
+            f"""
+            SELECT pt.product_id, t.name
+            FROM product_tags pt
+            JOIN tags t ON t.id = pt.tag_id
+            WHERE pt.product_id IN ({placeholders})
+            ORDER BY t.name ASC
+            """
+        ),
+        params,
+    ).mappings().all()
+    tags_by_product: Dict[int, List[str]] = {}
+    for row in rows:
+        pid = row.get("product_id")
+        name = row.get("name")
+        if pid is None or not isinstance(name, str):
+            continue
+        pid_int = int(pid)
+        tags_by_product.setdefault(pid_int, []).append(name)
+    return tags_by_product
+
+
+def _search_products(
+    conn,
+    keyword: str,
+    user_dormitory_id: Optional[int],
+    limit: int = 20,
+    offset: int = 0,
+) -> List[Dict[str, Any]]:
+    visibility_sql, visibility_params = _visibility_clause(user_dormitory_id)
+    rows = conn.execute(
+        text(
+            f"""
+            SELECT
+                p.id, p.title, p.description, p.price, p.status, p.created_at,
+                c.name AS category_name,
+                cl.name AS condition_level_name,
+                (
+                    SELECT pi.image_thumbnail_url
+                    FROM product_images pi
+                    WHERE pi.product_id = p.id
+                    ORDER BY pi.is_primary DESC, pi.id ASC
+                    LIMIT 1
+                ) AS image_thumbnail_url
+            FROM products p
+            LEFT JOIN categories c ON c.id = p.category_id
+            LEFT JOIN condition_levels cl ON cl.id = p.condition_level_id
+            WHERE p.status = 'available'
+              AND p.deleted_at IS NULL
+              AND {visibility_sql}
+              AND (
+                p.title LIKE :keyword_like
+                OR p.description LIKE :keyword_like
+                OR c.name LIKE :keyword_like
+              )
+            ORDER BY p.created_at DESC, p.id DESC
+            LIMIT :limit OFFSET :offset
+            """
+        ),
+        {
+            **visibility_params,
+            "keyword_like": f"%{keyword.strip()}%",
+            "limit": int(limit),
+            "offset": int(offset),
+        },
+    ).mappings().all()
+    products = [dict(row) for row in rows]
+    tags_by_product = _fetch_tags_for_products(conn, [int(p["id"]) for p in products])
+    for product in products:
+        pid = int(product["id"])
+        product["tags"] = tags_by_product.get(pid, [])
+    return [_serialize_product_row(product) for product in products]
+
+
+def _search_by_price(
+    conn,
+    max_price: float,
+    user_dormitory_id: Optional[int],
+    category_name: Optional[str] = None,
+    limit: int = 20,
+) -> List[Dict[str, Any]]:
+    visibility_sql, visibility_params = _visibility_clause(user_dormitory_id)
+    category_sql = ""
+    params: Dict[str, Any] = {
+        **visibility_params,
+        "max_price": max_price,
+        "limit": int(limit),
+    }
+    if category_name:
+        category_sql = " AND c.name = :category_name"
+        params["category_name"] = category_name
+    rows = conn.execute(
+        text(
+            f"""
+            SELECT
+                p.id, p.title, p.description, p.price, p.status, p.created_at,
+                c.name AS category_name,
+                cl.name AS condition_level_name,
+                (
+                    SELECT pi.image_thumbnail_url
+                    FROM product_images pi
+                    WHERE pi.product_id = p.id
+                    ORDER BY pi.is_primary DESC, pi.id ASC
+                    LIMIT 1
+                ) AS image_thumbnail_url
+            FROM products p
+            LEFT JOIN categories c ON c.id = p.category_id
+            LEFT JOIN condition_levels cl ON cl.id = p.condition_level_id
+            WHERE p.status = 'available'
+              AND p.deleted_at IS NULL
+              AND {visibility_sql}
+              AND p.price <= :max_price
+              {category_sql}
+            ORDER BY p.price ASC, p.created_at DESC, p.id DESC
+            LIMIT :limit
+            """
+        ),
+        params,
+    ).mappings().all()
+    products = [dict(row) for row in rows]
+    tags_by_product = _fetch_tags_for_products(conn, [int(p["id"]) for p in products])
+    for product in products:
+        pid = int(product["id"])
+        product["tags"] = tags_by_product.get(pid, [])
+    return [_serialize_product_row(product) for product in products]
+
+
+def _search_by_category(
+    conn,
+    category_name: str,
+    user_dormitory_id: Optional[int],
+    limit: int = 20,
+) -> List[Dict[str, Any]]:
+    visibility_sql, visibility_params = _visibility_clause(user_dormitory_id)
+    rows = conn.execute(
+        text(
+            f"""
+            SELECT
+                p.id, p.title, p.description, p.price, p.status, p.created_at,
+                c.name AS category_name,
+                cl.name AS condition_level_name,
+                (
+                    SELECT pi.image_thumbnail_url
+                    FROM product_images pi
+                    WHERE pi.product_id = p.id
+                    ORDER BY pi.is_primary DESC, pi.id ASC
+                    LIMIT 1
+                ) AS image_thumbnail_url
+            FROM products p
+            JOIN categories c ON c.id = p.category_id
+            LEFT JOIN condition_levels cl ON cl.id = p.condition_level_id
+            WHERE p.status = 'available'
+              AND p.deleted_at IS NULL
+              AND {visibility_sql}
+              AND c.name = :category_name
+            ORDER BY p.created_at DESC, p.id DESC
+            LIMIT :limit
+            """
+        ),
+        {
+            **visibility_params,
+            "category_name": category_name,
+            "limit": int(limit),
+        },
+    ).mappings().all()
+    products = [dict(row) for row in rows]
+    tags_by_product = _fetch_tags_for_products(conn, [int(p["id"]) for p in products])
+    for product in products:
+        pid = int(product["id"])
+        product["tags"] = tags_by_product.get(pid, [])
+    return [_serialize_product_row(product) for product in products]
+
+
+def _get_product(
+    conn,
+    product_id: int,
+    user_dormitory_id: Optional[int],
+) -> List[Dict[str, Any]]:
+    visibility_sql, visibility_params = _visibility_clause(user_dormitory_id)
+    row = conn.execute(
+        text(
+            f"""
+            SELECT
+                p.id, p.title, p.description, p.price, p.status, p.created_at,
+                c.name AS category_name,
+                cl.name AS condition_level_name,
+                (
+                    SELECT pi.image_thumbnail_url
+                    FROM product_images pi
+                    WHERE pi.product_id = p.id
+                    ORDER BY pi.is_primary DESC, pi.id ASC
+                    LIMIT 1
+                ) AS image_thumbnail_url
+            FROM products p
+            LEFT JOIN categories c ON c.id = p.category_id
+            LEFT JOIN condition_levels cl ON cl.id = p.condition_level_id
+            WHERE p.id = :product_id
+              AND p.status = 'available'
+              AND p.deleted_at IS NULL
+              AND {visibility_sql}
+            LIMIT 1
+            """
+        ),
+        {
+            **visibility_params,
+            "product_id": int(product_id),
+        },
+    ).mappings().first()
+    if row is None:
+        return []
+    product = dict(row)
+    tags_by_product = _fetch_tags_for_products(conn, [int(product["id"])])
+    product["tags"] = tags_by_product.get(int(product["id"]), [])
+    return [_serialize_product_row(product)]
+
+
+def _get_similar_products(
+    conn,
+    product_id: int,
+    user_dormitory_id: Optional[int],
+    limit: int = 10,
+) -> List[Dict[str, Any]]:
+    visibility_sql, visibility_params = _visibility_clause(user_dormitory_id)
+    target = conn.execute(
+        text(
+            """
+            SELECT id, category_id, price
+            FROM products
+            WHERE id = :product_id
+              AND deleted_at IS NULL
+            LIMIT 1
+            """
+        ),
+        {"product_id": int(product_id)},
+    ).mappings().first()
+    if target is None:
+        return []
+    rows = conn.execute(
+        text(
+            f"""
+            SELECT
+                p.id, p.title, p.description, p.price, p.status, p.created_at,
+                c.name AS category_name,
+                cl.name AS condition_level_name,
+                (
+                    SELECT pi.image_thumbnail_url
+                    FROM product_images pi
+                    WHERE pi.product_id = p.id
+                    ORDER BY pi.is_primary DESC, pi.id ASC
+                    LIMIT 1
+                ) AS image_thumbnail_url,
+                CASE
+                    WHEN p.category_id = :target_category_id THEN 3
+                    WHEN ABS(p.price - :target_price) <= (:target_price * 0.3) THEN 2
+                    ELSE 1
+                END AS similarity_score
+            FROM products p
+            LEFT JOIN categories c ON c.id = p.category_id
+            LEFT JOIN condition_levels cl ON cl.id = p.condition_level_id
+            WHERE p.id <> :product_id
+              AND p.status = 'available'
+              AND p.deleted_at IS NULL
+              AND {visibility_sql}
+            ORDER BY similarity_score DESC, p.created_at DESC, p.id DESC
+            LIMIT :limit
+            """
+        ),
+        {
+            **visibility_params,
+            "product_id": int(product_id),
+            "target_category_id": target.get("category_id"),
+            "target_price": float(target.get("price") or 0),
+            "limit": int(limit),
+        },
+    ).mappings().all()
+    products = [dict(row) for row in rows]
+    tags_by_product = _fetch_tags_for_products(conn, [int(p["id"]) for p in products])
+    for product in products:
+        pid = int(product["id"])
+        product["tags"] = tags_by_product.get(pid, [])
+    return [_serialize_product_row(product) for product in products]
+
+
+def _infer_function(
+    message: str,
+    conn,
+    user_dormitory_id: Optional[int],
+) -> Tuple[str, Dict[str, Any], List[Dict[str, Any]]]:
+    category_names = _load_category_names(conn)
+    category_name = _infer_category_name(message, category_names)
+    product_id = _extract_product_id(message)
+    price_cap = _extract_price_cap(message)
+    normalized = _normalize_text(message)
+
+    if "similar" in normalized and product_id is not None:
+        args = {"product_id": product_id, "limit": 10}
+        return "get_similar_products", args, _get_similar_products(conn, product_id, user_dormitory_id, limit=10)
+
+    if ("detail" in normalized or "about" in normalized) and product_id is not None:
+        args = {"product_id": product_id}
+        return "get_product", args, _get_product(conn, product_id, user_dormitory_id)
+
+    if price_cap is not None:
+        args: Dict[str, Any] = {"max_price": price_cap, "limit": 20}
+        if category_name:
+            args["category"] = category_name
+        return "search_by_price", args, _search_by_price(
+            conn,
+            max_price=price_cap,
+            user_dormitory_id=user_dormitory_id,
+            category_name=category_name,
+            limit=20,
+        )
+
+    if category_name:
+        args = {"category": category_name, "limit": 20}
+        return "search_by_category", args, _search_by_category(conn, category_name, user_dormitory_id, limit=20)
+
+    if product_id is not None:
+        args = {"product_id": product_id}
+        return "get_product", args, _get_product(conn, product_id, user_dormitory_id)
+
+    keyword = message.strip()
+    args = {"keyword": keyword, "limit": 20, "offset": 0}
+    return "search_products", args, _search_products(conn, keyword, user_dormitory_id, limit=20, offset=0)
+
+
+def _fallback_response_text(user_message: str, function_name: str, products: List[Dict[str, Any]]) -> str:
+    if not products:
+        return "I could not find matching products right now. Try adjusting your request."
+    if function_name == "get_product":
+        product = products[0]
+        price = product.get("price")
+        return f"{product.get('title')} is available for ${price}. Category: {product.get('category')}."
+    top = products[:3]
+    lines = []
+    for p in top:
+        lines.append(f"- {p.get('title')} (${p.get('price')})")
+    return "I found these options:\n" + "\n".join(lines)
+
+
+def _read_user_context_from_payload(payload: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    ctx = payload.get("user_context")
+    if not isinstance(ctx, dict):
+        return None
+    user_id = ctx.get("id")
+    if user_id is None:
+        return None
+    try:
+        user_id_int = int(user_id)
+    except Exception:
+        return None
+    role = ctx.get("role")
+    if role is not None and str(role).strip().lower() != "user":
+        raise HTTPException(status_code=403, detail="Only users can access this endpoint")
+    dormitory_raw = ctx.get("dormitory_id")
+    dormitory_id = None
+    if dormitory_raw not in (None, ""):
+        try:
+            dormitory_id = int(dormitory_raw)
+        except Exception:
+            dormitory_id = None
+    return {"id": user_id_int, "dormitory_id": dormitory_id}
+
+
+def _has_valid_internal_token(header_token: Optional[str]) -> bool:
+    expected = (os.environ.get("PYTHON_INTERNAL_TOKEN") or "").strip()
+    provided = (header_token or "").strip()
+    if not expected or not provided:
+        return False
+    return hmac.compare_digest(provided, expected)
+
+
+def _is_loopback_request(request: Request) -> bool:
+    host = (request.client.host if request.client else "") or ""
+    return host in {"127.0.0.1", "::1", "localhost"}
+
+
+@router.post("/ai/respond")
+def ai_respond(
+    request: Request,
+    payload: Dict[str, Any],
+    authorization: Optional[str] = Header(default=None),
+    x_internal_token: Optional[str] = Header(default=None),
+) -> dict:
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Missing Authorization header")
+
+    message = payload.get("message")
+    if not isinstance(message, str) or not message.strip():
+        raise HTTPException(status_code=422, detail="message is required")
+
+    message_type_raw = payload.get("message_type")
+    message_type = "text" if not isinstance(message_type_raw, str) else message_type_raw.strip().lower()
+    if message_type not in {"text", "voice"}:
+        raise HTTPException(status_code=422, detail="message_type must be text or voice")
+
+    internal_user = None
+    if _has_valid_internal_token(x_internal_token):
+        internal_user = _read_user_context_from_payload(payload)
+    elif _is_loopback_request(request):
+        internal_user = _read_user_context_from_payload(payload)
+    if internal_user is not None:
+        user_id = internal_user["id"]
+        user_dormitory_id = internal_user["dormitory_id"]
+    else:
+        me = _laravel_get_json(authorization, "/api/user/me")
+        user = me.get("user") if isinstance(me, dict) else None
+        if not isinstance(user, dict) or not user.get("id"):
+            raise HTTPException(status_code=401, detail="Invalid user")
+        role = user.get("role")
+        if role is not None and str(role).lower() != "user":
+            raise HTTPException(status_code=403, detail="Only users can access this endpoint")
+        user_id = int(user["id"])
+        user_dormitory_id = user.get("dormitory_id")
+        user_dormitory_id = int(user_dormitory_id) if user_dormitory_id else None
+
+    engine = _get_db_engine()
+    try:
+        conn = engine.connect()
+    except Exception:
+        raise HTTPException(status_code=503, detail="Database unavailable")
+
+    with conn:
+        try:
+            function_name, function_arguments, products = _infer_function(message, conn, user_dormitory_id)
+        except ProgrammingError as e:
+            if getattr(e.orig, "args", None) and len(e.orig.args) >= 1 and int(e.orig.args[0]) == 1146:
+                table = _missing_table_name_from_programming_error(e) or "unknown"
+                raise HTTPException(
+                    status_code=503,
+                    detail=f"Database '{os.environ.get('DB_DATABASE', 'suki_db')}' missing table: {table}. Check DB_* env or run Laravel migrations.",
+                )
+            raise
+
+    function_calls = [
+        {
+            "name": function_name,
+            "arguments": function_arguments,
+            "result_count": len(products),
+        }
+    ]
+
+    response_text = _fallback_response_text(message, function_name, products)
+    ai_key = os.environ.get("AI_API_KEY", "").strip()
+    if ai_key:
+        try:
+            manager = AIModelManager()
+            ai_result = manager.generate(
+                user_prompt=(
+                    f"User request: {message}\n"
+                    f"Function executed: {function_name}\n"
+                    f"Function arguments: {json.dumps(function_arguments, ensure_ascii=False)}\n"
+                    f"Result JSON: {json.dumps(products[:10], ensure_ascii=False)}"
+                ),
+                system_prompt=(
+                    "You are a shopping assistant for SafeGate. "
+                    "Use only the provided function result. "
+                    "Be concise and helpful."
+                ),
+            )
+            ai_content = ai_result.get("content")
+            if isinstance(ai_content, str) and ai_content.strip():
+                response_text = ai_content.strip()
+        except Exception:
+            pass
+
+    prompt_tokens = max(1, len(message.split()))
+    completion_tokens = max(1, len(response_text.split()))
+    total_tokens = prompt_tokens + completion_tokens
+
+    return {
+        "response": response_text,
+        "function_calls": function_calls,
+        "products": products,
+        "usage": {
+            "total_tokens": total_tokens,
+            "prompt_tokens": prompt_tokens,
+            "completion_tokens": completion_tokens,
+        },
+        "message_type": message_type,
+        "user_id": user_id,
+    }
 
 
 

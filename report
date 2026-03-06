@@ -49,7 +49,7 @@ User Authentication
 
 5) GET /api/user/me
    - Auth: auth:sanctum
-   - Response 200: {"message":"User retrieved successfully","user":{"id":...,"full_name":...,"username":...,"email":...,"profile_picture":...,"role":...}}
+   - Response 200: {"message":"User retrieved successfully","user":{"id":...,"full_name":...,"username":...,"email":...,"profile_picture":...,"dormitory_id":...,"role":...}}
    - Response 403: {"message":"Unauthorized: Only users can access this endpoint."}
    - Response 401: {"message":"Unauthenticated."}
 
@@ -747,7 +747,82 @@ Python Service
    - Response 401: {"detail":{"message":"Unauthenticated."}} (when Laravel /api/user/me fails)
    - Response 502: {"detail":"Could not reach Laravel"}
 
-51) GET /py/api/user/recommendations/products
+AI Chat
+51) POST /api/ai/sessions
+   - Auth: auth:sanctum, role=user
+   - Request body:
+     - title (nullable string, max 255)
+   - Response 201: {"session_id":"<uuid>","expires_at":"<iso8601>"}
+   - Response 403: {"message":"Unauthorized: Only users can access this endpoint."}
+   - Response 422: {"message":"Validation Error","errors":{...}}
+
+52) POST /api/ai/sessions/{session_id}/messages
+   - Auth: auth:sanctum, role=user
+   - Path params:
+     - session_id (required uuid from create session)
+   - Request body:
+     - message (required string, max 5000)
+     - message_type (optional enum: text|voice, default text)
+     - audio_duration_seconds (optional number, min 0, max 9999.99)
+   - Response 200: {"response":"...","function_calls":[{"name":"...","arguments":{...},"result_count":...}]}
+   - Response 404: {"message":"Session not found."}
+   - Response 422: {"message":"Validation Error","errors":{...}}
+   - Response 502: {"message":"AI service unavailable."}
+
+53) GET /api/ai/sessions/{session_id}/messages
+   - Auth: auth:sanctum, role=user
+   - Path params:
+     - session_id (required uuid)
+   - Response 200: {"message":"Messages retrieved successfully","session_id":"<uuid>","messages":[...]}
+   - Response 404: {"message":"Session not found."}
+   - Response 403: {"message":"Unauthorized: Only users can access this endpoint."}
+
+54) POST /api/ai/respond
+   - Service: python_service endpoint called by Laravel
+   - Headers:
+     - Authorization: Bearer <Laravel token> (required)
+   - Request body:
+     - message (required string)
+     - message_type (optional enum: text|voice)
+   - Response 200:
+     {
+       "response":"...",
+       "function_calls":[{"name":"search_products|search_by_price|search_by_category|get_product|get_similar_products","arguments":{...},"result_count":...}],
+       "products":[...],
+       "usage":{"total_tokens":...,"prompt_tokens":...,"completion_tokens":...},
+       "message_type":"text|voice",
+       "user_id":...
+     }
+   - Response 401: {"detail":"Missing Authorization header"}
+   - Response 422: {"detail":"message is required"}
+   - Response 422: {"detail":"message_type must be text or voice"}
+   - Response 503: {"detail":"Database unavailable"}
+
+AI Table New Options
+- ai_chat_messages.message_type: user|assistant|system
+- ai_chat_messages.content_type: text|voice|function_call
+- ai_chat_messages.function_name: nullable string
+- ai_chat_messages.function_arguments: nullable json
+- ai_chat_messages.function_response: nullable json
+- ai_chat_messages.tokens_used: unsigned integer
+- ai_chat_messages.audio_duration_seconds: nullable decimal(6,2)
+- ai_activity_events.event_type: nullable string
+- ai_activity_events.model_used: nullable string
+- ai_activity_events.total_tokens: unsigned integer
+- ai_activity_events.prompt_tokens: unsigned integer
+- ai_activity_events.completion_tokens: unsigned integer
+- ai_activity_events.cost: unsigned decimal(10,6)
+- ai_activity_events.duration_ms: unsigned integer
+- ai_activity_events.success: boolean
+- ai_activity_events.error_message: nullable text
+
+AI Runtime Config Options
+- safe_gate/.env:
+  - PYTHON_SERVICE_BASE_URL (default http://127.0.0.1:8001)
+  - AI_PROVIDER (default qwen)
+  - AI_MODEL (default qwen-plus)
+
+55) GET /py/api/user/recommendations/products
    - Headers:
      - Authorization: Bearer <Laravel token> (required)
    - Query params:
@@ -797,7 +872,7 @@ Python Service
    - Response 503: {"detail":"Database '<name>' missing table: <table>. Check DB_* env or run Laravel migrations."}
    - Response 502: {"detail":"Could not reach Laravel"}
 
-52) GET /py/api/user/products/{product_id}/similar
+56) GET /py/api/user/products/{product_id}/similar
   - Headers:
     - Authorization: Bearer <Laravel token> (required)
   - Path params:

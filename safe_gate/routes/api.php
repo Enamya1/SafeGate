@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\AiChatController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BehavioralEventController;
 use App\Http\Controllers\HealthCheckController;
@@ -41,6 +42,12 @@ Route::middleware('auth:sanctum')->get('/user/meta/options', [ProductController:
 Route::middleware('auth:sanctum')->get('/user/meta/dormitories', [ProductController::class, 'dormitories']);
 Route::middleware('auth:sanctum')->get('/user/meta/dormitories/by-university', [ProductController::class, 'dormitoriesByUserUniversity']);
 Route::middleware('auth:sanctum')->post('/user/tags', [ProductController::class, 'createTag']);
+
+Route::middleware('auth:sanctum')->prefix('ai')->group(function () {
+    Route::post('/sessions', [AiChatController::class, 'createSession']);
+    Route::post('/sessions/{session_id}/messages', [AiChatController::class, 'sendMessage']);
+    Route::get('/sessions/{session_id}/messages', [AiChatController::class, 'listMessages']);
+});
 
 Route::prefix('admin')->group(function () {
     Route::post('/test', [AdminController::class, 'index']);

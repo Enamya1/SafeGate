@@ -1,0 +1,479 @@
+# Production-Grade AI Assistant Service Technical Specification
+
+## Executive Summary
+
+This document outlines the architecture for a secure, scalable AI assistant service integrated with the SafeGate platform. The service enables conversational AI interactions (text and voice) for product discovery and shopping assistance, leveraging Qwen AI models with deterministic function calling capabilities against the existing product database.
+
+## Current Architecture Analysis
+
+### Existing Stack
+- **Backend**: Laravel PHP with Sanctum authentication
+- **Database**: MySQL with comprehensive product schema
+- **AI Service**: Python FastAPI service (partial implementation)
+- **Authentication**: Laravel Sanctum JWT tokens
+- **Product Schema**: Well-structured with categories, conditions, tags, and user relationships
+
+### Key Strengths
+- Robust user management with Sanctum authentication
+- Comprehensive product data model with relationships
+- Existing behavioral event tracking infrastructure
+- Modular architecture with separate Python AI service
+
+### Architectural Gaps
+- No real-time voice processing capabilities
+- Limited AI function calling infrastructure
+- Missing conversation history persistence
+- No dedicated AI query audit logging
+- Incomplete rate limiting and circuit breaker patterns
+
+## Target Architecture
+
+### System Overview
+```
+Frontend → WebSocket Gateway → AI Orchestrator → Qwen AI → Function Router → Database
+           ↑          ↓              ↑               ↓              ↑
+        STT Service   TTS Service   Auth Service   Audit Service   Cache Layer
+```
+
+### Core Components
+
+#### 1. WebSocket Gateway Service
+- Handles real-time bidirectional communication
+- Manages voice streaming sessions
+- Enforces authentication and rate limiting
+- Routes messages to appropriate services
+
+#### 2. AI Orchestrator Service
+- Manages Qwen AI interactions
+- Handles function calling and response synthesis
+- Implements conversation state management
+- Enforces user-specific query quotas
+
+#### 3. Speech Processing Services
+- **STT Service**: Converts voice to text (WebSocket streaming)
+- **TTS Service**: Converts text responses to audio
+- Supports multiple codecs (Opus, PCM)
+- Implements audio encryption in transit
+
+#### 4. Function Router Service
+- Executes deterministic database functions
+- Enforces row-level security based on user context
+- Implements parameterized query protection
+- Provides cached responses where appropriate
+
+#### 5. Audit & Monitoring Service
+- Logs all AI interactions for compliance
+- Tracks token usage and costs
+- Monitors performance metrics
+- Implements GDPR data minimization
+
+## Database Schema Enhancements
+
+### New Tables Required
+
+#### 1. AI Chat Sessions
+```sql
+CREATE TABLE ai_chat_sessions (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT UNSIGNED NOT NULL,
+    session_uuid CHAR(36) NOT NULL UNIQUE,
+    title VARCHAR(255) NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+```
+
+#### 2. AI Chat Messages
+```sql
+CREATE TABLE ai_chat_messages (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    session_id BIGINT UNSIGNED NOT NULL,
+    message_type ENUM('user', 'assistant', 'system') DEFAULT 'user',
+    content_type ENUM('text', 'voice', 'function_call') DEFAULT 'text',
+    content TEXT NOT NULL,
+    function_name VARCHAR(100) NULL,
+    function_arguments JSON NULL,
+    function_response JSON NULL,
+    tokens_used INT UNSIGNED DEFAULT 0,
+    audio_duration_seconds DECIMAL(5,2) NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (session_id) REFERENCES ai_chat_sessions(id) ON DELETE CASCADE
+);
+```
+
+#### 3. AI Activity Events
+```sql
+CREATE TABLE ai_activity_events (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT UNSIGNED NOT NULL,
+    event_type VARCHAR(50) NOT NULL,
+    model_used VARCHAR(50) NOT NULL,
+    total_tokens INT UNSIGNED NOT NULL,
+    prompt_tokens INT UNSIGNED NOT NULL,
+    completion_tokens INT UNSIGNED NOT NULL,
+    cost DECIMAL(10,6) UNSIGNED NOT NULL,
+    duration_ms INT UNSIGNED NOT NULL,
+    success BOOLEAN DEFAULT TRUE,
+    error_message TEXT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+```
+
+#### 4. Voice Session Metadata
+```sql
+CREATE TABLE voice_sessions (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    session_uuid CHAR(36) NOT NULL UNIQUE,
+    user_id BIGINT UNSIGNED NOT NULL,
+    audio_format VARCHAR(20) DEFAULT 'opus',
+    sample_rate INT DEFAULT 16000,
+    duration_seconds DECIMAL(6,2) NOT NULL,
+    audio_size_bytes INT UNSIGNED NOT NULL,
+    transcribed_text TEXT NULL,
+    processed_at TIMESTAMP NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    purged_at TIMESTAMP NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+```
+
+## Function Implementation Specifications
+
+### Core Deterministic Functions
+
+#### 1. search_products(keyword)
+```python
+def search_products(keyword: str, user_id: int, limit: int = 20, offset: int = 0):
+    """Full-text search across product catalog with fuzzy matching"""
+    query = """
+        SELECT p.*, 
+               MATCH(p.title, p.description) AGAINST (:keyword IN BOOLEAN MODE) as relevance
+        FROM products p
+        WHERE p.status = 'available'
+          AND (p.dormitory_id IN (SELECT dormitory_id FROM users WHERE id = :user_id)
+               OR p.dormitory_id IS NULL)
+        HAVING relevance > 0
+        ORDER BY relevance DESC, p.created_at DESC
+        LIMIT :limit OFFSET :offset
+    """
+    # Parameterized execution with user context
+```
+
+#### 2. search_by_price(max_price)
+```python
+def search_by_price(max_price: float, user_id: int, limit: int = 20):
+    """Filter products below specified price point"""
+    query = """
+        SELECT p.*
+        FROM products p
+        WHERE p.status = 'available'
+          AND p.price <= :max_price
+          AND (p.dormitory_id IN (SELECT dormitory_id FROM users WHERE id = :user_id)
+               OR p.dormitory_id IS NULL)
+        ORDER BY p.price ASC, p.created_at DESC
+        LIMIT :limit
+    """
+```
+
+#### 3. search_by_category(category)
+```python
+def search_by_category(category: str, user_id: int, limit: int = 20):
+    """Retrieve products within a given category"""
+    query = """
+        SELECT p.*
+        FROM products p
+        JOIN categories c ON p.category_id = c.id
+        WHERE p.status = 'available'
+          AND c.name = :category
+          AND (p.dormitory_id IN (SELECT dormitory_id FROM users WHERE id = :user_id)
+               OR p.dormitory_id IS NULL)
+        ORDER BY p.created_at DESC
+        LIMIT :limit
+    """
+```
+
+#### 4. get_product(product_id)
+```python
+def get_product(product_id: int, user_id: int):
+    """Return full product details for a single SKU"""
+    query = """
+        SELECT p.*, pi.image_path, t.name as tag_name
+        FROM products p
+        LEFT JOIN product_images pi ON p.id = pi.product_id
+        LEFT JOIN product_tags pt ON p.id = pt.product_id
+        LEFT JOIN tags t ON pt.tag_id = t.id
+        WHERE p.id = :product_id
+          AND p.status = 'available'
+          AND (p.dormitory_id IN (SELECT dormitory_id FROM users WHERE id = :user_id)
+               OR p.dormitory_id IS NULL)
+    """
+```
+
+#### 5. get_similar_products(product_id)
+```python
+def get_similar_products(product_id: int, user_id: int, limit: int = 10):
+    """Return ranked list of related products"""
+    query = """
+        WITH target_product AS (
+            SELECT category_id, price, dormitory_id 
+            FROM products WHERE id = :product_id
+        )
+        SELECT p.*,
+               CASE 
+                   WHEN p.category_id = tp.category_id THEN 3
+                   WHEN ABS(p.price - tp.price) < tp.price * 0.3 THEN 2
+                   ELSE 1
+               END as similarity_score
+        FROM products p, target_product tp
+        WHERE p.id != :product_id
+          AND p.status = 'available'
+          AND (p.dormitory_id = tp.dormitory_id 
+               OR p.dormitory_id IN (SELECT dormitory_id FROM users WHERE id = :user_id))
+        ORDER BY similarity_score DESC, p.created_at DESC
+        LIMIT :limit
+    """
+```
+
+## API Contracts
+
+### REST Endpoints
+
+#### 1. Authentication & Session Management
+```http
+POST /api/ai/sessions
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+    "title": "Product Search Session"
+}
+
+Response: {
+    "session_id": "uuid",
+    "expires_at": "2024-03-07T10:30:00Z"
+}
+```
+
+#### 2. Text Conversation
+```http
+POST /api/ai/sessions/{session_id}/messages
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+    "message": "Find me affordable laptops under $500",
+    "message_type": "text"
+}
+
+Response: {
+    "response": "I found 3 laptops under $500...",
+    "function_calls": [
+        {
+            "name": "search_by_price",
+            "arguments": {"max_price": 500, "category": "laptops"}
+        }
+    ]
+}
+```
+
+### WebSocket Protocol
+
+#### Connection Establishment
+```javascript
+const ws = new WebSocket('wss://api.safegate.com/ai/ws');
+ws.onopen = () => {
+    ws.send(JSON.stringify({
+        type: 'auth',
+        token: 'jwt_token_here',
+        session_id: 'optional_session_id'
+    }));
+};
+```
+
+#### Voice Streaming
+```javascript
+// Start voice session
+ws.send(JSON.stringify({
+    type: 'voice_start',
+    format: 'opus',
+    sample_rate: 16000
+}));
+
+// Stream audio chunks
+mediaRecorder.ondataavailable = (event) => {
+    ws.send(event.data); // Binary audio data
+};
+
+// End voice session
+ws.send(JSON.stringify({ type: 'voice_end' }));
+```
+
+#### Message Types
+- `auth`: Authentication handshake
+- `text_message`: Text-based interaction
+- `voice_start`: Initiate voice session
+- `voice_data`: Audio chunk transmission
+- `voice_end`: Terminate voice session
+- `function_call`: AI function execution request
+- `error`: Error responses
+
+## Security Implementation
+
+### Authentication & Authorization
+- **JWT Validation**: Verify token signature with Laravel Sanctum public key
+- **Short-lived Tokens**: 15-minute expiration with refresh mechanism
+- **User Context Extraction**: Extract user_id from token for row-level security
+- **Function Scope Validation**: Validate user permissions for each function call
+
+### Data Protection
+- **Audio Encryption**: TLS 1.3 for all voice data in transit
+- **Data Minimization**: Purge audio immediately after transcription
+- **Parameterized Queries**: Prevent SQL injection through prepared statements
+- **Input Validation**: Strict schema validation for all function parameters
+
+### Rate Limiting & Quotas
+```python
+# Per-user rate limiting
+RATE_LIMIT_RULES = {
+    'text_messages': {'max': 60, 'window': 60},  # 60 requests per minute
+    'voice_sessions': {'max': 10, 'window': 300},  # 10 sessions per 5 minutes
+    'function_calls': {'max': 100, 'window': 3600}  # 100 calls per hour
+}
+
+# Circuit breaker pattern
+CIRCUIT_BREAKER_CONFIG = {
+    'failure_threshold': 5,  # 5 failures
+    'reset_timeout': 30000,  # 30 seconds
+    'half_open_max_calls': 3  # Allow 3 calls in half-open state
+}
+```
+
+## Performance Targets
+
+### Latency Requirements
+- **P95 Total Latency**: < 1.5 seconds for complete voice-to-voice cycle
+- **STT Processing**: < 300ms P95
+- **AI Response Generation**: < 800ms P95
+- **TTS Synthesis**: < 400ms P95
+- **Database Queries**: < 100ms P95
+
+### Scaling Considerations
+- **Horizontal Scaling**: Stateless services behind load balancer
+- **Database Connection Pooling**: 50-100 connections per service instance
+- **Caching Strategy**: Redis for session state and frequent queries
+- **CDN Integration**: For static assets and pre-generated audio responses
+
+## Compliance & Data Governance
+
+### GDPR/CCPA Compliance
+- **Right to Erasure**: Automatic purging of voice data after processing
+- **Data Minimization**: Collect only necessary audio for transcription
+- **Audit Trails**: Comprehensive logging of all AI interactions
+- **User Consent**: Explicit opt-in for voice processing features
+
+### Cost Optimization
+- **Token Efficiency**: Prompt engineering to minimize Qwen token usage
+- **Caching**: Cache frequent AI responses and function results
+- **Batching**: Batch similar function calls where possible
+- **Monitoring**: Real-time cost tracking and alerts
+
+## Legacy Component Analysis
+
+### Incompatible Components
+
+#### 1. Monolithic PHP Endpoints
+- **Issue**: Synchronous request handling blocks voice streaming
+- **Solution**: Migrate to async Python services with WebSocket support
+
+#### 2. Plain-text Credential Storage
+- **Issue**: Environment variables in code
+- **Solution**: Implement HashiCorp Vault or AWS Secrets Manager
+
+#### 3. Synchronous File Uploads
+- **Issue**: Blocking I/O operations
+- **Solution**: Implement async file processing with S3 presigned URLs
+
+### Refactoring Steps
+
+#### Phase 1: Foundation (2 weeks)
+1. Implement new database tables
+2. Set up Redis for caching and session management
+3. Deploy Python AI services with Docker containers
+4. Implement JWT validation middleware
+
+#### Phase 2: Core Services (3 weeks)
+1. Develop WebSocket gateway service
+2. Implement STT/TTS services
+3. Build function router with security controls
+4. Add rate limiting and circuit breakers
+
+#### Phase 3: Integration (2 weeks)
+1. Connect to Qwen AI API
+2. Implement conversation state management
+3. Add audit logging and monitoring
+4. Performance testing and optimization
+
+#### Phase 4: Voice Features (2 weeks)
+1. Implement real-time voice streaming
+2. Add audio encryption and purging
+3. Develop frontend WebSocket client
+4. User testing and refinement
+
+## Monitoring & Observability
+
+### Key Metrics
+- **AI Response Times**: P50, P95, P99 latencies
+- **Token Usage**: Prompt and completion tokens per request
+- **Error Rates**: Function call failures and AI errors
+- **Cost Tracking**: Real-time Qwen API costs
+- **Voice Quality**: STT accuracy and audio latency
+
+### Alerting Rules
+- **High Latency**: > 2s P95 response time
+- **Error Spike**: > 5% error rate for 5 minutes
+- **Cost Alert**: > $100/hour spend rate
+- **Circuit Breaker**: Service degradation detection
+
+## Deployment Architecture
+
+### Cloud-Native Design
+- **Containerization**: Docker containers for all services
+- **Orchestration**: Kubernetes with horizontal pod autoscaling
+- **Service Mesh**: Istio for traffic management and security
+- **Database**: Managed MySQL with read replicas
+- **Caching**: Redis Cluster for distributed caching
+
+### 12-Factor Compliance
+1. **Codebase**: Single repo with multiple services
+2. **Dependencies**: Explicit dependency declaration
+3. **Config**: Environment-based configuration
+4. **Backing Services**: Treat databases as attached resources
+5. **Build, release, run**: Strict separation of stages
+6. **Processes**: Stateless processes with shared nothing
+7. **Port binding**: Export services via port binding
+8. **Concurrency**: Scale via process model
+9. **Disposability**: Fast startup and graceful shutdown
+10. **Dev/prod parity**: Keep environments similar
+11. **Logs**: Treat logs as event streams
+12. **Admin processes**: Run admin tasks as one-off processes
+
+## Success Metrics
+
+### Technical KPIs
+- **Availability**: 99.95% uptime
+- **Latency**: < 1.5s P95 voice-to-voice
+- **Error Rate**: < 1% failed requests
+- **Cost Efficiency**: < $0.01 per user interaction
+
+### Business KPIs
+- **User Engagement**: 30% increase in product discovery
+- **Conversion Rate**: 15% improvement in purchase completion
+- **Session Length**: 25% longer user sessions
+- **Customer Satisfaction**: 4.5/5 star rating for AI assistant
+
+---
+
+This specification provides a comprehensive blueprint for building a production-grade AI assistant service that integrates seamlessly with the existing SafeGate platform while meeting all security, performance, and compliance requirements.
