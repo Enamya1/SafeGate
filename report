@@ -405,6 +405,51 @@ User Metadata
    - Response 422: {"message":"Validation Error","errors":{...}}
    - Response 403: {"message":"Unauthorized: Only users can access this endpoint."}
 
+27a) GET /api/user/nearby
+   - Auth: auth:sanctum, role=user
+   - Query params:
+     - lat (required numeric, between -90 and 90)
+     - lng (required numeric, between -180 and 180)
+     - distance_km (optional numeric, min 0.1, max 500, default 10)
+     - category_id (optional integer, exists categories.id)
+     - condition_level_id (optional integer, exists condition_levels.id)
+     - q (optional string, title/description search)
+     - location_q (optional string, dormitory name/domain/address search)
+   - Response 200:
+     {
+       "message":"ok",
+       "center":{"lat":...,"lng":...},
+       "distance_km":...,
+       "products":[
+         {
+           "id":...,
+           "seller_id":...,
+           "seller":{"id":...,"full_name":"...","username":"...","email":"...","profile_picture":"..."},
+           "dormitory_id":...,
+           "dormitory":{"id":...,"dormitory_name":"...","domain":"...","location":"...","lat":...,"lng":...,"is_active":true,"university_id":...},
+           "category_id":...,
+           "category":{"id":...,"name":"...","parent_id":...,"icon":"..."},
+           "condition_level_id":...,
+           "condition_level":{"id":...,"name":"...","description":"...","sort_order":...},
+           "title":"...",
+           "description":"...",
+           "price":...,
+           "status":"available",
+           "is_promoted":false,
+           "created_at":"...",
+           "images":[{"id":...,"product_id":...,"image_url":"...","image_thumbnail_url":"...","is_primary":true}],
+           "tags":[{"id":...,"name":"..."}],
+           "distance_km":...
+         }
+       ],
+       "meta":{
+         "categories":[{"id":...,"name":"...","icon":"..."}],
+         "condition_levels":[{"id":...,"name":"...","description":"...","sort_order":...}]
+       }
+     }
+   - Response 403: {"message":"Unauthorized: Only users can access this endpoint."}
+   - Response 422: {"message":"Validation Error","errors":{...}}
+
 Admin
 28) POST /api/admin/test
    - Response 200: {"message":"Admin endpoint reached!"}
@@ -764,7 +809,7 @@ AI Chat
      - message (required string, max 5000)
      - message_type (optional enum: text|voice, default text)
      - audio_duration_seconds (optional number, min 0, max 9999.99)
-   - Response 200: {"response":"...","function_calls":[{"name":"...","arguments":{...},"result_count":...}]}
+   - Response 200: {"response":"...","function_calls":[{"name":"...","arguments":{...},"result_count":...}],"products":[{"id":...}]}
    - Response 404: {"message":"Session not found."}
    - Response 422: {"message":"Validation Error","errors":{...}}
    - Response 502: {"message":"AI service unavailable."}

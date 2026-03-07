@@ -10,8 +10,8 @@ use App\Models\Product;
 use App\Models\ProductImage;
 use App\Models\ProductTag;
 use App\Models\Tag;
-use App\Models\User;
 use App\Models\University;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -59,6 +59,18 @@ class ProductController extends Controller
         }
 
         DB::table('behavioral_events')->insert($rows);
+    }
+
+    private function haversineDistanceKm(float $fromLat, float $fromLng, float $toLat, float $toLng): float
+    {
+        $earthRadiusKm = 6371.0;
+        $dLat = deg2rad($toLat - $fromLat);
+        $dLng = deg2rad($toLng - $fromLng);
+        $a = sin($dLat / 2) ** 2
+            + cos(deg2rad($fromLat)) * cos(deg2rad($toLat)) * sin($dLng / 2) ** 2;
+        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+
+        return $earthRadiusKm * $c;
     }
 
     public function categories(Request $request)
@@ -1058,6 +1070,292 @@ class ProductController extends Controller
                 'parent_id' => $category->parent_id,
             ],
             'products' => $payload,
+        ], 200);
+    }
+
+    public function nearby(Request $request)
+    {
+        $user = $request->user();
+
+        if (($user->role ?? 'user') !== 'user') {
+            return response()->json([
+                'message' => 'Unauthorized: Only users can access this endpoint.',
+            ], 403);
+        }
+
+        try {
+            $validated = $request->validate([
+                'lat' => 'required|numeric|between:-90,90',
+                'lng' => 'required|numeric|between:-180,180',
+                'distance_km' => 'nullable|numeric|min:0.1|max:500',
+                'category_id' => 'nullable|integer|exists:categories,id',
+                'condition_level_id' => 'nullable|integer|exists:condition_levels,id',
+                'q' => 'nullable|string|max:255',
+                'location_q' => 'nullable|string|max:255',
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation Error',
+                'errors' => $e->errors(),
+            ], 422);
+        }
+
+        $centerLat = (float) $validated['lat'];
+        $centerLng = (float) $validated['lng'];
+        $distanceKm = (float) ($validated['distance_km'] ?? 10);
+        $latRadius = $distanceKm / 111.0;
+        $cosLat = cos(deg2rad($centerLat));
+        $lngRadius = abs($cosLat) < 0.000001 ? 180.0 : $distanceKm / (111.0 * abs($cosLat));
+
+        $query = Product::query()
+            ->join('dormitories', 'products.dormitory_id', '=', 'dormitories.id')
+            ->where('products.status', 'available')
+            ->whereNull('products.deleted_at')
+            ->whereNotNull('dormitories.latitude')
+            ->whereNotNull('dormitories.longitude')
+            ->whereBetween('dormitories.latitude', [$centerLat - $latRadius, $centerLat + $latRadius])
+            ->whereBetween('dormitories.longitude', [$centerLng - $lngRadius, $centerLng + $lngRadius])
+            ->select([
+                'products.id',
+                'products.seller_id',
+                'products.dormitory_id',
+                'products.category_id',
+                'products.condition_level_id',
+                'products.title',
+                'products.description',
+                'products.price',
+                'products.status',
+                'products.created_at',
+                'dormitories.latitude as dormitory_latitude',
+                'dormitories.longitude as dormitory_longitude',
+            ])
+            ->orderByDesc('products.id');
+
+        if (! empty($validated['category_id'])) {
+            $query->where('products.category_id', (int) $validated['category_id']);
+        }
+
+        if (! empty($validated['condition_level_id'])) {
+            $query->where('products.condition_level_id', (int) $validated['condition_level_id']);
+        }
+
+        if (! empty($validated['q'])) {
+            $q = trim((string) $validated['q']);
+            $query->where(function ($inner) use ($q) {
+                $inner
+                    ->where('products.title', 'like', '%'.$q.'%')
+                    ->orWhere('products.description', 'like', '%'.$q.'%');
+            });
+        }
+
+        if (! empty($validated['location_q'])) {
+            $locationQ = trim((string) $validated['location_q']);
+            $query->where(function ($inner) use ($locationQ) {
+                $inner
+                    ->where('dormitories.dormitory_name', 'like', '%'.$locationQ.'%')
+                    ->orWhere('dormitories.domain', 'like', '%'.$locationQ.'%')
+                    ->orWhere('dormitories.address', 'like', '%'.$locationQ.'%');
+            });
+        }
+
+        $rows = $query->get();
+
+        $nearbyRows = $rows
+            ->map(function ($row) use ($centerLat, $centerLng) {
+                $distance = $this->haversineDistanceKm(
+                    $centerLat,
+                    $centerLng,
+                    (float) $row->dormitory_latitude,
+                    (float) $row->dormitory_longitude
+                );
+                $row->distance_km = round($distance, 3);
+
+                return $row;
+            })
+            ->filter(function ($row) use ($distanceKm) {
+                return (float) $row->distance_km <= $distanceKm;
+            })
+            ->sortBy([
+                ['distance_km', 'asc'],
+                ['id', 'desc'],
+            ])
+            ->values();
+
+        $productIds = $nearbyRows->pluck('id')->all();
+        $sellerIds = $nearbyRows->pluck('seller_id')->filter()->unique()->values()->all();
+        $dormitoryIds = $nearbyRows->pluck('dormitory_id')->filter()->unique()->values()->all();
+        $categoryIds = $nearbyRows->pluck('category_id')->filter()->unique()->values()->all();
+        $conditionLevelIds = $nearbyRows->pluck('condition_level_id')->filter()->unique()->values()->all();
+
+        $sellersById = collect();
+        if (count($sellerIds) > 0) {
+            $sellersById = User::query()
+                ->select(['id', 'full_name', 'username', 'email', 'profile_picture'])
+                ->whereIn('id', $sellerIds)
+                ->get()
+                ->keyBy('id');
+        }
+
+        $dormitoriesById = collect();
+        if (count($dormitoryIds) > 0) {
+            $dormitoriesById = Dormitory::query()
+                ->select(['id', 'dormitory_name', 'domain', 'address', 'latitude', 'longitude', 'is_active', 'university_id'])
+                ->whereIn('id', $dormitoryIds)
+                ->get()
+                ->keyBy('id');
+        }
+
+        $categoriesById = collect();
+        if (count($categoryIds) > 0) {
+            $categoriesById = Category::query()
+                ->select(['id', 'name', 'parent_id', 'logo'])
+                ->whereIn('id', $categoryIds)
+                ->get()
+                ->keyBy('id');
+        }
+
+        $conditionLevelsById = collect();
+        if (count($conditionLevelIds) > 0) {
+            $conditionLevelsById = ConditionLevel::query()
+                ->select(['id', 'name', 'description', 'sort_order'])
+                ->whereIn('id', $conditionLevelIds)
+                ->get()
+                ->keyBy('id');
+        }
+
+        $imagesByProductId = [];
+        if (count($productIds) > 0) {
+            $imagesByProductId = ProductImage::query()
+                ->whereIn('product_id', $productIds)
+                ->orderByDesc('is_primary')
+                ->orderBy('id')
+                ->get()
+                ->groupBy('product_id')
+                ->all();
+        }
+
+        $tagsByProductId = [];
+        if (count($productIds) > 0) {
+            $tagRows = DB::table('product_tags')
+                ->join('tags', 'product_tags.tag_id', '=', 'tags.id')
+                ->whereIn('product_tags.product_id', $productIds)
+                ->select([
+                    'product_tags.product_id',
+                    'tags.id',
+                    'tags.name',
+                ])
+                ->orderBy('tags.id')
+                ->get();
+
+            foreach ($tagRows as $row) {
+                $tagsByProductId[$row->product_id][] = [
+                    'id' => (int) $row->id,
+                    'name' => $row->name,
+                ];
+            }
+        }
+
+        $productsPayload = $nearbyRows
+            ->map(function ($row) use ($sellersById, $dormitoriesById, $categoriesById, $conditionLevelsById, $imagesByProductId, $tagsByProductId) {
+                $seller = $sellersById->get($row->seller_id);
+                $dormitory = $dormitoriesById->get($row->dormitory_id);
+                $category = $categoriesById->get($row->category_id);
+                $conditionLevel = $conditionLevelsById->get($row->condition_level_id);
+                $images = ($imagesByProductId[$row->id] ?? collect())
+                    ->map(function ($image) {
+                        return [
+                            'id' => $image->id,
+                            'product_id' => $image->product_id,
+                            'image_url' => $image->image_url,
+                            'image_thumbnail_url' => $image->image_thumbnail_url,
+                            'is_primary' => (bool) $image->is_primary,
+                        ];
+                    })
+                    ->values();
+
+                return [
+                    'id' => (int) $row->id,
+                    'seller_id' => (int) $row->seller_id,
+                    'seller' => $seller ? [
+                        'id' => (int) $seller->id,
+                        'full_name' => $seller->full_name,
+                        'username' => $seller->username,
+                        'email' => $seller->email,
+                        'profile_picture' => $seller->profile_picture,
+                    ] : null,
+                    'dormitory_id' => (int) $row->dormitory_id,
+                    'dormitory' => $dormitory ? [
+                        'id' => (int) $dormitory->id,
+                        'dormitory_name' => $dormitory->dormitory_name,
+                        'domain' => $dormitory->domain,
+                        'location' => $dormitory->address,
+                        'lat' => $dormitory->latitude !== null ? (float) $dormitory->latitude : null,
+                        'lng' => $dormitory->longitude !== null ? (float) $dormitory->longitude : null,
+                        'is_active' => (bool) $dormitory->is_active,
+                        'university_id' => $dormitory->university_id !== null ? (int) $dormitory->university_id : null,
+                    ] : null,
+                    'category_id' => $row->category_id !== null ? (int) $row->category_id : null,
+                    'category' => $category ? [
+                        'id' => (int) $category->id,
+                        'name' => $category->name,
+                        'parent_id' => $category->parent_id !== null ? (int) $category->parent_id : null,
+                        'icon' => $category->logo,
+                    ] : null,
+                    'condition_level_id' => $row->condition_level_id !== null ? (int) $row->condition_level_id : null,
+                    'condition_level' => $conditionLevel ? [
+                        'id' => (int) $conditionLevel->id,
+                        'name' => $conditionLevel->name,
+                        'description' => $conditionLevel->description,
+                        'sort_order' => (int) $conditionLevel->sort_order,
+                    ] : null,
+                    'title' => $row->title,
+                    'description' => $row->description,
+                    'price' => $row->price !== null ? (float) $row->price : null,
+                    'status' => $row->status,
+                    'is_promoted' => false,
+                    'created_at' => $row->created_at,
+                    'images' => $images,
+                    'tags' => $tagsByProductId[$row->id] ?? [],
+                    'distance_km' => (float) $row->distance_km,
+                ];
+            })
+            ->values();
+
+        $metaCategories = $categoriesById
+            ->values()
+            ->map(function ($category) {
+                return [
+                    'id' => (int) $category->id,
+                    'name' => $category->name,
+                    'icon' => $category->logo,
+                ];
+            })
+            ->values();
+
+        $metaConditionLevels = $conditionLevelsById
+            ->values()
+            ->map(function ($conditionLevel) {
+                return [
+                    'id' => (int) $conditionLevel->id,
+                    'name' => $conditionLevel->name,
+                    'description' => $conditionLevel->description,
+                    'sort_order' => (int) $conditionLevel->sort_order,
+                ];
+            })
+            ->values();
+
+        return response()->json([
+            'message' => 'ok',
+            'center' => [
+                'lat' => $centerLat,
+                'lng' => $centerLng,
+            ],
+            'distance_km' => $distanceKm,
+            'products' => $productsPayload,
+            'meta' => [
+                'categories' => $metaCategories,
+                'condition_levels' => $metaConditionLevels,
+            ],
         ], 200);
     }
 
