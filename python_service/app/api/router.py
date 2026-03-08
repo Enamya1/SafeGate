@@ -1,3 +1,4 @@
+import base64
 import json
 import hmac
 import math
@@ -832,8 +833,11 @@ async def internal_visual_search_index(
     product_id_raw = payload.get("product_id")
     product_image_id_raw = payload.get("product_image_id")
     image_url_raw = payload.get("image_url")
-    if product_id_raw is None or product_image_id_raw is None or not isinstance(image_url_raw, str) or not image_url_raw.strip():
-        raise HTTPException(status_code=422, detail="product_id, product_image_id, and image_url are required")
+    image_bytes_base64_raw = payload.get("image_bytes_base64")
+    has_image_url = isinstance(image_url_raw, str) and image_url_raw.strip() != ""
+    has_image_bytes = isinstance(image_bytes_base64_raw, str) and image_bytes_base64_raw.strip() != ""
+    if product_id_raw is None or product_image_id_raw is None or (not has_image_url and not has_image_bytes):
+        raise HTTPException(status_code=422, detail="product_id, product_image_id, and image_url or image_bytes_base64 are required")
 
     try:
         product_id = int(product_id_raw)
@@ -850,7 +854,16 @@ async def internal_visual_search_index(
     visual_engine = _get_visual_search_engine()
     with conn:
         try:
-            result = visual_engine.index_single_image(conn, product_id, product_image_id, image_url_raw.strip())
+            if has_image_bytes:
+                try:
+                    image_bytes = base64.b64decode(str(image_bytes_base64_raw), validate=True)
+                except Exception:
+                    raise HTTPException(status_code=422, detail="Invalid image_bytes_base64")
+                if len(image_bytes) == 0:
+                    raise HTTPException(status_code=422, detail="image_bytes_base64 is empty")
+                result = visual_engine.index_single_image_bytes(conn, product_id, product_image_id, image_bytes)
+            else:
+                result = visual_engine.index_single_image(conn, product_id, product_image_id, str(image_url_raw).strip())
             conn.commit()
         except ProgrammingError as e:
             if getattr(e.orig, "args", None) and len(e.orig.args) >= 1 and int(e.orig.args[0]) == 1146:
@@ -867,6 +880,8 @@ async def internal_visual_search_index(
         except urllib.error.HTTPError as e:
             body = e.read().decode("utf-8") if hasattr(e, "read") else ""
             raise HTTPException(status_code=422, detail=body or "Could not fetch image")
+        except HTTPException:
+            raise
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Indexing failed: {type(e).__name__}")
 

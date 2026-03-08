@@ -222,6 +222,15 @@ class VisualSearchEngine:
         image_url: str,
     ) -> Dict[str, Any]:
         image_bytes = _download_image_bytes(image_url, timeout_seconds=self.image_download_timeout_seconds)
+        return self.index_single_image_bytes(conn, product_id, product_image_id, image_bytes)
+
+    def index_single_image_bytes(
+        self,
+        conn,
+        product_id: int,
+        product_image_id: int,
+        image_bytes: bytes,
+    ) -> Dict[str, Any]:
         embedding = self.compute_embedding(image_bytes)
         fingerprint = hashlib.sha256(image_bytes).hexdigest()
 

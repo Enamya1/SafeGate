@@ -38,16 +38,24 @@ class ProductController extends Controller
         return rtrim((string) env('PYTHON_SERVICE_BASE_URL', 'http://127.0.0.1:8001'), '/');
     }
 
-    private function indexProductImagesForVisualSearch(iterable $images): void
+    private function indexProductImagesForVisualSearch(iterable $images, bool $strict = false, array $imageBytesBase64ByImageId = []): array
     {
         if (app()->environment('testing')) {
-            return;
+            return [
+                'attempted' => 0,
+                'indexed' => 0,
+                'failed' => [],
+            ];
         }
 
         $pythonInternalToken = (string) env('PYTHON_INTERNAL_TOKEN', '');
         $timeoutSeconds = (int) env('PYTHON_SERVICE_TIMEOUT_SECONDS', 45);
         $connectTimeoutSeconds = (int) env('PYTHON_SERVICE_CONNECT_TIMEOUT_SECONDS', 5);
+        $retryAttempts = max(1, (int) env('VISUAL_SEARCH_INDEX_RETRY_ATTEMPTS', 2));
         $baseUrl = $this->pythonServiceBaseUrl();
+        $attempted = 0;
+        $indexed = 0;
+        $failed = [];
 
         foreach ($images as $image) {
             if (! $image instanceof ProductImage) {
@@ -57,21 +65,61 @@ class ProductController extends Controller
                 continue;
             }
 
-            try {
-                Http::connectTimeout($connectTimeoutSeconds)
-                    ->timeout($timeoutSeconds)
-                    ->acceptJson()
-                    ->withHeaders([
-                        'X-Internal-Token' => $pythonInternalToken,
-                    ])
-                    ->post($baseUrl.'/py/api/internal/visual-search/index', [
-                        'product_id' => (int) $image->product_id,
-                        'product_image_id' => (int) $image->id,
-                        'image_url' => $image->image_url,
-                    ]);
-            } catch (\Throwable $e) {
+            $attempted++;
+            $indexedThisImage = false;
+            $lastError = null;
+
+            for ($attempt = 1; $attempt <= $retryAttempts; $attempt++) {
+                try {
+                    /** @var \Illuminate\Http\Client\Response $response */
+                    $response = Http::connectTimeout($connectTimeoutSeconds)
+                        ->timeout($timeoutSeconds)
+                        ->acceptJson()
+                        ->withHeaders([
+                            'X-Internal-Token' => $pythonInternalToken,
+                        ])
+                        ->post($baseUrl.'/py/api/internal/visual-search/index', [
+                            'product_id' => (int) $image->product_id,
+                            'product_image_id' => (int) $image->id,
+                            'image_url' => $image->image_url,
+                            'image_bytes_base64' => $imageBytesBase64ByImageId[(int) $image->id] ?? null,
+                        ]);
+
+                    $payload = $response->json();
+                    $indexedImageId = is_array($payload) ? (int) data_get($payload, 'indexed.product_image_id', 0) : 0;
+                    if ($response->successful() && $indexedImageId === (int) $image->id) {
+                        $indexedThisImage = true;
+                        $indexed++;
+                        break;
+                    }
+
+                    $lastError = 'HTTP '.$response->status();
+                } catch (\Throwable $e) {
+                    $lastError = class_basename($e).': '.$e->getMessage();
+                }
+            }
+
+            if (! $indexedThisImage) {
+                $failed[] = [
+                    'product_id' => (int) $image->product_id,
+                    'product_image_id' => (int) $image->id,
+                    'error' => $lastError ?? 'Unknown indexing failure',
+                ];
             }
         }
+
+        if ($strict && count($failed) > 0) {
+            $firstFailure = $failed[0];
+            throw new \RuntimeException(
+                'Visual indexing failed for product_image_id '.$firstFailure['product_image_id'].' ('.$firstFailure['error'].')'
+            );
+        }
+
+        return [
+            'attempted' => $attempted,
+            'indexed' => $indexed,
+            'failed' => $failed,
+        ];
     }
 
     private function recordProductBehaviorEventBatch(Request $request, User $user, iterable $products, string $eventType): void
@@ -546,6 +594,7 @@ class ProductController extends Controller
         $baseUrl = $this->pythonServiceBaseUrl();
 
         try {
+            /** @var \Illuminate\Http\Client\Response $pythonResponse */
             $pythonResponse = Http::connectTimeout($pythonConnectTimeoutSeconds)
                 ->timeout($pythonTimeoutSeconds)
                 ->acceptJson()
@@ -1942,7 +1991,8 @@ class ProductController extends Controller
 
         $tagIds = array_values(array_unique(array_map('intval', $validated['tag_ids'] ?? [])));
 
-        $result = DB::transaction(function () use ($validated, $user, $dormitoryId, $imagesToStore, $thumbnailsToStore, $imageUrlsToStore, $imageThumbnailUrlsToStore, $primaryIndex, $tagIds) {
+        $imageBytesBase64ByImageId = [];
+        $result = DB::transaction(function () use ($validated, $user, $dormitoryId, $imagesToStore, $thumbnailsToStore, $imageUrlsToStore, $imageThumbnailUrlsToStore, $primaryIndex, $tagIds, &$imageBytesBase64ByImageId) {
             $product = Product::create([
                 'seller_id' => $user->id,
                 'dormitory_id' => $dormitoryId,
@@ -1991,6 +2041,10 @@ class ProductController extends Controller
                         'image_thumbnail_url' => $thumbnailUrl,
                         'is_primary' => $index === $primaryIndex,
                     ]);
+                    $rawImageBytes = $file->get();
+                    if (is_string($rawImageBytes) && $rawImageBytes !== '') {
+                        $imageBytesBase64ByImageId[(int) $image->id] = base64_encode($rawImageBytes);
+                    }
 
                     $images[] = $image;
                 }
@@ -2012,13 +2066,24 @@ class ProductController extends Controller
             ];
         });
 
-        $this->indexProductImagesForVisualSearch($result['images']);
+        try {
+            $indexing = $this->indexProductImagesForVisualSearch($result['images'], true, $imageBytesBase64ByImageId);
+        } catch (\RuntimeException $e) {
+            return response()->json([
+                'message' => 'Product created but visual indexing failed',
+                'product' => $result['product'],
+                'images' => $result['images'],
+                'tag_ids' => $result['tag_ids'],
+                'error' => $e->getMessage(),
+            ], 503);
+        }
 
         return response()->json([
             'message' => 'Product created successfully',
             'product' => $result['product'],
             'images' => $result['images'],
             'tag_ids' => $result['tag_ids'],
+            'visual_indexing' => $indexing,
         ], 201);
     }
 
