@@ -1,0 +1,75 @@
+{
+  "started_at": "2026-03-08T02:42:48.208404+00:00",
+  "completed_at": "2026-03-08T02:42:50.849478+00:00",
+  "settings": {
+    "laravel_base_url": "http://127.0.0.1:8000",
+    "python_base_url": "http://127.0.0.1:8001",
+    "bearer_token_tail": "afe595",
+    "internal_token_tail": "l-2026",
+    "timeout_seconds": "25.0",
+    "retries": "2",
+    "backoff_seconds": "0.35",
+    "max_response_ms": "8000",
+    "enable_live_tests": "False",
+    "report_dir": "d:\\ty_now\\SafeGate\\python_service\\tests\\reports",
+    "report_source_path": "d:\\ty_now\\SafeGate\\report",
+    "db_host": "127.0.0.1",
+    "db_port": "3306",
+    "db_database": "suki_db",
+    "db_username": "root"
+  },
+  "summary": {
+    "total_tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 6,
+    "successful": true
+  },
+  "tests": [
+    {
+      "test": "setUpClass (tests.suites.test_ai_respond.AiRespondTests)",
+      "status": "skipped",
+      "duration_ms": 0
+    },
+    {
+      "test": "setUpClass (tests.suites.test_auth_and_visual.AuthAndVisualEndpointsTests)",
+      "status": "skipped",
+      "duration_ms": 0
+    },
+    {
+      "test": "setUpClass (tests.suites.test_documented_endpoint_compliance.DocumentedEndpointComplianceTests)",
+      "status": "skipped",
+      "duration_ms": 0
+    },
+    {
+      "test": "setUpClass (tests.suites.test_health_and_core.HealthAndCoreEndpointsTests)",
+      "status": "skipped",
+      "duration_ms": 0
+    },
+    {
+      "test": "setUpClass (tests.suites.test_laravel_auth.LaravelAuthTests)",
+      "status": "skipped",
+      "duration_ms": 0
+    },
+    {
+      "test": "setUpClass (tests.suites.test_recommendations_and_similar.RecommendationsAndSimilarTests)",
+      "status": "skipped",
+      "duration_ms": 0
+    },
+    {
+      "test": "tests.test_visual_search.VisualSearchTests.test_compute_embedding_normalizes_dimension",
+      "status": "passed",
+      "duration_ms": 17
+    },
+    {
+      "test": "tests.test_visual_search.VisualSearchTests.test_visual_search_returns_ranked_products",
+      "status": "passed",
+      "duration_ms": 19
+    }
+  ],
+  "endpoint_metrics": [],
+  "endpoint_summary": {
+    "endpoint_stats": [],
+    "network_or_transport_failures": []
+  }
+}

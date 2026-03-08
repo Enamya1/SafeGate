@@ -1,0 +1,1 @@
+2026-03-08 10:42:30,491 INFO httpx HTTP Request: POST http://testserver/py/api/user/search/visual "HTTP/1.1 200 OK"

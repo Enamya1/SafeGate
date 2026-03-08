@@ -9,17 +9,19 @@ import urllib.request
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-from fastapi import APIRouter, Header, HTTPException, Query, Request
+from fastapi import APIRouter, File, Form, Header, HTTPException, Query, Request, UploadFile
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import ProgrammingError
 
 from app.ai_manager import AIModelManager
+from app.visual_search import VisualSearchEngine
 
 router = APIRouter()
 py_router = APIRouter()
 
 _engine: Optional[Engine] = None
+_visual_search_engine: Optional[VisualSearchEngine] = None
 
 
 def _get_env_int(name: str, default: int) -> int:
@@ -51,6 +53,14 @@ def _get_db_engine() -> Engine:
         future=True,
     )
     return _engine
+
+
+def _get_visual_search_engine() -> VisualSearchEngine:
+    global _visual_search_engine
+    if _visual_search_engine is not None:
+        return _visual_search_engine
+    _visual_search_engine = VisualSearchEngine()
+    return _visual_search_engine
 
 
 def _laravel_get_json(authorization: str, path: str) -> Dict[str, Any]:
@@ -808,6 +818,154 @@ def hi(authorization: Optional[str] = Header(default=None)) -> dict:
         username = "user"
 
     return {"message": f"hi {username}"}
+
+
+@py_router.post("/py/api/internal/visual-search/index")
+async def internal_visual_search_index(
+    request: Request,
+    payload: Dict[str, Any],
+    x_internal_token: Optional[str] = Header(default=None),
+) -> dict:
+    if not (_has_valid_internal_token(x_internal_token) or _is_loopback_request(request)):
+        raise HTTPException(status_code=401, detail="Unauthorized internal request")
+
+    product_id_raw = payload.get("product_id")
+    product_image_id_raw = payload.get("product_image_id")
+    image_url_raw = payload.get("image_url")
+    if product_id_raw is None or product_image_id_raw is None or not isinstance(image_url_raw, str) or not image_url_raw.strip():
+        raise HTTPException(status_code=422, detail="product_id, product_image_id, and image_url are required")
+
+    try:
+        product_id = int(product_id_raw)
+        product_image_id = int(product_image_id_raw)
+    except Exception:
+        raise HTTPException(status_code=422, detail="product_id and product_image_id must be integers")
+
+    engine = _get_db_engine()
+    try:
+        conn = engine.connect()
+    except Exception:
+        raise HTTPException(status_code=503, detail="Database unavailable")
+
+    visual_engine = _get_visual_search_engine()
+    with conn:
+        try:
+            result = visual_engine.index_single_image(conn, product_id, product_image_id, image_url_raw.strip())
+            conn.commit()
+        except ProgrammingError as e:
+            if getattr(e.orig, "args", None) and len(e.orig.args) >= 1 and int(e.orig.args[0]) == 1146:
+                table = visual_engine.missing_table_name_from_programming_error(e) or "unknown"
+                raise HTTPException(
+                    status_code=503,
+                    detail=f"Database '{os.environ.get('DB_DATABASE', 'suki_db')}' missing table: {table}. Check DB_* env or run Laravel migrations.",
+                )
+            raise
+        except ValueError as e:
+            raise HTTPException(status_code=422, detail=str(e))
+        except RuntimeError as e:
+            raise HTTPException(status_code=503, detail=str(e))
+        except urllib.error.HTTPError as e:
+            body = e.read().decode("utf-8") if hasattr(e, "read") else ""
+            raise HTTPException(status_code=422, detail=body or "Could not fetch image")
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Indexing failed: {type(e).__name__}")
+
+    return {
+        "message": "Image embedding indexed successfully",
+        "indexed": result,
+    }
+
+
+@py_router.post("/py/api/user/search/visual")
+async def visual_search(
+    request: Request,
+    authorization: Optional[str] = Header(default=None),
+    x_internal_token: Optional[str] = Header(default=None),
+    x_user_id: Optional[str] = Header(default=None),
+    x_user_role: Optional[str] = Header(default=None),
+    x_user_dormitory_id: Optional[str] = Header(default=None),
+    image: UploadFile = File(...),
+    top_k: int = Form(default=12),
+) -> dict:
+    internal_trusted = _has_valid_internal_token(x_internal_token) or _is_loopback_request(request)
+
+    user: Optional[Dict[str, Any]] = None
+    if internal_trusted and x_user_id is not None and str(x_user_id).strip() != "":
+        try:
+            uid = int(str(x_user_id).strip())
+        except Exception:
+            raise HTTPException(status_code=422, detail="Invalid X-User-Id header")
+        role_value = (x_user_role or "user").strip().lower()
+        if role_value != "user":
+            raise HTTPException(status_code=403, detail="Only users can access this endpoint")
+        dormitory_value: Optional[int] = None
+        if x_user_dormitory_id is not None and str(x_user_dormitory_id).strip() != "":
+            try:
+                dormitory_value = int(str(x_user_dormitory_id).strip())
+            except Exception:
+                dormitory_value = None
+        user = {
+            "id": uid,
+            "role": role_value,
+            "dormitory_id": dormitory_value,
+        }
+    else:
+        if not authorization:
+            raise HTTPException(status_code=401, detail="Missing Authorization header")
+
+        me = _laravel_get_json(authorization, "/api/user/me")
+        user = me.get("user") if isinstance(me, dict) else None
+        if not isinstance(user, dict) or not user.get("id"):
+            raise HTTPException(status_code=401, detail="Invalid user")
+        role = user.get("role")
+        if role is not None and str(role).lower() != "user":
+            raise HTTPException(status_code=403, detail="Only users can access this endpoint")
+
+    content_type = (image.content_type or "").lower()
+    allowed_types = {"image/jpeg", "image/jpg", "image/png", "image/webp"}
+    if content_type not in allowed_types:
+        raise HTTPException(status_code=422, detail="Unsupported image format")
+
+    image_bytes = await image.read()
+    if not image_bytes:
+        raise HTTPException(status_code=422, detail="Image file is empty")
+
+    max_upload_mb = _get_env_int("VISUAL_SEARCH_MAX_UPLOAD_MB", 8)
+    if len(image_bytes) > (max_upload_mb * 1024 * 1024):
+        raise HTTPException(status_code=422, detail=f"Image exceeds {max_upload_mb} MB limit")
+
+    engine = _get_db_engine()
+    try:
+        conn = engine.connect()
+    except Exception:
+        raise HTTPException(status_code=503, detail="Database unavailable")
+
+    visual_engine = _get_visual_search_engine()
+    with conn:
+        try:
+            result = visual_engine.search(conn, image_bytes, top_k=top_k)
+        except ProgrammingError as e:
+            if getattr(e.orig, "args", None) and len(e.orig.args) >= 1 and int(e.orig.args[0]) == 1146:
+                table = visual_engine.missing_table_name_from_programming_error(e) or "unknown"
+                raise HTTPException(
+                    status_code=503,
+                    detail=f"Database '{os.environ.get('DB_DATABASE', 'suki_db')}' missing table: {table}. Check DB_* env or run Laravel migrations.",
+                )
+            raise
+        except ValueError as e:
+            raise HTTPException(status_code=422, detail=str(e))
+        except RuntimeError as e:
+            raise HTTPException(status_code=503, detail=str(e))
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Visual search failed: {type(e).__name__}")
+
+    return {
+        "message": "Visual search completed successfully",
+        "product_ids": result["product_ids"],
+        "matches": result["matches"],
+        "model_name": result["model_name"],
+        "embedding_dim": result["embedding_dim"],
+    }
 
 
 @py_router.get("/py/api/user/recommendations/products")

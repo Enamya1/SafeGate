@@ -1,0 +1,1449 @@
+{
+  "started_at": "2026-03-08T03:08:20.855342+00:00",
+  "completed_at": "2026-03-08T03:08:50.455549+00:00",
+  "settings": {
+    "laravel_base_url": "http://127.0.0.1:8000",
+    "python_base_url": "http://127.0.0.1:8001",
+    "bearer_token_tail": "afe595",
+    "internal_token_tail": "l-2026",
+    "timeout_seconds": "25.0",
+    "retries": "2",
+    "backoff_seconds": "0.35",
+    "max_response_ms": "8000",
+    "enable_live_tests": "True",
+    "report_dir": "d:\\ty_now\\SafeGate\\python_service\\tests\\reports",
+    "report_source_path": "d:\\ty_now\\SafeGate\\report",
+    "db_host": "127.0.0.1",
+    "db_port": "3306",
+    "db_database": "suki_db",
+    "db_username": "root"
+  },
+  "summary": {
+    "total_tests": 24,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "successful": true
+  },
+  "tests": [
+    {
+      "test": "tests.suites.test_ai_respond.AiRespondTests.test_ai_respond_rejects_invalid_message_type",
+      "status": "passed",
+      "duration_ms": 10
+    },
+    {
+      "test": "tests.suites.test_ai_respond.AiRespondTests.test_ai_respond_requires_auth",
+      "status": "passed",
+      "duration_ms": 10
+    },
+    {
+      "test": "tests.suites.test_ai_respond.AiRespondTests.test_ai_respond_schema",
+      "status": "passed",
+      "duration_ms": 1341
+    },
+    {
+      "test": "tests.suites.test_auth_and_visual.AuthAndVisualEndpointsTests.test_internal_visual_index_auth_or_validation",
+      "status": "passed",
+      "duration_ms": 36
+    },
+    {
+      "test": "tests.suites.test_auth_and_visual.AuthAndVisualEndpointsTests.test_python_hi_with_auth",
+      "status": "passed",
+      "duration_ms": 356
+    },
+    {
+      "test": "tests.suites.test_auth_and_visual.AuthAndVisualEndpointsTests.test_python_hi_without_auth",
+      "status": "passed",
+      "duration_ms": 29
+    },
+    {
+      "test": "tests.suites.test_auth_and_visual.AuthAndVisualEndpointsTests.test_visual_search_rejects_invalid_price_range",
+      "status": "passed",
+      "duration_ms": 290
+    },
+    {
+      "test": "tests.suites.test_auth_and_visual.AuthAndVisualEndpointsTests.test_visual_search_requires_valid_multipart",
+      "status": "passed",
+      "duration_ms": 353
+    },
+    {
+      "test": "tests.suites.test_auth_and_visual.AuthAndVisualEndpointsTests.test_visual_search_without_auth",
+      "status": "passed",
+      "duration_ms": 21
+    },
+    {
+      "test": "tests.suites.test_auth_and_visual.AuthAndVisualEndpointsTests.test_visual_tables_exist_when_db_config_present",
+      "status": "passed",
+      "duration_ms": 25
+    },
+    {
+      "test": "tests.suites.test_documented_endpoint_compliance.DocumentedEndpointComplianceTests.test_documented_endpoints_are_reachable",
+      "status": "passed",
+      "duration_ms": 16522
+    },
+    {
+      "test": "tests.suites.test_health_and_core.HealthAndCoreEndpointsTests.test_laravel_health_check",
+      "status": "passed",
+      "duration_ms": 294
+    },
+    {
+      "test": "tests.suites.test_health_and_core.HealthAndCoreEndpointsTests.test_python_health",
+      "status": "passed",
+      "duration_ms": 11
+    },
+    {
+      "test": "tests.suites.test_health_and_core.HealthAndCoreEndpointsTests.test_python_ping",
+      "status": "passed",
+      "duration_ms": 7
+    },
+    {
+      "test": "tests.suites.test_health_and_core.HealthAndCoreEndpointsTests.test_python_test_py",
+      "status": "passed",
+      "duration_ms": 10
+    },
+    {
+      "test": "tests.suites.test_laravel_auth.LaravelAuthTests.test_user_login_invalid_credentials",
+      "status": "passed",
+      "duration_ms": 323
+    },
+    {
+      "test": "tests.suites.test_laravel_auth.LaravelAuthTests.test_user_me_requires_auth",
+      "status": "passed",
+      "duration_ms": 276
+    },
+    {
+      "test": "tests.suites.test_laravel_auth.LaravelAuthTests.test_user_me_with_token",
+      "status": "passed",
+      "duration_ms": 334
+    },
+    {
+      "test": "tests.suites.test_python_endpoint_matrix.PythonEndpointMatrixTests.test_all_python_routes",
+      "status": "passed",
+      "duration_ms": 2877
+    },
+    {
+      "test": "tests.suites.test_recommendations_and_similar.RecommendationsAndSimilarTests.test_recommendations_endpoint",
+      "status": "passed",
+      "duration_ms": 353
+    },
+    {
+      "test": "tests.suites.test_recommendations_and_similar.RecommendationsAndSimilarTests.test_recommendations_requires_auth",
+      "status": "passed",
+      "duration_ms": 12
+    },
+    {
+      "test": "tests.suites.test_recommendations_and_similar.RecommendationsAndSimilarTests.test_similar_products_endpoint",
+      "status": "passed",
+      "duration_ms": 339
+    },
+    {
+      "test": "tests.test_visual_search.VisualSearchTests.test_compute_embedding_normalizes_dimension",
+      "status": "passed",
+      "duration_ms": 45
+    },
+    {
+      "test": "tests.test_visual_search.VisualSearchTests.test_visual_search_returns_ranked_products",
+      "status": "passed",
+      "duration_ms": 46
+    }
+  ],
+  "endpoint_metrics": [
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8001/api/ai/respond",
+      "status_code": 422,
+      "elapsed_ms": 9,
+      "base": "python",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8001/api/ai/respond",
+      "status_code": 401,
+      "elapsed_ms": 9,
+      "base": "python",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8001/api/ai/respond",
+      "status_code": 200,
+      "elapsed_ms": 1340,
+      "base": "python",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8001/py/api/internal/visual-search/index",
+      "status_code": 422,
+      "elapsed_ms": 12,
+      "base": "python",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8001/api/hi",
+      "status_code": 200,
+      "elapsed_ms": 355,
+      "base": "python",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8001/api/hi",
+      "status_code": 401,
+      "elapsed_ms": 28,
+      "base": "python",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8001/py/api/user/search/visual",
+      "status_code": 422,
+      "elapsed_ms": 290,
+      "base": "python",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8001/py/api/user/search/visual",
+      "status_code": 200,
+      "elapsed_ms": 353,
+      "base": "python",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8001/py/api/user/search/visual",
+      "status_code": 401,
+      "elapsed_ms": 20,
+      "base": "python",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/up",
+      "status_code": 200,
+      "elapsed_ms": 251,
+      "base": "laravel",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/health-check",
+      "status_code": 200,
+      "elapsed_ms": 250,
+      "base": "laravel",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8000/api/user/signup",
+      "status_code": 422,
+      "elapsed_ms": 269,
+      "base": "laravel",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8000/api/user/login",
+      "status_code": 422,
+      "elapsed_ms": 247,
+      "base": "laravel",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/user/me",
+      "status_code": 200,
+      "elapsed_ms": 291,
+      "base": "laravel",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "PATCH",
+      "url": "http://127.0.0.1:8000/api/user/settings",
+      "status_code": 200,
+      "elapsed_ms": 338,
+      "base": "laravel",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/user/settings/university-options",
+      "status_code": 200,
+      "elapsed_ms": 392,
+      "base": "laravel",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "PATCH",
+      "url": "http://127.0.0.1:8000/api/user/settings/university",
+      "status_code": 422,
+      "elapsed_ms": 331,
+      "base": "laravel",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8000/api/user/products",
+      "status_code": 422,
+      "elapsed_ms": 318,
+      "base": "laravel",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/user/products",
+      "status_code": 200,
+      "elapsed_ms": 278,
+      "base": "laravel",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/user/products/cards",
+      "status_code": 200,
+      "elapsed_ms": 307,
+      "base": "laravel",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/user/get_product/1",
+      "status_code": 200,
+      "elapsed_ms": 361,
+      "base": "laravel",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/user/products/1/edit",
+      "status_code": 404,
+      "elapsed_ms": 299,
+      "base": "laravel",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "PATCH",
+      "url": "http://127.0.0.1:8000/api/user/products/1/mark-sold",
+      "status_code": 404,
+      "elapsed_ms": 332,
+      "base": "laravel",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/user/products/by-tag/sample-tag",
+      "status_code": 404,
+      "elapsed_ms": 312,
+      "base": "laravel",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/user/products/by-category/electronics",
+      "status_code": 200,
+      "elapsed_ms": 331,
+      "base": "laravel",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/user/get_favorites",
+      "status_code": 200,
+      "elapsed_ms": 309,
+      "base": "laravel",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8000/api/user/favorites",
+      "status_code": 422,
+      "elapsed_ms": 307,
+      "base": "laravel",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8000/api/user/products/1/images",
+      "status_code": 403,
+      "elapsed_ms": 295,
+      "base": "laravel",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8000/api/user/behavioral_events",
+      "status_code": 422,
+      "elapsed_ms": 327,
+      "base": "laravel",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/user/meta/options",
+      "status_code": 200,
+      "elapsed_ms": 316,
+      "base": "laravel",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/user/meta/categories",
+      "status_code": 200,
+      "elapsed_ms": 279,
+      "base": "laravel",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/user/meta/condition-levels",
+      "status_code": 200,
+      "elapsed_ms": 327,
+      "base": "laravel",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/user/meta/tags",
+      "status_code": 200,
+      "elapsed_ms": 343,
+      "base": "laravel",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/user/meta/dormitories",
+      "status_code": 200,
+      "elapsed_ms": 316,
+      "base": "laravel",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/user/meta/dormitories/by-university",
+      "status_code": 200,
+      "elapsed_ms": 310,
+      "base": "laravel",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8000/api/user/tags",
+      "status_code": 422,
+      "elapsed_ms": 310,
+      "base": "laravel",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8000/api/admin/test",
+      "status_code": 200,
+      "elapsed_ms": 262,
+      "base": "laravel",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8000/api/admin/login",
+      "status_code": 422,
+      "elapsed_ms": 279,
+      "base": "laravel",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8000/api/admin/logout",
+      "status_code": 403,
+      "elapsed_ms": 298,
+      "base": "laravel",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8000/api/admin/set_university",
+      "status_code": 422,
+      "elapsed_ms": 265,
+      "base": "laravel",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8000/api/admin/set_dormitory",
+      "status_code": 403,
+      "elapsed_ms": 335,
+      "base": "laravel",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/admin/universities",
+      "status_code": 200,
+      "elapsed_ms": 310,
+      "base": "laravel",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/admin/universities/sample-university/dormitories",
+      "status_code": 404,
+      "elapsed_ms": 290,
+      "base": "laravel",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8000/api/admin/categories",
+      "status_code": 403,
+      "elapsed_ms": 343,
+      "base": "laravel",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8000/api/admin/condition-levels",
+      "status_code": 403,
+      "elapsed_ms": 290,
+      "base": "laravel",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/admin/get_all_users",
+      "status_code": 403,
+      "elapsed_ms": 274,
+      "base": "laravel",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/admin/products",
+      "status_code": 403,
+      "elapsed_ms": 284,
+      "base": "laravel",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/admin/products/1",
+      "status_code": 403,
+      "elapsed_ms": 324,
+      "base": "laravel",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "PATCH",
+      "url": "http://127.0.0.1:8000/api/admin/products/1/block",
+      "status_code": 403,
+      "elapsed_ms": 327,
+      "base": "laravel",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8000/api/admin/messages",
+      "status_code": 403,
+      "elapsed_ms": 382,
+      "base": "laravel",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/admin/messages",
+      "status_code": 403,
+      "elapsed_ms": 303,
+      "base": "laravel",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/admin/users/1",
+      "status_code": 403,
+      "elapsed_ms": 338,
+      "base": "laravel",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "PATCH",
+      "url": "http://127.0.0.1:8000/api/admin/users/1",
+      "status_code": 403,
+      "elapsed_ms": 283,
+      "base": "laravel",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "PATCH",
+      "url": "http://127.0.0.1:8000/api/admin/users/1/activate",
+      "status_code": 403,
+      "elapsed_ms": 285,
+      "base": "laravel",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "PATCH",
+      "url": "http://127.0.0.1:8000/api/admin/users/1/deactivate",
+      "status_code": 403,
+      "elapsed_ms": 289,
+      "base": "laravel",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8001/health",
+      "status_code": 200,
+      "elapsed_ms": 7,
+      "base": "python",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8001/api/ping",
+      "status_code": 200,
+      "elapsed_ms": 6,
+      "base": "python",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8001/api/test_py",
+      "status_code": 200,
+      "elapsed_ms": 26,
+      "base": "python",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8001/api/hi",
+      "status_code": 200,
+      "elapsed_ms": 338,
+      "base": "python",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8000/api/ai/sessions",
+      "status_code": 201,
+      "elapsed_ms": 321,
+      "base": "laravel",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8000/api/ai/sessions/00000000-0000-0000-0000-000000000000/messages",
+      "status_code": 422,
+      "elapsed_ms": 300,
+      "base": "laravel",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/ai/sessions/00000000-0000-0000-0000-000000000000/messages",
+      "status_code": 404,
+      "elapsed_ms": 312,
+      "base": "laravel",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8001/api/ai/respond",
+      "status_code": 422,
+      "elapsed_ms": 17,
+      "base": "python",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8001/py/api/user/recommendations/products",
+      "status_code": 200,
+      "elapsed_ms": 355,
+      "base": "python",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8001/py/api/user/products/1/similar",
+      "status_code": 200,
+      "elapsed_ms": 327,
+      "base": "python",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8000/api/user/search/visual",
+      "status_code": 422,
+      "elapsed_ms": 360,
+      "base": "laravel",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8001/py/api/internal/visual-search/index",
+      "status_code": 422,
+      "elapsed_ms": 8,
+      "base": "python",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/health-check",
+      "status_code": 200,
+      "elapsed_ms": 291,
+      "base": "laravel",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8001/health",
+      "status_code": 200,
+      "elapsed_ms": 10,
+      "base": "python",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8001/api/ping",
+      "status_code": 200,
+      "elapsed_ms": 6,
+      "base": "python",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8001/api/test_py",
+      "status_code": 200,
+      "elapsed_ms": 9,
+      "base": "python",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8000/api/user/login",
+      "status_code": 401,
+      "elapsed_ms": 321,
+      "base": "laravel",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/user/me",
+      "status_code": 401,
+      "elapsed_ms": 275,
+      "base": "laravel",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8000/api/user/me",
+      "status_code": 200,
+      "elapsed_ms": 331,
+      "base": "laravel",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8001/health",
+      "status_code": 200,
+      "elapsed_ms": 29,
+      "base": "python",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8001/api/ping",
+      "status_code": 200,
+      "elapsed_ms": 9,
+      "base": "python",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8001/api/test_py",
+      "status_code": 200,
+      "elapsed_ms": 7,
+      "base": "python",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8001/api/hi",
+      "status_code": 200,
+      "elapsed_ms": 326,
+      "base": "python",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8001/api/ai/respond",
+      "status_code": 200,
+      "elapsed_ms": 1526,
+      "base": "python",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8001/py/api/user/recommendations/products?page=1&page_size=5&random_count=2&lookback_days=30",
+      "status_code": 200,
+      "elapsed_ms": 352,
+      "base": "python",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8001/py/api/user/products/1/similar?page=1&page_size=5&random_count=2&lookback_days=30",
+      "status_code": 200,
+      "elapsed_ms": 343,
+      "base": "python",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8001/py/api/internal/visual-search/index",
+      "status_code": 422,
+      "elapsed_ms": 9,
+      "base": "python",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:8001/py/api/user/search/visual",
+      "status_code": 200,
+      "elapsed_ms": 269,
+      "base": "python",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8001/py/api/user/recommendations/products?page=1&page_size=5&random_count=2&lookback_days=30",
+      "status_code": 200,
+      "elapsed_ms": 352,
+      "base": "python",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8001/py/api/user/recommendations/products?page=1&page_size=3&random_count=1&lookback_days=30",
+      "status_code": 401,
+      "elapsed_ms": 10,
+      "base": "python",
+      "retries_used": 0,
+      "error": ""
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:8001/py/api/user/products/1/similar?page=1&page_size=3&random_count=1&lookback_days=30",
+      "status_code": 200,
+      "elapsed_ms": 338,
+      "base": "python",
+      "retries_used": 0,
+      "error": ""
+    }
+  ],
+  "endpoint_summary": {
+    "endpoint_stats": [
+      {
+        "endpoint": "POST http://127.0.0.1:8001/api/ai/respond",
+        "calls": 5,
+        "min_ms": 9,
+        "max_ms": 1526,
+        "avg_ms": 580,
+        "p95_ms": 1526
+      },
+      {
+        "endpoint": "POST http://127.0.0.1:8001/py/api/internal/visual-search/index",
+        "calls": 3,
+        "min_ms": 8,
+        "max_ms": 12,
+        "avg_ms": 9,
+        "p95_ms": 12
+      },
+      {
+        "endpoint": "GET http://127.0.0.1:8001/api/hi",
+        "calls": 4,
+        "min_ms": 28,
+        "max_ms": 355,
+        "avg_ms": 261,
+        "p95_ms": 355
+      },
+      {
+        "endpoint": "POST http://127.0.0.1:8001/py/api/user/search/visual",
+        "calls": 4,
+        "min_ms": 20,
+        "max_ms": 353,
+        "avg_ms": 233,
+        "p95_ms": 353
+      },
+      {
+        "endpoint": "GET http://127.0.0.1:8000/up",
+        "calls": 1,
+        "min_ms": 251,
+        "max_ms": 251,
+        "avg_ms": 251,
+        "p95_ms": 251
+      },
+      {
+        "endpoint": "GET http://127.0.0.1:8000/api/health-check",
+        "calls": 2,
+        "min_ms": 250,
+        "max_ms": 291,
+        "avg_ms": 270,
+        "p95_ms": 291
+      },
+      {
+        "endpoint": "POST http://127.0.0.1:8000/api/user/signup",
+        "calls": 1,
+        "min_ms": 269,
+        "max_ms": 269,
+        "avg_ms": 269,
+        "p95_ms": 269
+      },
+      {
+        "endpoint": "POST http://127.0.0.1:8000/api/user/login",
+        "calls": 2,
+        "min_ms": 247,
+        "max_ms": 321,
+        "avg_ms": 284,
+        "p95_ms": 321
+      },
+      {
+        "endpoint": "GET http://127.0.0.1:8000/api/user/me",
+        "calls": 3,
+        "min_ms": 275,
+        "max_ms": 331,
+        "avg_ms": 299,
+        "p95_ms": 331
+      },
+      {
+        "endpoint": "PATCH http://127.0.0.1:8000/api/user/settings",
+        "calls": 1,
+        "min_ms": 338,
+        "max_ms": 338,
+        "avg_ms": 338,
+        "p95_ms": 338
+      },
+      {
+        "endpoint": "GET http://127.0.0.1:8000/api/user/settings/university-options",
+        "calls": 1,
+        "min_ms": 392,
+        "max_ms": 392,
+        "avg_ms": 392,
+        "p95_ms": 392
+      },
+      {
+        "endpoint": "PATCH http://127.0.0.1:8000/api/user/settings/university",
+        "calls": 1,
+        "min_ms": 331,
+        "max_ms": 331,
+        "avg_ms": 331,
+        "p95_ms": 331
+      },
+      {
+        "endpoint": "POST http://127.0.0.1:8000/api/user/products",
+        "calls": 1,
+        "min_ms": 318,
+        "max_ms": 318,
+        "avg_ms": 318,
+        "p95_ms": 318
+      },
+      {
+        "endpoint": "GET http://127.0.0.1:8000/api/user/products",
+        "calls": 1,
+        "min_ms": 278,
+        "max_ms": 278,
+        "avg_ms": 278,
+        "p95_ms": 278
+      },
+      {
+        "endpoint": "GET http://127.0.0.1:8000/api/user/products/cards",
+        "calls": 1,
+        "min_ms": 307,
+        "max_ms": 307,
+        "avg_ms": 307,
+        "p95_ms": 307
+      },
+      {
+        "endpoint": "GET http://127.0.0.1:8000/api/user/get_product/1",
+        "calls": 1,
+        "min_ms": 361,
+        "max_ms": 361,
+        "avg_ms": 361,
+        "p95_ms": 361
+      },
+      {
+        "endpoint": "GET http://127.0.0.1:8000/api/user/products/1/edit",
+        "calls": 1,
+        "min_ms": 299,
+        "max_ms": 299,
+        "avg_ms": 299,
+        "p95_ms": 299
+      },
+      {
+        "endpoint": "PATCH http://127.0.0.1:8000/api/user/products/1/mark-sold",
+        "calls": 1,
+        "min_ms": 332,
+        "max_ms": 332,
+        "avg_ms": 332,
+        "p95_ms": 332
+      },
+      {
+        "endpoint": "GET http://127.0.0.1:8000/api/user/products/by-tag/sample-tag",
+        "calls": 1,
+        "min_ms": 312,
+        "max_ms": 312,
+        "avg_ms": 312,
+        "p95_ms": 312
+      },
+      {
+        "endpoint": "GET http://127.0.0.1:8000/api/user/products/by-category/electronics",
+        "calls": 1,
+        "min_ms": 331,
+        "max_ms": 331,
+        "avg_ms": 331,
+        "p95_ms": 331
+      },
+      {
+        "endpoint": "GET http://127.0.0.1:8000/api/user/get_favorites",
+        "calls": 1,
+        "min_ms": 309,
+        "max_ms": 309,
+        "avg_ms": 309,
+        "p95_ms": 309
+      },
+      {
+        "endpoint": "POST http://127.0.0.1:8000/api/user/favorites",
+        "calls": 1,
+        "min_ms": 307,
+        "max_ms": 307,
+        "avg_ms": 307,
+        "p95_ms": 307
+      },
+      {
+        "endpoint": "POST http://127.0.0.1:8000/api/user/products/1/images",
+        "calls": 1,
+        "min_ms": 295,
+        "max_ms": 295,
+        "avg_ms": 295,
+        "p95_ms": 295
+      },
+      {
+        "endpoint": "POST http://127.0.0.1:8000/api/user/behavioral_events",
+        "calls": 1,
+        "min_ms": 327,
+        "max_ms": 327,
+        "avg_ms": 327,
+        "p95_ms": 327
+      },
+      {
+        "endpoint": "GET http://127.0.0.1:8000/api/user/meta/options",
+        "calls": 1,
+        "min_ms": 316,
+        "max_ms": 316,
+        "avg_ms": 316,
+        "p95_ms": 316
+      },
+      {
+        "endpoint": "GET http://127.0.0.1:8000/api/user/meta/categories",
+        "calls": 1,
+        "min_ms": 279,
+        "max_ms": 279,
+        "avg_ms": 279,
+        "p95_ms": 279
+      },
+      {
+        "endpoint": "GET http://127.0.0.1:8000/api/user/meta/condition-levels",
+        "calls": 1,
+        "min_ms": 327,
+        "max_ms": 327,
+        "avg_ms": 327,
+        "p95_ms": 327
+      },
+      {
+        "endpoint": "GET http://127.0.0.1:8000/api/user/meta/tags",
+        "calls": 1,
+        "min_ms": 343,
+        "max_ms": 343,
+        "avg_ms": 343,
+        "p95_ms": 343
+      },
+      {
+        "endpoint": "GET http://127.0.0.1:8000/api/user/meta/dormitories",
+        "calls": 1,
+        "min_ms": 316,
+        "max_ms": 316,
+        "avg_ms": 316,
+        "p95_ms": 316
+      },
+      {
+        "endpoint": "GET http://127.0.0.1:8000/api/user/meta/dormitories/by-university",
+        "calls": 1,
+        "min_ms": 310,
+        "max_ms": 310,
+        "avg_ms": 310,
+        "p95_ms": 310
+      },
+      {
+        "endpoint": "POST http://127.0.0.1:8000/api/user/tags",
+        "calls": 1,
+        "min_ms": 310,
+        "max_ms": 310,
+        "avg_ms": 310,
+        "p95_ms": 310
+      },
+      {
+        "endpoint": "POST http://127.0.0.1:8000/api/admin/test",
+        "calls": 1,
+        "min_ms": 262,
+        "max_ms": 262,
+        "avg_ms": 262,
+        "p95_ms": 262
+      },
+      {
+        "endpoint": "POST http://127.0.0.1:8000/api/admin/login",
+        "calls": 1,
+        "min_ms": 279,
+        "max_ms": 279,
+        "avg_ms": 279,
+        "p95_ms": 279
+      },
+      {
+        "endpoint": "POST http://127.0.0.1:8000/api/admin/logout",
+        "calls": 1,
+        "min_ms": 298,
+        "max_ms": 298,
+        "avg_ms": 298,
+        "p95_ms": 298
+      },
+      {
+        "endpoint": "POST http://127.0.0.1:8000/api/admin/set_university",
+        "calls": 1,
+        "min_ms": 265,
+        "max_ms": 265,
+        "avg_ms": 265,
+        "p95_ms": 265
+      },
+      {
+        "endpoint": "POST http://127.0.0.1:8000/api/admin/set_dormitory",
+        "calls": 1,
+        "min_ms": 335,
+        "max_ms": 335,
+        "avg_ms": 335,
+        "p95_ms": 335
+      },
+      {
+        "endpoint": "GET http://127.0.0.1:8000/api/admin/universities",
+        "calls": 1,
+        "min_ms": 310,
+        "max_ms": 310,
+        "avg_ms": 310,
+        "p95_ms": 310
+      },
+      {
+        "endpoint": "GET http://127.0.0.1:8000/api/admin/universities/sample-university/dormitories",
+        "calls": 1,
+        "min_ms": 290,
+        "max_ms": 290,
+        "avg_ms": 290,
+        "p95_ms": 290
+      },
+      {
+        "endpoint": "POST http://127.0.0.1:8000/api/admin/categories",
+        "calls": 1,
+        "min_ms": 343,
+        "max_ms": 343,
+        "avg_ms": 343,
+        "p95_ms": 343
+      },
+      {
+        "endpoint": "POST http://127.0.0.1:8000/api/admin/condition-levels",
+        "calls": 1,
+        "min_ms": 290,
+        "max_ms": 290,
+        "avg_ms": 290,
+        "p95_ms": 290
+      },
+      {
+        "endpoint": "GET http://127.0.0.1:8000/api/admin/get_all_users",
+        "calls": 1,
+        "min_ms": 274,
+        "max_ms": 274,
+        "avg_ms": 274,
+        "p95_ms": 274
+      },
+      {
+        "endpoint": "GET http://127.0.0.1:8000/api/admin/products",
+        "calls": 1,
+        "min_ms": 284,
+        "max_ms": 284,
+        "avg_ms": 284,
+        "p95_ms": 284
+      },
+      {
+        "endpoint": "GET http://127.0.0.1:8000/api/admin/products/1",
+        "calls": 1,
+        "min_ms": 324,
+        "max_ms": 324,
+        "avg_ms": 324,
+        "p95_ms": 324
+      },
+      {
+        "endpoint": "PATCH http://127.0.0.1:8000/api/admin/products/1/block",
+        "calls": 1,
+        "min_ms": 327,
+        "max_ms": 327,
+        "avg_ms": 327,
+        "p95_ms": 327
+      },
+      {
+        "endpoint": "POST http://127.0.0.1:8000/api/admin/messages",
+        "calls": 1,
+        "min_ms": 382,
+        "max_ms": 382,
+        "avg_ms": 382,
+        "p95_ms": 382
+      },
+      {
+        "endpoint": "GET http://127.0.0.1:8000/api/admin/messages",
+        "calls": 1,
+        "min_ms": 303,
+        "max_ms": 303,
+        "avg_ms": 303,
+        "p95_ms": 303
+      },
+      {
+        "endpoint": "GET http://127.0.0.1:8000/api/admin/users/1",
+        "calls": 1,
+        "min_ms": 338,
+        "max_ms": 338,
+        "avg_ms": 338,
+        "p95_ms": 338
+      },
+      {
+        "endpoint": "PATCH http://127.0.0.1:8000/api/admin/users/1",
+        "calls": 1,
+        "min_ms": 283,
+        "max_ms": 283,
+        "avg_ms": 283,
+        "p95_ms": 283
+      },
+      {
+        "endpoint": "PATCH http://127.0.0.1:8000/api/admin/users/1/activate",
+        "calls": 1,
+        "min_ms": 285,
+        "max_ms": 285,
+        "avg_ms": 285,
+        "p95_ms": 285
+      },
+      {
+        "endpoint": "PATCH http://127.0.0.1:8000/api/admin/users/1/deactivate",
+        "calls": 1,
+        "min_ms": 289,
+        "max_ms": 289,
+        "avg_ms": 289,
+        "p95_ms": 289
+      },
+      {
+        "endpoint": "GET http://127.0.0.1:8001/health",
+        "calls": 3,
+        "min_ms": 7,
+        "max_ms": 29,
+        "avg_ms": 15,
+        "p95_ms": 29
+      },
+      {
+        "endpoint": "GET http://127.0.0.1:8001/api/ping",
+        "calls": 3,
+        "min_ms": 6,
+        "max_ms": 9,
+        "avg_ms": 7,
+        "p95_ms": 9
+      },
+      {
+        "endpoint": "GET http://127.0.0.1:8001/api/test_py",
+        "calls": 3,
+        "min_ms": 7,
+        "max_ms": 26,
+        "avg_ms": 14,
+        "p95_ms": 26
+      },
+      {
+        "endpoint": "POST http://127.0.0.1:8000/api/ai/sessions",
+        "calls": 1,
+        "min_ms": 321,
+        "max_ms": 321,
+        "avg_ms": 321,
+        "p95_ms": 321
+      },
+      {
+        "endpoint": "POST http://127.0.0.1:8000/api/ai/sessions/00000000-0000-0000-0000-000000000000/messages",
+        "calls": 1,
+        "min_ms": 300,
+        "max_ms": 300,
+        "avg_ms": 300,
+        "p95_ms": 300
+      },
+      {
+        "endpoint": "GET http://127.0.0.1:8000/api/ai/sessions/00000000-0000-0000-0000-000000000000/messages",
+        "calls": 1,
+        "min_ms": 312,
+        "max_ms": 312,
+        "avg_ms": 312,
+        "p95_ms": 312
+      },
+      {
+        "endpoint": "GET http://127.0.0.1:8001/py/api/user/recommendations/products",
+        "calls": 1,
+        "min_ms": 355,
+        "max_ms": 355,
+        "avg_ms": 355,
+        "p95_ms": 355
+      },
+      {
+        "endpoint": "GET http://127.0.0.1:8001/py/api/user/products/1/similar",
+        "calls": 1,
+        "min_ms": 327,
+        "max_ms": 327,
+        "avg_ms": 327,
+        "p95_ms": 327
+      },
+      {
+        "endpoint": "POST http://127.0.0.1:8000/api/user/search/visual",
+        "calls": 1,
+        "min_ms": 360,
+        "max_ms": 360,
+        "avg_ms": 360,
+        "p95_ms": 360
+      },
+      {
+        "endpoint": "GET http://127.0.0.1:8001/py/api/user/recommendations/products?page=1&page_size=5&random_count=2&lookback_days=30",
+        "calls": 2,
+        "min_ms": 352,
+        "max_ms": 352,
+        "avg_ms": 352,
+        "p95_ms": 352
+      },
+      {
+        "endpoint": "GET http://127.0.0.1:8001/py/api/user/products/1/similar?page=1&page_size=5&random_count=2&lookback_days=30",
+        "calls": 1,
+        "min_ms": 343,
+        "max_ms": 343,
+        "avg_ms": 343,
+        "p95_ms": 343
+      },
+      {
+        "endpoint": "GET http://127.0.0.1:8001/py/api/user/recommendations/products?page=1&page_size=3&random_count=1&lookback_days=30",
+        "calls": 1,
+        "min_ms": 10,
+        "max_ms": 10,
+        "avg_ms": 10,
+        "p95_ms": 10
+      },
+      {
+        "endpoint": "GET http://127.0.0.1:8001/py/api/user/products/1/similar?page=1&page_size=3&random_count=1&lookback_days=30",
+        "calls": 1,
+        "min_ms": 338,
+        "max_ms": 338,
+        "avg_ms": 338,
+        "p95_ms": 338
+      }
+    ],
+    "network_or_transport_failures": [],
+    "calls_by_base": {
+      "python": 32,
+      "laravel": 54
+    },
+    "unique_endpoints_by_base": {
+      "python": 13,
+      "laravel": 50
+    }
+  },
+  "coverage_guards": {
+    "python_calls": 32,
+    "python_unique_endpoints": 13,
+    "python_coverage_ok": true,
+    "failed": false
+  }
+}

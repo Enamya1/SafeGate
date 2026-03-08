@@ -15,6 +15,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -30,6 +31,47 @@ class ProductController extends Controller
         }
 
         return rtrim($baseUrl, '/').'/'.$path;
+    }
+
+    private function pythonServiceBaseUrl(): string
+    {
+        return rtrim((string) env('PYTHON_SERVICE_BASE_URL', 'http://127.0.0.1:8001'), '/');
+    }
+
+    private function indexProductImagesForVisualSearch(iterable $images): void
+    {
+        if (app()->environment('testing')) {
+            return;
+        }
+
+        $pythonInternalToken = (string) env('PYTHON_INTERNAL_TOKEN', '');
+        $timeoutSeconds = (int) env('PYTHON_SERVICE_TIMEOUT_SECONDS', 45);
+        $connectTimeoutSeconds = (int) env('PYTHON_SERVICE_CONNECT_TIMEOUT_SECONDS', 5);
+        $baseUrl = $this->pythonServiceBaseUrl();
+
+        foreach ($images as $image) {
+            if (! $image instanceof ProductImage) {
+                continue;
+            }
+            if (! is_string($image->image_url) || trim($image->image_url) === '') {
+                continue;
+            }
+
+            try {
+                Http::connectTimeout($connectTimeoutSeconds)
+                    ->timeout($timeoutSeconds)
+                    ->acceptJson()
+                    ->withHeaders([
+                        'X-Internal-Token' => $pythonInternalToken,
+                    ])
+                    ->post($baseUrl.'/py/api/internal/visual-search/index', [
+                        'product_id' => (int) $image->product_id,
+                        'product_image_id' => (int) $image->id,
+                        'image_url' => $image->image_url,
+                    ]);
+            } catch (\Throwable $e) {
+            }
+        }
     }
 
     private function recordProductBehaviorEventBatch(Request $request, User $user, iterable $products, string $eventType): void
@@ -461,6 +503,241 @@ class ProductController extends Controller
             'total' => $paginator->total(),
             'total_pages' => $paginator->lastPage(),
             'products' => $payload,
+        ], 200);
+    }
+
+    public function visualSearch(Request $request)
+    {
+        $user = $request->user();
+
+        if (($user->role ?? 'user') !== 'user') {
+            return response()->json([
+                'message' => 'Unauthorized: Only users can access this endpoint.',
+            ], 403);
+        }
+
+        try {
+            $validated = $request->validate([
+                'image' => 'required|file|image|mimes:jpg,jpeg,png,webp|max:8192',
+                'top_k' => 'nullable|integer|min:1|max:50',
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation Error',
+                'errors' => $e->errors(),
+            ], 422);
+        }
+
+        $image = $request->file('image');
+        if (! $image) {
+            return response()->json([
+                'message' => 'Validation Error',
+                'errors' => [
+                    'image' => ['The image field is required.'],
+                ],
+            ], 422);
+        }
+
+        $topK = (int) ($validated['top_k'] ?? 12);
+        $authHeader = (string) $request->header('Authorization', '');
+        $pythonInternalToken = (string) env('PYTHON_INTERNAL_TOKEN', '');
+        $pythonTimeoutSeconds = (int) env('PYTHON_SERVICE_TIMEOUT_SECONDS', 45);
+        $pythonConnectTimeoutSeconds = (int) env('PYTHON_SERVICE_CONNECT_TIMEOUT_SECONDS', 5);
+        $baseUrl = $this->pythonServiceBaseUrl();
+
+        try {
+            $pythonResponse = Http::connectTimeout($pythonConnectTimeoutSeconds)
+                ->timeout($pythonTimeoutSeconds)
+                ->acceptJson()
+                ->withHeaders([
+                    'Authorization' => $authHeader,
+                    'X-Internal-Token' => $pythonInternalToken,
+                    'X-User-Id' => (string) $user->id,
+                    'X-User-Role' => (string) ($user->role ?? 'user'),
+                    'X-User-Dormitory-Id' => $user->dormitory_id !== null ? (string) $user->dormitory_id : '',
+                ])
+                ->attach(
+                    'image',
+                    $image->get(),
+                    $image->getClientOriginalName() ?: 'query-image.jpg'
+                )
+                ->post($baseUrl.'/py/api/user/search/visual', [
+                    'top_k' => $topK,
+                ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'message' => 'AI visual search service unavailable.',
+                'detail' => [
+                    'exception' => class_basename($e),
+                    'message' => $e->getMessage(),
+                ],
+            ], 502);
+        }
+
+        if (! $pythonResponse->successful()) {
+            $body = $pythonResponse->json();
+
+            return response()->json([
+                'message' => 'AI visual search service unavailable.',
+                'detail' => is_array($body) ? $body : ['raw' => (string) $pythonResponse->body()],
+                'upstream_status' => $pythonResponse->status(),
+            ], 502);
+        }
+
+        $searchPayload = $pythonResponse->json();
+        $productIds = is_array($searchPayload['product_ids'] ?? null) ? $searchPayload['product_ids'] : [];
+        $matches = is_array($searchPayload['matches'] ?? null) ? $searchPayload['matches'] : [];
+        $scoreByProductId = [];
+
+        foreach ($matches as $match) {
+            if (! is_array($match)) {
+                continue;
+            }
+            $pid = (int) ($match['product_id'] ?? 0);
+            if ($pid <= 0) {
+                continue;
+            }
+            $scoreByProductId[$pid] = (float) ($match['score'] ?? 0.0);
+        }
+
+        $orderedIds = collect($productIds)
+            ->map(static fn ($id) => (int) $id)
+            ->filter(static fn (int $id) => $id > 0)
+            ->unique()
+            ->values()
+            ->all();
+
+        $products = collect();
+        if (count($orderedIds) > 0) {
+            $orderMap = array_flip($orderedIds);
+            $products = Product::query()
+                ->with([
+                    'dormitory:id,dormitory_name,university_id',
+                ])
+                ->whereIn('id', $orderedIds)
+                ->where('status', 'available')
+                ->whereNull('deleted_at')
+                ->get([
+                    'id',
+                    'seller_id',
+                    'dormitory_id',
+                    'category_id',
+                    'condition_level_id',
+                    'title',
+                    'price',
+                    'status',
+                    'created_at',
+                ]);
+
+            $products = $products
+                ->sortBy(static function (Product $product) use ($orderMap) {
+                    return $orderMap[(int) $product->id] ?? PHP_INT_MAX;
+                })
+                ->values();
+        }
+
+        $productIdsInDb = $products->pluck('id')->map(static fn ($id) => (int) $id)->all();
+        $imagesByProductId = [];
+        $tagsByProductId = [];
+        $categoriesById = collect();
+        $conditionLevelsById = collect();
+
+        if (count($productIdsInDb) > 0) {
+            $imagesByProductId = ProductImage::query()
+                ->whereIn('product_id', $productIdsInDb)
+                ->orderByDesc('is_primary')
+                ->orderBy('id')
+                ->get()
+                ->groupBy('product_id')
+                ->all();
+
+            $tagRows = DB::table('product_tags')
+                ->join('tags', 'product_tags.tag_id', '=', 'tags.id')
+                ->whereIn('product_tags.product_id', $productIdsInDb)
+                ->select([
+                    'product_tags.product_id',
+                    'tags.id',
+                    'tags.name',
+                ])
+                ->orderBy('tags.id')
+                ->get();
+
+            foreach ($tagRows as $row) {
+                $tagsByProductId[$row->product_id][] = [
+                    'id' => $row->id,
+                    'name' => $row->name,
+                ];
+            }
+
+            $categoryIds = $products->pluck('category_id')
+                ->filter()
+                ->unique()
+                ->values()
+                ->all();
+
+            $conditionLevelIds = $products->pluck('condition_level_id')
+                ->filter()
+                ->unique()
+                ->values()
+                ->all();
+
+            if (count($categoryIds) > 0) {
+                $categoriesById = Category::query()
+                    ->select(['id', 'name', 'description', 'parent_id'])
+                    ->whereIn('id', $categoryIds)
+                    ->get()
+                    ->keyBy('id');
+            }
+
+            if (count($conditionLevelIds) > 0) {
+                $conditionLevelsById = ConditionLevel::query()
+                    ->select(['id', 'name', 'description', 'sort_order', 'level'])
+                    ->whereIn('id', $conditionLevelIds)
+                    ->get()
+                    ->keyBy('id');
+            }
+        }
+
+        $payloadProducts = $products
+            ->map(function (Product $product) use ($imagesByProductId, $tagsByProductId, $categoriesById, $conditionLevelsById, $scoreByProductId) {
+                $images = collect($imagesByProductId[$product->id] ?? [])->values();
+                $primaryImage = $images->first();
+                $data = [
+                    'id' => (int) $product->id,
+                    'seller_id' => (int) $product->seller_id,
+                    'dormitory_id' => $product->dormitory_id !== null ? (int) $product->dormitory_id : null,
+                    'category_id' => $product->category_id !== null ? (int) $product->category_id : null,
+                    'condition_level_id' => $product->condition_level_id !== null ? (int) $product->condition_level_id : null,
+                    'title' => $product->title,
+                    'price' => $product->price !== null ? (float) $product->price : null,
+                    'status' => $product->status,
+                    'created_at' => optional($product->created_at)->toISOString(),
+                    'dormitory' => $product->dormitory ? [
+                        'id' => $product->dormitory->id,
+                        'dormitory_name' => $product->dormitory->dormitory_name,
+                        'university_id' => $product->dormitory->university_id,
+                    ] : null,
+                    'category' => $categoriesById->get($product->category_id),
+                    'condition_level' => $conditionLevelsById->get($product->condition_level_id),
+                    'image_thumbnail_url' => $primaryImage ? $primaryImage->image_thumbnail_url : null,
+                    'images' => $images,
+                    'tags' => $tagsByProductId[$product->id] ?? [],
+                    'visual_similarity_score' => $scoreByProductId[(int) $product->id] ?? null,
+                ];
+
+                return $data;
+            })
+            ->values();
+
+        return response()->json([
+            'message' => 'Visual search completed successfully',
+            'query' => [
+                'top_k' => $topK,
+                'model_name' => $searchPayload['model_name'] ?? null,
+                'embedding_dim' => $searchPayload['embedding_dim'] ?? null,
+            ],
+            'count' => $payloadProducts->count(),
+            'products' => $payloadProducts,
         ], 200);
     }
 
@@ -1735,6 +2012,8 @@ class ProductController extends Controller
             ];
         });
 
+        $this->indexProductImagesForVisualSearch($result['images']);
+
         return response()->json([
             'message' => 'Product created successfully',
             'product' => $result['product'],
@@ -1965,6 +2244,8 @@ class ProductController extends Controller
 
             return $created;
         });
+
+        $this->indexProductImagesForVisualSearch($images);
 
         return response()->json([
             'message' => 'Product images uploaded successfully',

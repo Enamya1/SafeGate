@@ -16,7 +16,7 @@ def _load_env_file(env_path: Path) -> None:
         if key:
             os.environ.setdefault(key, value)
 
-
+# function dayl l7wa ( run the loc.env)
 def _load_local_env() -> None:
     python_service_root = Path(__file__).resolve().parents[1]
     project_root = python_service_root.parent

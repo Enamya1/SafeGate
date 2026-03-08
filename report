@@ -964,3 +964,97 @@ AI Runtime Config Options
   - Response 503: {"detail":"Database unavailable"}
   - Response 503: {"detail":"Database '<name>' missing table: <table>. Check DB_* env or run Laravel migrations."}
   - Response 502: {"detail":"Could not reach Laravel"}
+
+57) POST /api/user/search/visual
+  - Auth: auth:sanctum, role=user
+  - Request (multipart/form-data):
+    - image (required file, image, mimes: jpg|jpeg|png|webp, max 8MB)
+    - top_k (optional integer, min 1, max 50, default 12)
+  - Response 200:
+    {
+      "message":"Visual search completed successfully",
+      "query":{
+        "top_k":12,
+        "model_name":"ViT-B-32",
+        "embedding_dim":512
+      },
+      "count":2,
+      "products":[
+        {
+          "id":...,
+          "seller_id":...,
+          "dormitory_id":...,
+          "category_id":...,
+          "condition_level_id":...,
+          "title":"...",
+          "price":...,
+          "status":"available",
+          "created_at":"...",
+          "dormitory":{"id":...,"dormitory_name":"...","university_id":...},
+          "category":{"id":...,"name":"...","description":"...","parent_id":...},
+          "condition_level":{"id":...,"name":"...","description":"...","sort_order":...,"level":...},
+          "image_thumbnail_url":"...",
+          "images":[...],
+          "tags":[{"id":...,"name":"..."}],
+          "visual_similarity_score":0.95
+        }
+      ]
+    }
+  - Response 403: {"message":"Unauthorized: Only users can access this endpoint."}
+  - Response 422: {"message":"Validation Error","errors":{"image":[...]}}
+  - Response 502: {"message":"AI visual search service unavailable.","detail":{...},"upstream_status":...}
+
+58) POST /py/api/user/search/visual
+  - Headers:
+    - Authorization: Bearer <Laravel token> (required)
+  - Request (multipart/form-data):
+    - image (required)
+    - top_k (optional, default 12)
+  - Response 200:
+    {
+      "message":"Visual search completed successfully",
+      "product_ids":[...],
+      "matches":[
+        {"product_id":...,"product_image_id":...,"score":0.95}
+      ],
+      "model_name":"ViT-B-32",
+      "embedding_dim":512
+    }
+  - Response 401: {"detail":"Missing Authorization header"}
+  - Response 401: {"detail":"Invalid user"}
+  - Response 403: {"detail":"Only users can access this endpoint"}
+  - Response 422: {"detail":"Unsupported image format"}
+  - Response 422: {"detail":"Image file is empty"}
+  - Response 422: {"detail":"Image exceeds <n> MB limit"}
+  - Response 422: {"detail":"Image is too small. Minimum is <w>x<h>"}
+  - Response 422: {"detail":"Image is too blurry"}
+  - Response 503: {"detail":"Database unavailable"}
+  - Response 503: {"detail":"Database '<name>' missing table: <table>. Check DB_* env or run Laravel migrations."}
+
+59) POST /py/api/internal/visual-search/index
+  - Internal endpoint used by Laravel after product image write
+  - Headers:
+    - X-Internal-Token: <PYTHON_INTERNAL_TOKEN> (or loopback source)
+  - Request JSON:
+    {
+      "product_id":1,
+      "product_image_id":10,
+      "image_url":"/storage/products/x.jpg"
+    }
+  - Response 200:
+    {
+      "message":"Image embedding indexed successfully",
+      "indexed":{
+        "product_id":1,
+        "product_image_id":10,
+        "embedding_dim":512,
+        "model_name":"ViT-B-32",
+        "indexed_at":"..."
+      }
+    }
+  - Response 401: {"detail":"Unauthorized internal request"}
+  - Response 422: {"detail":"product_id, product_image_id, and image_url are required"}
+  - Response 422: {"detail":"product_id and product_image_id must be integers"}
+  - Response 422: {"detail":"Could not fetch image"}
+  - Response 503: {"detail":"Database unavailable"}
+  - Response 503: {"detail":"Database '<name>' missing table: <table>. Check DB_* env or run Laravel migrations."}

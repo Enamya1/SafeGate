@@ -25,6 +25,7 @@ Route::middleware('auth:sanctum')->get('/user/messages/contacts', [AuthControlle
 Route::middleware('auth:sanctum')->post('/user/products', [ProductController::class, 'store']);
 Route::middleware('auth:sanctum')->get('/user/products', [ProductController::class, 'myProducts']);
 Route::middleware('auth:sanctum')->get('/user/nearby', [ProductController::class, 'nearby']);
+Route::middleware('auth:sanctum')->post('/user/search/visual', [ProductController::class, 'visualSearch']);
 Route::middleware('auth:sanctum')->get('/user/products/cards', [ProductController::class, 'myProductCards']);
 Route::middleware('auth:sanctum')->get('/user/get_product/{product_id}', [ProductController::class, 'getProduct']);
 Route::middleware('auth:sanctum')->get('/user/sellers/{seller_id}', [ProductController::class, 'sellerProfile']);
