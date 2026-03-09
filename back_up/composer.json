@@ -1,8 +1,8 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "suki/suki",
+    "name": "xiaowu/xiaowu",
     "type": "project",
-    "description": "Suki application.",
+    "description": "XiaoWu application.",
     "keywords": ["laravel", "framework"],
     "license": "MIT",
     "require": {

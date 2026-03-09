@@ -19,22 +19,22 @@ class ProductTestingSeeder extends Seeder
     public function run(): void
     {
         $university = University::query()->updateOrCreate(
-            ['domain' => 'test.safegate.local'],
+            ['domain' => 'test.xiaowu.local'],
             [
-                'name' => 'SafeGate Test University',
-                'website' => 'https://test.safegate.local',
+                'name' => 'XiaoWu Test University',
+                'website' => 'https://test.xiaowu.local',
                 'latitude' => 30.0600000,
                 'longitude' => 31.2400000,
                 'address' => 'Test Campus Road',
                 'pic' => null,
-                'contact_email' => 'help@test.safegate.local',
+                'contact_email' => 'help@test.xiaowu.local',
                 'contact_phone' => '+20-100-000-0000',
                 'description' => 'Testing university',
             ]
         );
 
         $dormA = Dormitory::query()->updateOrCreate(
-            ['domain' => 'alpha.test.safegate.local'],
+            ['domain' => 'alpha.test.xiaowu.local'],
             [
                 'dormitory_name' => 'Dorm Alpha',
                 'latitude' => 30.0610000,
@@ -48,7 +48,7 @@ class ProductTestingSeeder extends Seeder
         );
 
         $dormB = Dormitory::query()->updateOrCreate(
-            ['domain' => 'beta.test.safegate.local'],
+            ['domain' => 'beta.test.xiaowu.local'],
             [
                 'dormitory_name' => 'Dorm Beta',
                 'latitude' => 30.0660000,
@@ -93,7 +93,7 @@ class ProductTestingSeeder extends Seeder
         $tagFurniture = Tag::query()->updateOrCreate(['name' => 'furniture']);
 
         $sellerA = User::query()->updateOrCreate(
-            ['email' => 'seller.alpha@test.safegate.local'],
+            ['email' => 'seller.alpha@test.xiaowu.local'],
             [
                 'full_name' => 'Seller Alpha',
                 'username' => 'seller_alpha',
@@ -106,7 +106,7 @@ class ProductTestingSeeder extends Seeder
         );
 
         $sellerB = User::query()->updateOrCreate(
-            ['email' => 'seller.beta@test.safegate.local'],
+            ['email' => 'seller.beta@test.xiaowu.local'],
             [
                 'full_name' => 'Seller Beta',
                 'username' => 'seller_beta',
@@ -119,7 +119,7 @@ class ProductTestingSeeder extends Seeder
         );
 
         User::query()->updateOrCreate(
-            ['email' => 'ai.user@test.safegate.local'],
+            ['email' => 'ai.user@test.xiaowu.local'],
             [
                 'full_name' => 'AI Test User',
                 'username' => 'ai_test_user',
@@ -210,10 +210,10 @@ class ProductTestingSeeder extends Seeder
             ProductImage::query()->updateOrCreate(
                 [
                     'product_id' => $product->id,
-                    'image_url' => 'https://picsum.photos/seed/safegate-'.$product->id.'/1024/768',
+                    'image_url' => 'https://picsum.photos/seed/xiaowu-'.$product->id.'/1024/768',
                 ],
                 [
-                    'image_thumbnail_url' => 'https://picsum.photos/seed/safegate-thumb-'.$product->id.'/320/240',
+                    'image_thumbnail_url' => 'https://picsum.photos/seed/xiaowu-thumb-'.$product->id.'/320/240',
                     'is_primary' => true,
                 ]
             );
@@ -229,10 +229,10 @@ class ProductTestingSeeder extends Seeder
             ProductImage::query()->updateOrCreate(
                 [
                     'product_id' => $product->id,
-                    'image_url' => 'https://picsum.photos/seed/safegate-alt-'.($index + 1).'/1024/768',
+                    'image_url' => 'https://picsum.photos/seed/xiaowu-alt-'.($index + 1).'/1024/768',
                 ],
                 [
-                    'image_thumbnail_url' => 'https://picsum.photos/seed/safegate-alt-thumb-'.($index + 1).'/320/240',
+                    'image_thumbnail_url' => 'https://picsum.photos/seed/xiaowu-alt-thumb-'.($index + 1).'/320/240',
                     'is_primary' => false,
                 ]
             );

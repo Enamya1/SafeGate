@@ -42,7 +42,7 @@ def _get_db_engine() -> Engine:
 
     host = os.environ.get("DB_HOST", "127.0.0.1")
     port = _get_env_int("DB_PORT", 3306)
-    database = os.environ.get("DB_DATABASE", "suki_db")
+    database = os.environ.get("DB_DATABASE", "XiaoWu")
     username = os.environ.get("DB_USERNAME", "root")
     password = os.environ.get("DB_PASSWORD", "")
 
@@ -737,7 +737,7 @@ def ai_respond(
                 table = _missing_table_name_from_programming_error(e) or "unknown"
                 raise HTTPException(
                     status_code=503,
-                    detail=f"Database '{os.environ.get('DB_DATABASE', 'suki_db')}' missing table: {table}. Check DB_* env or run Laravel migrations.",
+                    detail=f"Database '{os.environ.get('DB_DATABASE', 'XiaoWu')}' missing table: {table}. Check DB_* env or run Laravel migrations.",
                 )
             raise
 
@@ -762,7 +762,7 @@ def ai_respond(
                     f"Result JSON: {json.dumps(products[:10], ensure_ascii=False)}"
                 ),
                 system_prompt=(
-                    "You are a shopping assistant for SafeGate. "
+                    "You are a shopping assistant for XiaoWu. "
                     "Use only the provided function result. "
                     "Be concise and helpful."
                 ),
@@ -870,7 +870,7 @@ async def internal_visual_search_index(
                 table = visual_engine.missing_table_name_from_programming_error(e) or "unknown"
                 raise HTTPException(
                     status_code=503,
-                    detail=f"Database '{os.environ.get('DB_DATABASE', 'suki_db')}' missing table: {table}. Check DB_* env or run Laravel migrations.",
+                    detail=f"Database '{os.environ.get('DB_DATABASE', 'XiaoWu')}' missing table: {table}. Check DB_* env or run Laravel migrations.",
                 )
             raise
         except ValueError as e:
@@ -964,7 +964,7 @@ async def visual_search(
                 table = visual_engine.missing_table_name_from_programming_error(e) or "unknown"
                 raise HTTPException(
                     status_code=503,
-                    detail=f"Database '{os.environ.get('DB_DATABASE', 'suki_db')}' missing table: {table}. Check DB_* env or run Laravel migrations.",
+                    detail=f"Database '{os.environ.get('DB_DATABASE', 'XiaoWu')}' missing table: {table}. Check DB_* env or run Laravel migrations.",
                 )
             raise
         except ValueError as e:
@@ -1040,7 +1040,7 @@ def recommend_products(
                     table = _missing_table_name_from_programming_error(e) or "unknown"
                     raise HTTPException(
                         status_code=503,
-                        detail=f"Database '{os.environ.get('DB_DATABASE', 'suki_db')}' missing table: {table}. Check DB_* env or run Laravel migrations.",
+                        detail=f"Database '{os.environ.get('DB_DATABASE', 'XiaoWu')}' missing table: {table}. Check DB_* env or run Laravel migrations.",
                     )
                 raise
             if buyer_dorm is not None:
@@ -1225,7 +1225,7 @@ def recommend_products(
                 table = _missing_table_name_from_programming_error(e) or "unknown"
                 raise HTTPException(
                     status_code=503,
-                    detail=f"Database '{os.environ.get('DB_DATABASE', 'suki_db')}' missing table: {table}. Check DB_* env or run Laravel migrations.",
+                    detail=f"Database '{os.environ.get('DB_DATABASE', 'XiaoWu')}' missing table: {table}. Check DB_* env or run Laravel migrations.",
                 )
             raise
 
@@ -1240,7 +1240,7 @@ def recommend_products(
                     table = _missing_table_name_from_programming_error(e) or "unknown"
                     raise HTTPException(
                         status_code=503,
-                        detail=f"Database '{os.environ.get('DB_DATABASE', 'suki_db')}' missing table: {table}. Check DB_* env or run Laravel migrations.",
+                        detail=f"Database '{os.environ.get('DB_DATABASE', 'XiaoWu')}' missing table: {table}. Check DB_* env or run Laravel migrations.",
                     )
                 raise
             known = {int(r["id"]) for r in rows}
@@ -1501,7 +1501,7 @@ def similar_products(
                 table = _missing_table_name_from_programming_error(e) or "unknown"
                 raise HTTPException(
                     status_code=503,
-                    detail=f"Database '{os.environ.get('DB_DATABASE', 'suki_db')}' missing table: {table}. Check DB_* env or run Laravel migrations.",
+                    detail=f"Database '{os.environ.get('DB_DATABASE', 'XiaoWu')}' missing table: {table}. Check DB_* env or run Laravel migrations.",
                 )
             raise
 
@@ -1552,7 +1552,7 @@ def similar_products(
                 table = _missing_table_name_from_programming_error(e) or "unknown"
                 raise HTTPException(
                     status_code=503,
-                    detail=f"Database '{os.environ.get('DB_DATABASE', 'suki_db')}' missing table: {table}. Check DB_* env or run Laravel migrations.",
+                    detail=f"Database '{os.environ.get('DB_DATABASE', 'XiaoWu')}' missing table: {table}. Check DB_* env or run Laravel migrations.",
                 )
             raise
 
@@ -1592,7 +1592,7 @@ def similar_products(
                 table = _missing_table_name_from_programming_error(e) or "unknown"
                 raise HTTPException(
                     status_code=503,
-                    detail=f"Database '{os.environ.get('DB_DATABASE', 'suki_db')}' missing table: {table}. Check DB_* env or run Laravel migrations.",
+                    detail=f"Database '{os.environ.get('DB_DATABASE', 'XiaoWu')}' missing table: {table}. Check DB_* env or run Laravel migrations.",
                 )
             raise
 

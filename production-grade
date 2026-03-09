@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-This document outlines the architecture for a secure, scalable AI assistant service integrated with the SafeGate platform. The service enables conversational AI interactions (text and voice) for product discovery and shopping assistance, leveraging Qwen AI models with deterministic function calling capabilities against the existing product database.
+This document outlines the architecture for a secure, scalable AI assistant service integrated with the XiaoWu platform. The service enables conversational AI interactions (text and voice) for product discovery and shopping assistance, leveraging Qwen AI models with deterministic function calling capabilities against the existing product database.
 
 ## Current Architecture Analysis
 
@@ -283,7 +283,7 @@ Response: {
 
 #### Connection Establishment
 ```javascript
-const ws = new WebSocket('wss://api.safegate.com/ai/ws');
+const ws = new WebSocket('wss://api.xiaowu.com/ai/ws');
 ws.onopen = () => {
     ws.send(JSON.stringify({
         type: 'auth',
@@ -476,4 +476,4 @@ CIRCUIT_BREAKER_CONFIG = {
 
 ---
 
-This specification provides a comprehensive blueprint for building a production-grade AI assistant service that integrates seamlessly with the existing SafeGate platform while meeting all security, performance, and compliance requirements.
+This specification provides a comprehensive blueprint for building a production-grade AI assistant service that integrates seamlessly with the existing XiaoWu platform while meeting all security, performance, and compliance requirements.

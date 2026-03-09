@@ -11,11 +11,11 @@
     "backoff_seconds": "0.35",
     "max_response_ms": "8000",
     "enable_live_tests": "False",
-    "report_dir": "d:\\ty_now\\SafeGate\\python_service\\tests\\reports",
-    "report_source_path": "d:\\ty_now\\SafeGate\\report",
+    "report_dir": "d:\\ty_now\\XiaoWu\\python_service\\tests\\reports",
+    "report_source_path": "d:\\ty_now\\XiaoWu\\report",
     "db_host": "127.0.0.1",
     "db_port": "3306",
-    "db_database": "suki_db",
+    "db_database": "XiaoWu",
     "db_username": "root"
   },
   "summary": {
@@ -30,43 +30,43 @@
       "test": "unittest.loader._FailedTest.suites.test_ai_respond",
       "status": "error",
       "duration_ms": 0,
-      "error": "ImportError: Failed to import test module: suites.test_ai_respond\nTraceback (most recent call last):\n  File \"C:\\Users\\Aymane\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\unittest\\loader.py\", line 396, in _find_test_path\n    module = self._get_module_from_name(name)\n  File \"C:\\Users\\Aymane\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\unittest\\loader.py\", line 339, in _get_module_from_name\n    __import__(name)\n    ~~~~~~~~~~^^^^^^\n  File \"D:\\ty_now\\SafeGate\\python_service\\tests\\suites\\test_ai_respond.py\", line 4, in <module>\n    from tests.framework.base import BaseApiTestCase\nModuleNotFoundError: No module named 'tests'\n\n"
+      "error": "ImportError: Failed to import test module: suites.test_ai_respond\nTraceback (most recent call last):\n  File \"C:\\Users\\Aymane\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\unittest\\loader.py\", line 396, in _find_test_path\n    module = self._get_module_from_name(name)\n  File \"C:\\Users\\Aymane\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\unittest\\loader.py\", line 339, in _get_module_from_name\n    __import__(name)\n    ~~~~~~~~~~^^^^^^\n  File \"D:\\ty_now\\XiaoWu\\python_service\\tests\\suites\\test_ai_respond.py\", line 4, in <module>\n    from tests.framework.base import BaseApiTestCase\nModuleNotFoundError: No module named 'tests'\n\n"
     },
     {
       "test": "unittest.loader._FailedTest.suites.test_auth_and_visual",
       "status": "error",
       "duration_ms": 0,
-      "error": "ImportError: Failed to import test module: suites.test_auth_and_visual\nTraceback (most recent call last):\n  File \"C:\\Users\\Aymane\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\unittest\\loader.py\", line 396, in _find_test_path\n    module = self._get_module_from_name(name)\n  File \"C:\\Users\\Aymane\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\unittest\\loader.py\", line 339, in _get_module_from_name\n    __import__(name)\n    ~~~~~~~~~~^^^^^^\n  File \"D:\\ty_now\\SafeGate\\python_service\\tests\\suites\\test_auth_and_visual.py\", line 4, in <module>\n    from tests.framework.base import BaseApiTestCase\nModuleNotFoundError: No module named 'tests'\n\n"
+      "error": "ImportError: Failed to import test module: suites.test_auth_and_visual\nTraceback (most recent call last):\n  File \"C:\\Users\\Aymane\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\unittest\\loader.py\", line 396, in _find_test_path\n    module = self._get_module_from_name(name)\n  File \"C:\\Users\\Aymane\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\unittest\\loader.py\", line 339, in _get_module_from_name\n    __import__(name)\n    ~~~~~~~~~~^^^^^^\n  File \"D:\\ty_now\\XiaoWu\\python_service\\tests\\suites\\test_auth_and_visual.py\", line 4, in <module>\n    from tests.framework.base import BaseApiTestCase\nModuleNotFoundError: No module named 'tests'\n\n"
     },
     {
       "test": "unittest.loader._FailedTest.suites.test_documented_endpoint_compliance",
       "status": "error",
       "duration_ms": 0,
-      "error": "ImportError: Failed to import test module: suites.test_documented_endpoint_compliance\nTraceback (most recent call last):\n  File \"C:\\Users\\Aymane\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\unittest\\loader.py\", line 396, in _find_test_path\n    module = self._get_module_from_name(name)\n  File \"C:\\Users\\Aymane\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\unittest\\loader.py\", line 339, in _get_module_from_name\n    __import__(name)\n    ~~~~~~~~~~^^^^^^\n  File \"D:\\ty_now\\SafeGate\\python_service\\tests\\suites\\test_documented_endpoint_compliance.py\", line 1, in <module>\n    from tests.framework.base import BaseApiTestCase\nModuleNotFoundError: No module named 'tests'\n\n"
+      "error": "ImportError: Failed to import test module: suites.test_documented_endpoint_compliance\nTraceback (most recent call last):\n  File \"C:\\Users\\Aymane\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\unittest\\loader.py\", line 396, in _find_test_path\n    module = self._get_module_from_name(name)\n  File \"C:\\Users\\Aymane\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\unittest\\loader.py\", line 339, in _get_module_from_name\n    __import__(name)\n    ~~~~~~~~~~^^^^^^\n  File \"D:\\ty_now\\XiaoWu\\python_service\\tests\\suites\\test_documented_endpoint_compliance.py\", line 1, in <module>\n    from tests.framework.base import BaseApiTestCase\nModuleNotFoundError: No module named 'tests'\n\n"
     },
     {
       "test": "unittest.loader._FailedTest.suites.test_health_and_core",
       "status": "error",
       "duration_ms": 0,
-      "error": "ImportError: Failed to import test module: suites.test_health_and_core\nTraceback (most recent call last):\n  File \"C:\\Users\\Aymane\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\unittest\\loader.py\", line 396, in _find_test_path\n    module = self._get_module_from_name(name)\n  File \"C:\\Users\\Aymane\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\unittest\\loader.py\", line 339, in _get_module_from_name\n    __import__(name)\n    ~~~~~~~~~~^^^^^^\n  File \"D:\\ty_now\\SafeGate\\python_service\\tests\\suites\\test_health_and_core.py\", line 1, in <module>\n    from tests.framework.base import BaseApiTestCase\nModuleNotFoundError: No module named 'tests'\n\n"
+      "error": "ImportError: Failed to import test module: suites.test_health_and_core\nTraceback (most recent call last):\n  File \"C:\\Users\\Aymane\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\unittest\\loader.py\", line 396, in _find_test_path\n    module = self._get_module_from_name(name)\n  File \"C:\\Users\\Aymane\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\unittest\\loader.py\", line 339, in _get_module_from_name\n    __import__(name)\n    ~~~~~~~~~~^^^^^^\n  File \"D:\\ty_now\\XiaoWu\\python_service\\tests\\suites\\test_health_and_core.py\", line 1, in <module>\n    from tests.framework.base import BaseApiTestCase\nModuleNotFoundError: No module named 'tests'\n\n"
     },
     {
       "test": "unittest.loader._FailedTest.suites.test_laravel_auth",
       "status": "error",
       "duration_ms": 0,
-      "error": "ImportError: Failed to import test module: suites.test_laravel_auth\nTraceback (most recent call last):\n  File \"C:\\Users\\Aymane\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\unittest\\loader.py\", line 396, in _find_test_path\n    module = self._get_module_from_name(name)\n  File \"C:\\Users\\Aymane\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\unittest\\loader.py\", line 339, in _get_module_from_name\n    __import__(name)\n    ~~~~~~~~~~^^^^^^\n  File \"D:\\ty_now\\SafeGate\\python_service\\tests\\suites\\test_laravel_auth.py\", line 4, in <module>\n    from tests.framework.base import BaseApiTestCase\nModuleNotFoundError: No module named 'tests'\n\n"
+      "error": "ImportError: Failed to import test module: suites.test_laravel_auth\nTraceback (most recent call last):\n  File \"C:\\Users\\Aymane\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\unittest\\loader.py\", line 396, in _find_test_path\n    module = self._get_module_from_name(name)\n  File \"C:\\Users\\Aymane\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\unittest\\loader.py\", line 339, in _get_module_from_name\n    __import__(name)\n    ~~~~~~~~~~^^^^^^\n  File \"D:\\ty_now\\XiaoWu\\python_service\\tests\\suites\\test_laravel_auth.py\", line 4, in <module>\n    from tests.framework.base import BaseApiTestCase\nModuleNotFoundError: No module named 'tests'\n\n"
     },
     {
       "test": "unittest.loader._FailedTest.suites.test_recommendations_and_similar",
       "status": "error",
       "duration_ms": 0,
-      "error": "ImportError: Failed to import test module: suites.test_recommendations_and_similar\nTraceback (most recent call last):\n  File \"C:\\Users\\Aymane\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\unittest\\loader.py\", line 396, in _find_test_path\n    module = self._get_module_from_name(name)\n  File \"C:\\Users\\Aymane\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\unittest\\loader.py\", line 339, in _get_module_from_name\n    __import__(name)\n    ~~~~~~~~~~^^^^^^\n  File \"D:\\ty_now\\SafeGate\\python_service\\tests\\suites\\test_recommendations_and_similar.py\", line 4, in <module>\n    from tests.framework.base import BaseApiTestCase\nModuleNotFoundError: No module named 'tests'\n\n"
+      "error": "ImportError: Failed to import test module: suites.test_recommendations_and_similar\nTraceback (most recent call last):\n  File \"C:\\Users\\Aymane\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\unittest\\loader.py\", line 396, in _find_test_path\n    module = self._get_module_from_name(name)\n  File \"C:\\Users\\Aymane\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\unittest\\loader.py\", line 339, in _get_module_from_name\n    __import__(name)\n    ~~~~~~~~~~^^^^^^\n  File \"D:\\ty_now\\XiaoWu\\python_service\\tests\\suites\\test_recommendations_and_similar.py\", line 4, in <module>\n    from tests.framework.base import BaseApiTestCase\nModuleNotFoundError: No module named 'tests'\n\n"
     },
     {
       "test": "unittest.loader._FailedTest.test_visual_search",
       "status": "error",
       "duration_ms": 0,
-      "error": "ImportError: Failed to import test module: test_visual_search\nTraceback (most recent call last):\n  File \"C:\\Users\\Aymane\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\unittest\\loader.py\", line 396, in _find_test_path\n    module = self._get_module_from_name(name)\n  File \"C:\\Users\\Aymane\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\unittest\\loader.py\", line 339, in _get_module_from_name\n    __import__(name)\n    ~~~~~~~~~~^^^^^^\n  File \"D:\\ty_now\\SafeGate\\python_service\\tests\\test_visual_search.py\", line 9, in <module>\n    from app.api import router as router_module\nModuleNotFoundError: No module named 'app'\n\n"
+      "error": "ImportError: Failed to import test module: test_visual_search\nTraceback (most recent call last):\n  File \"C:\\Users\\Aymane\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\unittest\\loader.py\", line 396, in _find_test_path\n    module = self._get_module_from_name(name)\n  File \"C:\\Users\\Aymane\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\unittest\\loader.py\", line 339, in _get_module_from_name\n    __import__(name)\n    ~~~~~~~~~~^^^^^^\n  File \"D:\\ty_now\\XiaoWu\\python_service\\tests\\test_visual_search.py\", line 9, in <module>\n    from app.api import router as router_module\nModuleNotFoundError: No module named 'app'\n\n"
     }
   ],
   "endpoint_metrics": [],

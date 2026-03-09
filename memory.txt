@@ -1,11 +1,11 @@
-SafeGate / Dormitory Second‑Hand Trading (Laravel) — Project Memory
+XiaoWu / Dormitory Second‑Hand Trading (Laravel) — Project Memory
 
 1) What this project is
-SafeGate is a Laravel 12 API-only backend intended to support a campus/dormitory second‑hand marketplace. The repository includes:
-- A working Laravel application in: d:\ty_now\SafeGate\safe_gate\
-- A thesis-style database design document in: d:\ty_now\SafeGate\description.txt
-- A MySQL DDL script in: d:\ty_now\SafeGate\mysql_ddl.sql
-- A Word document database design file in: d:\ty_now\SafeGate\Campus_Second_Hand_Trading_Enhanced_Database_Design.docx
+XiaoWu is a Laravel 12 API-only backend intended to support a campus/dormitory second‑hand marketplace. The repository includes:
+- A working Laravel application in: d:\ty_now\XiaoWu\xiaowu\
+- A thesis-style database design document in: d:\ty_now\XiaoWu\description.txt
+- A MySQL DDL script in: d:\ty_now\XiaoWu\mysql_ddl.sql
+- A Word document database design file in: d:\ty_now\XiaoWu\Campus_Second_Hand_Trading_Enhanced_Database_Design.docx
 
 The implemented API currently covers authentication, admin bootstrap (creating universities and dormitories), and health checks. The database schema in Laravel migrations already includes many marketplace tables (products, offers, messaging, reviews, reports, etc.), but there are not yet controllers/routes for those features.
 
@@ -16,33 +16,33 @@ Backend
 - Framework: Laravel Framework ^12.0
 - Auth tokens: Laravel Sanctum ^4.0 (personal access tokens)
 - ORM: Eloquent (Active Record)
-- Migrations/Schema Builder: Laravel migrations in safe_gate/database/migrations
+- Migrations/Schema Builder: Laravel migrations in xiaowu/database/migrations
 - Testing: PHPUnit ^11.5.3 via Laravel test runner
 
 Python microservice (in-repo)
 - Framework: FastAPI
 - ASGI server: Uvicorn
-- Location: d:\ty_now\SafeGate\python_service\
+- Location: d:\ty_now\XiaoWu\python_service\
 
 Frontend
 - No UI/frontend is included in this repository (API-only). A separate frontend can be connected later.
 
 Key entrypoints and bootstrapping
-- HTTP entry: safe_gate/public/index.php
-- App bootstrap: safe_gate/bootstrap/app.php
+- HTTP entry: xiaowu/public/index.php
+- App bootstrap: xiaowu/bootstrap/app.php
 - Route files:
-  - safe_gate/routes/api.php
-  - safe_gate/routes/web.php
-  - safe_gate/routes/console.php
+  - xiaowu/routes/api.php
+  - xiaowu/routes/web.php
+  - xiaowu/routes/console.php
 
-Local configuration defaults (safe_gate/.env.example)
+Local configuration defaults (xiaowu/.env.example)
 - DB_CONNECTION=sqlite (default)
 - SESSION_DRIVER=database
 - CACHE_STORE=database
 - QUEUE_CONNECTION=database
 - MAIL_MAILER=log
 
-Composer scripts (safe_gate/composer.json)
+Composer scripts (xiaowu/composer.json)
 - setup: composer install + copy .env + key:generate + migrate
 - dev: php artisan serve
 - test: php artisan config:clear + php artisan test
@@ -50,11 +50,11 @@ Composer scripts (safe_gate/composer.json)
 
 3) High-level architecture
 Laravel MVC (with only Controllers and Models currently used)
-- Controllers (safe_gate/app/Http/Controllers)
+- Controllers (xiaowu/app/Http/Controllers)
   - AuthController: user signup/login
   - AdminController: admin login + create/list universities/dormitories
   - HealthCheckController: JSON health status
-- Models (safe_gate/app/Models)
+- Models (xiaowu/app/Models)
   - Eloquent models represent tables and provide a data access layer
   - Current codebase has very light relationship definitions (only a few belongsTo)
 
@@ -67,7 +67,7 @@ In practice, the authoritative runtime schema is the Laravel migrations (because
 4) HTTP API (endpoints, methods, payloads)
 
 4.1 API base
-- API routes are defined in safe_gate/routes/api.php.
+- API routes are defined in xiaowu/routes/api.php.
 - In Laravel, these routes typically resolve under the /api prefix (default framework behavior).
 So an entry like Route::post('/user/login', ...) is usually reachable at: POST /api/user/login
 
@@ -482,13 +482,13 @@ Admin endpoints (bootstrap + listing)
   - Response (201): {"message":"Tag created successfully","tag":{...}}
 
 4.3 Web endpoints
-Routes are defined in safe_gate/routes/web.php.
+Routes are defined in xiaowu/routes/web.php.
 - No web/UI routes are used (API-only). The web route file is empty.
 
 4.4 Authentication model used by the API
 - Token issuance is done with Laravel Sanctum personal access tokens.
 - Route protection is only partially applied today (currently: /api/admin/users uses token_auth; other admin endpoints are still unprotected).
-- Sanctum is configured in safe_gate/config/sanctum.php and uses guard ['web'] by default.
+- Sanctum is configured in xiaowu/config/sanctum.php and uses guard ['web'] by default.
 
 Implication:
 - Tokens are generated, but only some routes enforce them.
@@ -510,10 +510,10 @@ Implication:
   - Environment variable: LARAVEL_BASE_URL (default: http://127.0.0.1:8000)
 - MySQL database connection used by Python:
   - Environment variables: DB_HOST, DB_PORT, DB_DATABASE, DB_USERNAME, DB_PASSWORD
-  - Must point to the same MySQL database Laravel uses (safe_gate/.env). Example from repo:
+  - Must point to the same MySQL database Laravel uses (xiaowu/.env). Example from repo:
     - DB_HOST=127.0.0.1
     - DB_PORT=3306
-    - DB_DATABASE=safegate
+    - DB_DATABASE=xiaowu
     - DB_USERNAME=root
     - DB_PASSWORD=(empty)
 
@@ -536,11 +536,11 @@ Implication:
     - Mixes exploration: random_count of page_size items are randomized
   - Common failure mode:
     - If Python is pointed at the wrong DB (DB_DATABASE mismatch), it may return 503 with "Database ... missing table ...".
-    - Fix by aligning Python DB_* env vars with safe_gate/.env and running Laravel migrations (php artisan migrate).
+    - Fix by aligning Python DB_* env vars with xiaowu/.env and running Laravel migrations (php artisan migrate).
 
 
 5) Database layer (what is actually in migrations)
-The runtime schema is defined by the Laravel migrations in safe_gate/database/migrations.
+The runtime schema is defined by the Laravel migrations in xiaowu/database/migrations.
 Below is the table inventory based on migration filenames and contents.
 
 5.1 Framework/infra tables
@@ -605,7 +605,7 @@ Trust, moderation, monetization
 - Reads are done via Model::where(...)->first(), Model::all(), etc.
 
 
-6) Domain models present in code (safe_gate/app/Models)
+6) Domain models present in code (xiaowu/app/Models)
 These classes exist and are intended to map to database tables:
 - ActivityLog
 - AuthenticationProvider
@@ -716,15 +716,15 @@ Persistence flow
 
 10) Testing
 Test scaffolding exists:
-- safe_gate/tests/Feature/ExampleTest.php
-- safe_gate/tests/Unit/ExampleTest.php
-- safe_gate/tests/TestCase.php
+- xiaowu/tests/Feature/ExampleTest.php
+- xiaowu/tests/Unit/ExampleTest.php
+- xiaowu/tests/TestCase.php
 Primary command is composer script "test" (php artisan test).
 
 
 11) Files and directories map (quick reference)
-Repository root: d:\ty_now\SafeGate\
-- safe_gate\                      Laravel app
+Repository root: d:\ty_now\XiaoWu\
+- xiaowu\                         Laravel app
   - app\Http\Controllers\          Controllers (Auth/Admin/Health)
   - app\Models\                    Domain models
   - bootstrap\                     Laravel bootstrap

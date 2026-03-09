@@ -1,7 +1,7 @@
 $ErrorActionPreference = "Stop"
 
 $rootDir = $PSScriptRoot
-$laravelDir = Join-Path $rootDir "safe_gate"
+$laravelDir = Join-Path $rootDir "xiaowu"
 $pythonDir = Join-Path $rootDir "python_service"
 
 if (!(Test-Path $laravelDir)) {

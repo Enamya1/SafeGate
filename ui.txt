@@ -1,4 +1,4 @@
-SafeGate UI Description Prompt
+XiaoWu UI Description Prompt
 
 Overview
 - Backend architecture: Laravel API (PHP 8, Sanctum) with FastAPI microservice for recommendations.

@@ -11,11 +11,11 @@
     "backoff_seconds": "0.35",
     "max_response_ms": "8000",
     "enable_live_tests": "False",
-    "report_dir": "d:\\ty_now\\SafeGate\\python_service\\tests\\reports",
-    "report_source_path": "d:\\ty_now\\SafeGate\\report",
+    "report_dir": "d:\\ty_now\\XiaoWu\\python_service\\tests\\reports",
+    "report_source_path": "d:\\ty_now\\XiaoWu\\report",
     "db_host": "127.0.0.1",
     "db_port": "3306",
-    "db_database": "suki_db",
+    "db_database": "XiaoWu",
     "db_username": "root"
   },
   "summary": {

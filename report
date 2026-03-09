@@ -1,7 +1,7 @@
-SafeGate Project Endpoint Report
+XiaoWu Project Endpoint Report
 
 Scope
-- Laravel app (safe_gate) with API routes under /api
+- Laravel app (xiaowu) with API routes under /api
 - Laravel health route configured at /up
 - Python service (python_service) with base /api prefix
 
@@ -862,7 +862,7 @@ AI Table New Options
 - ai_activity_events.error_message: nullable text
 
 AI Runtime Config Options
-- safe_gate/.env:
+- xiaowu/.env:
   - PYTHON_SERVICE_BASE_URL (default http://127.0.0.1:8001)
   - AI_PROVIDER (default qwen)
   - AI_MODEL (default qwen-plus)

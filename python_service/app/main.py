@@ -21,14 +21,14 @@ def _load_local_env() -> None:
     python_service_root = Path(__file__).resolve().parents[1]
     project_root = python_service_root.parent
     _load_env_file(python_service_root / ".env")
-    _load_env_file(project_root / "safe_gate" / ".env")
+    _load_env_file(project_root / "xiaowu" / ".env")
 
 
 _load_local_env()
 
 from app.api.router import py_router, router as api_router
 
-app = FastAPI(title="SafeGate Python Service")
+app = FastAPI(title="XiaoWu Python Service")
 
 
 @app.get("/health")
