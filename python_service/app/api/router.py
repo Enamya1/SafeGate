@@ -286,11 +286,17 @@ def _serialize_product_row(row: Dict[str, Any]) -> Dict[str, Any]:
         price = float(price) if price is not None else None
     except Exception:
         price = None
+    currency = row.get("currency")
+    if isinstance(currency, str) and currency.strip():
+        currency = currency.strip().upper()
+    else:
+        currency = "CNY"
     return {
         "id": row.get("id"),
         "title": row.get("title"),
         "description": row.get("description"),
         "price": price,
+        "currency": currency,
         "status": row.get("status"),
         "created_at": created_at,
         "category": row.get("category_name"),
@@ -340,7 +346,7 @@ def _search_products(
         text(
             f"""
             SELECT
-                p.id, p.title, p.description, p.price, p.status, p.created_at,
+                p.id, p.title, p.description, p.price, p.currency, p.status, p.created_at,
                 c.name AS category_name,
                 cl.name AS condition_level_name,
                 (
@@ -401,7 +407,7 @@ def _search_by_price(
         text(
             f"""
             SELECT
-                p.id, p.title, p.description, p.price, p.status, p.created_at,
+                p.id, p.title, p.description, p.price, p.currency, p.status, p.created_at,
                 c.name AS category_name,
                 cl.name AS condition_level_name,
                 (
@@ -444,7 +450,7 @@ def _search_by_category(
         text(
             f"""
             SELECT
-                p.id, p.title, p.description, p.price, p.status, p.created_at,
+                p.id, p.title, p.description, p.price, p.currency, p.status, p.created_at,
                 c.name AS category_name,
                 cl.name AS condition_level_name,
                 (
@@ -489,7 +495,7 @@ def _get_product(
         text(
             f"""
             SELECT
-                p.id, p.title, p.description, p.price, p.status, p.created_at,
+                p.id, p.title, p.description, p.price, p.currency, p.status, p.created_at,
                 c.name AS category_name,
                 cl.name AS condition_level_name,
                 (
@@ -547,7 +553,7 @@ def _get_similar_products(
         text(
             f"""
             SELECT
-                p.id, p.title, p.description, p.price, p.status, p.created_at,
+                p.id, p.title, p.description, p.price, p.currency, p.status, p.created_at,
                 c.name AS category_name,
                 cl.name AS condition_level_name,
                 (
@@ -1162,7 +1168,7 @@ def recommend_products(
         base_query = """
             SELECT
                 p.id, p.seller_id, p.dormitory_id, p.category_id, p.condition_level_id,
-                p.title, p.price, p.status, p.created_at,
+                p.title, p.price, p.currency, p.status, p.created_at,
                 COALESCE(d_user.latitude, d_product.latitude) AS dormitory__latitude,
                 COALESCE(d_user.longitude, d_product.longitude) AS dormitory__longitude,
                 COALESCE(d_user.university_id, d_product.university_id) AS dormitory__university_id,
@@ -1424,6 +1430,7 @@ def recommend_products(
             "id": pid,
             "title": p.get("title"),
             "price": float(p["price"]) if p.get("price") is not None else None,
+            "currency": (str(p.get("currency") or "CNY")).strip().upper(),
             "status": p.get("status"),
             "created_at": p.get("created_at"),
             "category_id": p.get("category_id"),
@@ -1566,7 +1573,7 @@ def similar_products(
                     f"""
                     SELECT
                         p.id, p.seller_id, p.dormitory_id, p.category_id, p.condition_level_id,
-                        p.title, p.price, p.status, p.created_at,
+                        p.title, p.price, p.currency, p.status, p.created_at,
                         COALESCE(d_user.latitude, d_product.latitude) AS dormitory__latitude,
                         COALESCE(d_user.longitude, d_product.longitude) AS dormitory__longitude,
                         cl.id AS condition_level__id, cl.name AS condition_level__name,
@@ -1653,6 +1660,7 @@ def similar_products(
             "id": pid,
             "title": p.get("title"),
             "price": float(p["price"]) if p.get("price") is not None else None,
+            "currency": (str(p.get("currency") or "CNY")).strip().upper(),
             "status": p.get("status"),
             "created_at": p.get("created_at"),
             "category_id": p.get("category_id"),

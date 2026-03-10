@@ -147,6 +147,7 @@ User Products
            "id":...,
            "title":"...",
            "price":...,
+          "currency":"CNY",
            "status":"...",
            "created_at":"...",
            "image_thumbnail_url":"...",
@@ -206,6 +207,7 @@ User Products
           "id":1,
           "name":"...",
           "price":85,
+          "currency":"CNY",
           "condition_name":"...",
           "image_thumbnail_url":"...",
           "location":{
@@ -350,6 +352,7 @@ User Products
 20) POST /api/user/behavioral_events
    - Auth: auth:sanctum, role=user
    - Request body:
+   SADJSDJ
      - event_type (required string max 50)
      - product_id (nullable integer)
      - category_id (nullable integer)
@@ -434,6 +437,7 @@ User Metadata
            "title":"...",
            "description":"...",
            "price":...,
+          "currency":"CNY",
            "status":"available",
            "is_promoted":false,
            "created_at":"...",
@@ -891,6 +895,7 @@ AI Runtime Config Options
          {
            "title":"...",
            "price":...,
+          "currency":"CNY",
            "status":"...",
            "created_at":"...",
            "category_id":...,
@@ -938,7 +943,9 @@ AI Runtime Config Options
           "id":...,
           "title":"...",
           "price":...,
+          "currency":"CNY",
           "status":"...",
+          "created_at":"...",
           "created_at":"...",
           "category_id":...,
           "condition_level_id":...,
@@ -988,6 +995,7 @@ AI Runtime Config Options
           "condition_level_id":...,
           "title":"...",
           "price":...,
+          "currency":"CNY",
           "status":"available",
           "created_at":"...",
           "dormitory":{"id":...,"dormitory_name":"...","university_id":...},

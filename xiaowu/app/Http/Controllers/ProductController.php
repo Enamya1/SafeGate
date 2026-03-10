@@ -457,6 +457,7 @@ class ProductController extends Controller
                 'condition_level_id',
                 'title',
                 'price',
+                'currency',
                 'status',
                 'created_at',
             ])
@@ -530,6 +531,7 @@ class ProductController extends Controller
                     'id' => $product->id,
                     'title' => $product->title,
                     'price' => $product->price,
+                    'currency' => strtoupper((string) ($product->currency ?? 'CNY')),
                     'status' => $product->status,
                     'created_at' => $product->created_at,
                     'image_thumbnail_url' => $imageThumbnailUrl,
@@ -674,6 +676,7 @@ class ProductController extends Controller
                     'condition_level_id',
                     'title',
                     'price',
+                    'currency',
                     'status',
                     'created_at',
                 ]);
@@ -759,6 +762,7 @@ class ProductController extends Controller
                     'condition_level_id' => $product->condition_level_id !== null ? (int) $product->condition_level_id : null,
                     'title' => $product->title,
                     'price' => $product->price !== null ? (float) $product->price : null,
+                    'currency' => strtoupper((string) ($product->currency ?? 'CNY')),
                     'status' => $product->status,
                     'created_at' => optional($product->created_at)->toISOString(),
                     'dormitory' => $product->dormitory ? [
@@ -997,6 +1001,7 @@ class ProductController extends Controller
                 'products.id',
                 'products.title',
                 'products.price',
+                'products.currency',
                 'products.created_at',
                 'products.status',
                 'condition_levels.name as condition_name',
@@ -1031,6 +1036,7 @@ class ProductController extends Controller
                     'id' => $row->id,
                     'name' => $row->title,
                     'price' => $row->price !== null ? (float) $row->price : null,
+                    'currency' => strtoupper((string) ($row->currency ?? 'CNY')),
                     'condition_name' => $row->condition_name,
                     'image_thumbnail_url' => $imageThumbnailUrl,
                     'location' => [
@@ -1450,6 +1456,7 @@ class ProductController extends Controller
                 'products.title',
                 'products.description',
                 'products.price',
+                'products.currency',
                 'products.status',
                 'products.created_at',
                 'dormitories.latitude as dormitory_latitude',
@@ -1637,6 +1644,7 @@ class ProductController extends Controller
                     'title' => $row->title,
                     'description' => $row->description,
                     'price' => $row->price !== null ? (float) $row->price : null,
+                    'currency' => strtoupper((string) ($row->currency ?? 'CNY')),
                     'status' => $row->status,
                     'is_promoted' => false,
                     'created_at' => $row->created_at,

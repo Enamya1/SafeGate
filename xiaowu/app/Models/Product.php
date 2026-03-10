@@ -14,6 +14,7 @@ class Product extends Model
         'title',
         'description',
         'price',
+        'currency',
         'status',
         'deleted_at',
         'modified_by',
