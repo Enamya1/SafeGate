@@ -6,6 +6,7 @@ import os
 import random
 import re
 import urllib.error
+import urllib.parse
 import urllib.request
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Set, Tuple
@@ -103,6 +104,28 @@ def _laravel_get_json(authorization: str, path: str) -> Dict[str, Any]:
     if last_error is not None:
         detail = f"Could not reach Laravel: {type(last_error).__name__}"
     raise HTTPException(status_code=502, detail=detail)
+
+
+def _resolve_image_url(image_url: Optional[str]) -> Optional[str]:
+    if not isinstance(image_url, str) or image_url.strip() == "":
+        return None
+
+    normalized = image_url.strip()
+    if normalized.startswith("http://") or normalized.startswith("https://"):
+        parsed = urllib.parse.urlparse(normalized)
+        if parsed.netloc in {"localhost", "127.0.0.1", "localhost:80", "127.0.0.1:80"}:
+            normalized = parsed.path or "/"
+            if parsed.query:
+                normalized = f"{normalized}?{parsed.query}"
+            if parsed.fragment:
+                normalized = f"{normalized}#{parsed.fragment}"
+        else:
+            return normalized
+
+    base_url = (os.environ.get("LARAVEL_BASE_URL") or "http://127.0.0.1:8000").strip().rstrip("/")
+    if not normalized.startswith("/"):
+        normalized = f"/{normalized}"
+    return f"{base_url}{normalized}"
 
 
 def _parse_lat_lng_from_location(location: Any) -> Optional[Tuple[float, float]]:
@@ -1425,7 +1448,8 @@ def recommend_products(
         image_thumbnail_url = None
         if imgs:
             first = imgs[0]
-            image_thumbnail_url = first.get("image_thumbnail_url")
+            image_thumbnail_url = _resolve_image_url(first.get("image_thumbnail_url"))
+        seller_profile_picture = _resolve_image_url(p.get("seller__profile_picture"))
         prod: Dict[str, Any] = {
             "id": pid,
             "title": p.get("title"),
@@ -1436,6 +1460,11 @@ def recommend_products(
             "category_id": p.get("category_id"),
             "condition_level_id": p.get("condition_level_id"),
             "is_promoted": int(p.get("is_promoted") or 0),
+            "seller": {
+                "id": p.get("seller__id"),
+                "username": p.get("seller__username"),
+                "profile_picture": seller_profile_picture,
+            },
             "dormitory": {
                 "latitude": p.get("dormitory__latitude"),
                 "longitude": p.get("dormitory__longitude"),

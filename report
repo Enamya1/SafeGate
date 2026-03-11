@@ -900,6 +900,11 @@ AI Runtime Config Options
            "category_id":...,
            "condition_level_id":...,
            "is_promoted":0,
+          "seller":{
+            "id":...,
+            "username":"...",
+            "profile_picture":"..."
+          },
           "dormitory":{
             "latitude":...,
             "longitude":...
