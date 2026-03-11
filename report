@@ -352,7 +352,6 @@ User Products
 20) POST /api/user/behavioral_events
    - Auth: auth:sanctum, role=user
    - Request body:
-   SADJSDJ
      - event_type (required string max 50)
      - product_id (nullable integer)
      - category_id (nullable integer)
@@ -1066,3 +1065,226 @@ AI Runtime Config Options
   - Response 422: {"detail":"Could not fetch image"}
   - Response 503: {"detail":"Database unavailable"}
   - Response 503: {"detail":"Database '<name>' missing table: <table>. Check DB_* env or run Laravel migrations."}
+
+Financial System Schema Additions (Laravel)
+- Wallet management
+  - wallet_types (id, code, name)
+  - wallet_statuses (id, code, name)
+  - wallets (user_id, wallet_type_id, status_id, currency, balance, available_balance, locked_balance, frozen_at, freeze_reason)
+  - wallet_status_histories (wallet_id, from_status_id, to_status_id, changed_by, reason)
+  - wallet_freeze_requests (wallet_id, requested_by, approved_by, action, status, reason, approved_at)
+- Transaction ledger
+  - transaction_ledgers (ledger_uuid, atomic_transaction_id, wallet_id, related_wallet_id, direction, amount, currency, status, type, reference, metadata, occurred_at, initiated_by, approved_by)
+  - transaction_ledger_audits (transaction_ledger_id, action, actor_id, payload)
+- Atomic transactions
+  - atomic_transactions (atomic_uuid, status, total_amount, currency, initiated_by, metadata)
+  - atomic_transaction_steps (atomic_transaction_id, step_order, step_type, status, from_wallet_id, to_wallet_id, amount, currency, transaction_ledger_id, error_message)
+- Payment flows
+  - payment_methods (code, name, status)
+  - payment_states (code, name, is_terminal)
+  - payment_flows (payment_reference, payment_method_id, state_id, amount, currency, metadata)
+  - payment_flow_histories (payment_flow_id, from_state_id, to_state_id, changed_by, reason)
+- Escrow system
+  - escrow_accounts (wallet_id, status, held_amount, available_amount)
+  - escrow_transactions (escrow_account_id, ledger_id, status, release_condition, dispute_reason)
+  - escrow_disputes (escrow_transaction_id, status, opened_by, resolved_by, resolution)
+- Reversal and fraud
+  - transaction_reversals (transaction_ledger_id, requested_by, approved_by_level1, approved_by_level2, status, amount, currency, approval_required_level, approved_level, reversal_ledger_id)
+  - fraud_alerts (transaction_ledger_id, wallet_id, related_wallet_id, risk_score, risk_level, status, reasons, external_provider, external_reference, external_score)
+
+Financial APIs (User)
+60) POST /api/wallets
+  - Auth: auth:sanctum, role=user
+  - Request body:
+    - wallet_type_id (nullable integer, exists wallet_types.id)
+    - currency (nullable string size 3, default CNY)
+    - initial_balance (nullable numeric >= 0)
+  - Response 201: {"message":"Wallet created successfully","wallet":{...}}
+  - Response 409: {"message":"Wallet already exists.","wallet_id":...}
+  - Response 422: {"message":"Validation Error","errors":{...}}
+
+61) GET /api/wallets
+  - Auth: auth:sanctum, role=user
+  - Response 200: {"message":"Wallets retrieved successfully","wallets":[...]}
+
+62) GET /api/wallets/{wallet_id}
+  - Auth: auth:sanctum, role=user
+  - Response 200: {"message":"Wallet retrieved successfully","wallet":{...}}
+  - Response 404: {"message":"Wallet not found."}
+
+63) POST /api/wallets/{wallet_id}/balance
+  - Auth: auth:sanctum, role=user
+  - Request body:
+    - amount (required numeric >= 0.01)
+    - direction (required credit|debit)
+    - type (optional string)
+    - reference (optional string)
+    - metadata (optional array)
+  - Response 200: {"message":"Wallet balance updated successfully","wallet":{...},"ledger_id":...}
+  - Response 409: {"message":"Insufficient available balance."}
+
+64) POST /api/wallets/transfer
+  - Auth: auth:sanctum, role=user
+  - Request body:
+    - from_wallet_id (required integer)
+    - to_wallet_id (required integer)
+    - amount (required numeric >= 0.01)
+    - reference (optional string)
+    - metadata (optional array)
+  - Response 200: {"message":"Transfer completed successfully","atomic_transaction_id":...,"debit_ledger_id":...,"credit_ledger_id":...}
+  - Response 409: {"message":"Wallet currencies do not match."}
+
+65) GET /api/wallets/{wallet_id}/transactions
+  - Auth: auth:sanctum, role=user
+  - Query:
+    - status (optional string)
+    - direction (optional string)
+    - type (optional string)
+    - from (optional datetime)
+    - to (optional datetime)
+    - limit (optional integer, default 50, max 200)
+  - Response 200: {"message":"Wallet transactions retrieved successfully","wallet_id":...,"transactions":[...]}
+
+66) GET /api/wallets/{wallet_id}/status-history
+  - Auth: auth:sanctum, role=user
+  - Response 200: {"message":"Wallet status history retrieved successfully","wallet_id":...,"history":[...]}
+
+67) POST /api/wallets/{wallet_id}/status-requests
+  - Auth: auth:sanctum, role=user
+  - Request body:
+    - action (required freeze|unfreeze)
+    - reason (optional string)
+  - Response 201: {"message":"Wallet status request submitted successfully","request_id":...}
+
+68) POST /api/atomic-transactions
+  - Auth: auth:sanctum, role=user
+  - Request body:
+    - steps (required array of step objects)
+    - steps[].step_type (required string)
+    - steps[].from_wallet_id (nullable integer)
+    - steps[].to_wallet_id (nullable integer)
+    - steps[].amount (required numeric >= 0.01)
+    - steps[].currency (required string size 3)
+    - metadata (optional array)
+  - Response 201: {"message":"Atomic transaction completed successfully","atomic_transaction":{...},"steps":[...]}
+  - Response 409: {"message":"Atomic transaction failed","error":"...","atomic_transaction_id":...}
+
+69) GET /api/atomic-transactions/{atomic_id}
+  - Auth: auth:sanctum, role=user
+  - Response 200: {"message":"Atomic transaction retrieved successfully","atomic_transaction":{...},"steps":[...]}
+
+70) GET /api/atomic-transactions/{atomic_id}/verify
+  - Auth: auth:sanctum, role=user
+  - Response 200: {"message":"Atomic transaction verification completed","credits":...,"debits":...,"integrity_ok":true}
+
+Financial APIs (Admin)
+71) POST /api/admin/wallets/{wallet_id}/freeze
+  - Auth: token_auth (Sanctum token), role=admin
+  - Request body:
+    - reason (optional string)
+  - Response 200: {"message":"Wallet frozen successfully","freeze_request_id":...}
+
+72) POST /api/admin/wallets/{wallet_id}/unfreeze
+  - Auth: token_auth (Sanctum token), role=admin
+  - Request body:
+    - reason (optional string)
+  - Response 200: {"message":"Wallet unfrozen successfully","freeze_request_id":...}
+
+73) GET /api/admin/wallets/freeze-requests
+  - Auth: token_auth (Sanctum token), role=admin
+  - Query:
+    - status (optional string)
+    - action (optional string)
+    - limit (optional integer, default 100)
+  - Response 200: {"message":"Freeze requests retrieved successfully","requests":[...]}
+
+74) POST /api/admin/wallets/freeze-requests/{request_id}/approve
+  - Auth: token_auth (Sanctum token), role=admin
+  - Response 200: {"message":"Freeze request approved successfully","freeze_request_id":...}
+
+75) POST /api/admin/ledgers
+  - Auth: token_auth (Sanctum token), role=admin
+  - Request body:
+    - wallet_id (required integer)
+    - direction (required credit|debit)
+    - amount (required numeric >= 0.01)
+    - currency (required string size 3)
+    - status (optional pending|completed|failed|reversed)
+    - type (optional string)
+    - reference (optional string)
+    - metadata (optional array)
+  - Response 201: {"message":"Ledger entry created successfully","ledger":{...}}
+
+76) GET /api/admin/ledgers/{ledger_id}
+  - Auth: token_auth (Sanctum token), role=admin
+  - Response 200: {"message":"Ledger entry retrieved successfully","ledger":{...},"audits":[...]}
+
+77) GET /api/admin/ledgers
+  - Auth: token_auth (Sanctum token), role=admin
+  - Query:
+    - wallet_id, status, direction, currency, from, to, min_amount, max_amount, limit
+  - Response 200: {"message":"Ledger entries retrieved successfully","count":...,"ledgers":[...]}
+
+78) POST /api/admin/ledgers/reconcile
+  - Auth: token_auth (Sanctum token), role=admin
+  - Request body:
+    - wallet_id (required integer)
+    - from (optional date)
+    - to (optional date)
+  - Response 200: {"message":"Ledger reconciliation completed","wallet_balance":...,"ledger_balance":...,"delta":...}
+
+79) POST /api/admin/ledgers/{ledger_id}/reverse
+  - Auth: token_auth (Sanctum token), role=admin
+  - Request body:
+    - reason (optional string)
+  - Response 201: {"message":"Reversal request created successfully","reversal_id":...,"approval_required_level":1|2}
+
+80) POST /api/admin/reversals/{reversal_id}/approve
+  - Auth: token_auth (Sanctum token), role=admin
+  - Response 200: {"message":"Reversal approval recorded successfully","reversal_id":...}
+
+81) POST /api/admin/atomic-transactions/{atomic_id}/rollback
+  - Auth: token_auth (Sanctum token), role=admin
+  - Response 200: {"message":"Atomic transaction rolled back successfully","atomic_transaction_id":...}
+
+82) GET /api/admin/fraud/alerts
+  - Auth: token_auth (Sanctum token), role=admin
+  - Query:
+    - status (optional open|reviewing|resolved|ignored)
+    - risk_level (optional low|medium|high)
+    - limit (optional integer, default 100)
+  - Response 200: {"message":"Fraud alerts retrieved successfully","alerts":[...]}
+
+83) PATCH /api/admin/fraud/alerts/{alert_id}
+  - Auth: token_auth (Sanctum token), role=admin
+  - Request body:
+    - status (required open|reviewing|resolved|ignored)
+    - external_provider (optional string)
+    - external_reference (optional string)
+    - external_score (optional numeric)
+  - Response 200: {"message":"Fraud alert updated successfully","alert_id":...}
+
+Error Handling and Auth
+- All financial endpoints return 401 when unauthenticated.
+- User endpoints enforce role=user and return 403 for non-user tokens.
+- Admin endpoints enforce role=admin and return 403 for non-admin tokens.
+- Validation failures return 422 with {"message":"Validation Error","errors":{...}}.
+- State conflicts return 409 (e.g., insufficient balance, wallet frozen, already processed).
+
+Testing Protocols
+- Run Laravel migrations after schema changes: php artisan migrate
+- Use feature tests to validate:
+  - Wallet create, balance update, transfer, and history retrieval
+  - Ledger creation, search, and reconciliation results
+  - Atomic transaction multi-step success and rollback behavior
+  - Admin freeze, reversal approval, and fraud alert review flows
+
+Performance Notes
+- Wallet transfer and atomic transaction use DB::transaction with row locks to prevent race conditions.
+- Ledger search endpoints support limit caps to reduce load.
+- Fraud alert scoring uses recent ledger counts within 1 hour to limit query scope.
+
+Security Notes
+- Balance updates require auth:sanctum and role checks.
+- Admin financial actions require token_auth middleware.
+- Ledger reversal writes audit records and updates original ledger status.

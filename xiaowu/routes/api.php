@@ -1,11 +1,15 @@
 <?php
 
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\AdminFinanceController;
 use App\Http\Controllers\AiChatController;
+use App\Http\Controllers\AtomicTransactionController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BehavioralEventController;
 use App\Http\Controllers\HealthCheckController;
+use App\Http\Controllers\LedgerController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\WalletController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('api')->get('/health-check', HealthCheckController::class);
@@ -44,6 +48,22 @@ Route::middleware('auth:sanctum')->get('/user/meta/options', [ProductController:
 Route::middleware('auth:sanctum')->get('/user/meta/dormitories', [ProductController::class, 'dormitories']);
 Route::middleware('auth:sanctum')->get('/user/meta/dormitories/by-university', [ProductController::class, 'dormitoriesByUserUniversity']);
 Route::middleware('auth:sanctum')->post('/user/tags', [ProductController::class, 'createTag']);
+Route::middleware('auth:sanctum')->prefix('wallets')->group(function () {
+    Route::post('/', [WalletController::class, 'createWallet']);
+    Route::get('/', [WalletController::class, 'listWallets']);
+    Route::get('/{wallet_id}', [WalletController::class, 'showWallet']);
+    Route::post('/{wallet_id}/balance', [WalletController::class, 'updateBalance']);
+    Route::post('/transfer', [WalletController::class, 'transfer']);
+    Route::get('/{wallet_id}/transactions', [WalletController::class, 'transactionHistory']);
+    Route::get('/{wallet_id}/status-history', [WalletController::class, 'statusHistory']);
+    Route::post('/{wallet_id}/status-requests', [WalletController::class, 'createStatusRequest']);
+});
+
+Route::middleware('auth:sanctum')->prefix('atomic-transactions')->group(function () {
+    Route::post('/', [AtomicTransactionController::class, 'create']);
+    Route::get('/{atomic_id}', [AtomicTransactionController::class, 'show']);
+    Route::get('/{atomic_id}/verify', [AtomicTransactionController::class, 'verify']);
+});
 
 Route::middleware('auth:sanctum')->prefix('ai')->group(function () {
     Route::post('/sessions', [AiChatController::class, 'createSession']);
@@ -83,4 +103,17 @@ Route::prefix('admin')->group(function () {
     Route::middleware('token_auth')->patch('/users/{id}', [AdminController::class, 'updateUser']);
     Route::middleware('token_auth')->patch('/users/{id}/activate', [AdminController::class, 'activateUser']);
     Route::middleware('token_auth')->patch('/users/{id}/deactivate', [AdminController::class, 'deactivateUser']);
+    Route::middleware('token_auth')->post('/wallets/{wallet_id}/freeze', [AdminFinanceController::class, 'freezeWallet']);
+    Route::middleware('token_auth')->post('/wallets/{wallet_id}/unfreeze', [AdminFinanceController::class, 'unfreezeWallet']);
+    Route::middleware('token_auth')->get('/wallets/freeze-requests', [AdminFinanceController::class, 'listFreezeRequests']);
+    Route::middleware('token_auth')->post('/wallets/freeze-requests/{request_id}/approve', [AdminFinanceController::class, 'approveFreezeRequest']);
+    Route::middleware('token_auth')->post('/ledgers', [LedgerController::class, 'create']);
+    Route::middleware('token_auth')->get('/ledgers/{ledger_id}', [LedgerController::class, 'show']);
+    Route::middleware('token_auth')->get('/ledgers', [LedgerController::class, 'search']);
+    Route::middleware('token_auth')->post('/ledgers/reconcile', [LedgerController::class, 'reconcile']);
+    Route::middleware('token_auth')->post('/ledgers/{ledger_id}/reverse', [AdminFinanceController::class, 'reverseLedger']);
+    Route::middleware('token_auth')->post('/reversals/{reversal_id}/approve', [AdminFinanceController::class, 'approveReversal']);
+    Route::middleware('token_auth')->get('/fraud/alerts', [AdminFinanceController::class, 'listFraudAlerts']);
+    Route::middleware('token_auth')->patch('/fraud/alerts/{alert_id}', [AdminFinanceController::class, 'updateFraudAlert']);
+    Route::middleware('token_auth')->post('/atomic-transactions/{atomic_id}/rollback', [AtomicTransactionController::class, 'rollback']);
 });

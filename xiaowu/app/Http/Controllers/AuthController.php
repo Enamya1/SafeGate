@@ -65,19 +65,43 @@ class AuthController extends Controller
             ], 422);
         }
 
-        $user = User::create([
-            'full_name' => $validatedData['full_name'],
-            'username' => $validatedData['username'],
-            'email' => $validatedData['email'],
-            'phone_number' => data_get($validatedData, 'phone_number', null),
-            'password' => Hash::make($validatedData['password']),
-            'dormitory_id' => data_get($validatedData, 'dormitory_id', null),
-        ]);
-        $accountCompleted = $this->isAccountCompleted($user);
-        if ($user->account_completed !== $accountCompleted) {
-            $user->account_completed = $accountCompleted;
-            $user->save();
-        }
+        $user = null;
+
+        DB::transaction(function () use ($validatedData, &$user) {
+            $user = User::create([
+                'full_name' => $validatedData['full_name'],
+                'username' => $validatedData['username'],
+                'email' => $validatedData['email'],
+                'phone_number' => data_get($validatedData, 'phone_number', null),
+                'password' => Hash::make($validatedData['password']),
+                'dormitory_id' => data_get($validatedData, 'dormitory_id', null),
+            ]);
+
+            $accountCompleted = $this->isAccountCompleted($user);
+            if ($user->account_completed !== $accountCompleted) {
+                $user->account_completed = $accountCompleted;
+                $user->save();
+            }
+
+            $walletTypeId = DB::table('wallet_types')->where('code', 'primary')->value('id');
+            $statusId = DB::table('wallet_statuses')->where('code', 'active')->value('id');
+
+            if ($walletTypeId && $statusId) {
+                DB::table('wallets')->insert([
+                    'user_id' => $user->id,
+                    'wallet_type_id' => $walletTypeId,
+                    'status_id' => $statusId,
+                    'currency' => 'CNY',
+                    'balance' => 0,
+                    'available_balance' => 0,
+                    'locked_balance' => 0,
+                    'frozen_at' => null,
+                    'freeze_reason' => null,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+        });
 
         return response()->json([
             'message' => 'User registered successfully',
