@@ -459,9 +459,7 @@ User Metadata
     - q (required string, max 255)
     - page (optional integer, min 1, default 1)
     - page_size (optional integer, min 1, max 50, default 12)
-    - suggestions_limit (optional integer, min 1, max 15, default 8)
   - Behavior:
-    - Provides real-time suggestions based on prefix matches in tags, product titles, and categories.
     - Returns full product results matching product title, description, tags, category, condition level, dormitory info, and seller info.
     - Uses full-text indexes (MySQL) and fuzzy matching (SOUNDEX) to handle typos and partial matches.
     - Caches frequent queries for faster responses.
@@ -469,7 +467,6 @@ User Metadata
     {
       "message":"Search completed successfully",
       "query":{"q":"...","normalized":"..."},
-      "suggestions":["phones","phone case",...],
       "page":1,
       "page_size":12,
       "total":123,
@@ -492,6 +489,23 @@ User Metadata
           "tags":[{"id":...,"name":"..."}]
         }
       ]
+    }
+  - Response 403: {"message":"Unauthorized: Only users can access this endpoint."}
+  - Response 422: {"message":"Validation Error","errors":{...}}
+
+27c) GET /api/user/search/products/suggestions
+  - Auth: auth:sanctum, role=user
+  - Query params:
+    - q (required string, max 255)
+    - suggestions_limit (optional integer, min 1, max 15, default 8)
+  - Behavior:
+    - Provides real-time suggestions based on prefix matches in tags, product titles, and categories.
+    - Caches frequent queries for faster responses.
+  - Response 200:
+    {
+      "message":"Search suggestions retrieved successfully",
+      "query":{"q":"...","normalized":"..."},
+      "suggestions":["phones","phone case",...]
     }
   - Response 403: {"message":"Unauthorized: Only users can access this endpoint."}
   - Response 422: {"message":"Validation Error","errors":{...}}

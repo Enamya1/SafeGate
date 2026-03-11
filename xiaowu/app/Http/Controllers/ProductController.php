@@ -164,6 +164,371 @@ class ProductController extends Controller
         return $earthRadiusKm * $c;
     }
 
+    private function buildSearchTokens(string $queryString): array
+    {
+        $normalized = Str::lower(trim($queryString));
+        $tokens = collect(preg_split('/\s+/', $normalized, -1, PREG_SPLIT_NO_EMPTY))
+            ->filter()
+            ->values();
+        $booleanQuery = $tokens
+            ->map(function (string $token) {
+                return $token.'*';
+            })
+            ->implode(' ');
+
+        if ($booleanQuery === '') {
+            $booleanQuery = $normalized.'*';
+        }
+
+        return [$normalized, $booleanQuery];
+    }
+
+    private function buildSearchSuggestions(string $queryString, int $suggestionsLimit): array
+    {
+        $normalizedQuery = Str::lower($queryString);
+        $cacheSeconds = 120;
+        $cacheToken = md5($normalizedQuery);
+        $suggestionsCacheKey = 'product_search:v1:suggestions:'.$cacheToken.':'.$suggestionsLimit;
+
+        return Cache::remember($suggestionsCacheKey, $cacheSeconds, function () use ($queryString, $suggestionsLimit) {
+            $prefix = $queryString.'%';
+
+            $tagSuggestions = Tag::query()
+                ->where('name', 'like', $prefix)
+                ->orderBy('name')
+                ->limit($suggestionsLimit)
+                ->pluck('name')
+                ->all();
+
+            $productSuggestions = Product::query()
+                ->where('status', 'available')
+                ->whereNull('deleted_at')
+                ->where('title', 'like', $prefix)
+                ->orderBy('title')
+                ->limit($suggestionsLimit)
+                ->pluck('title')
+                ->all();
+
+            $categorySuggestions = Category::query()
+                ->where('name', 'like', $prefix)
+                ->orderBy('name')
+                ->limit($suggestionsLimit)
+                ->pluck('name')
+                ->all();
+
+            return collect(array_merge($tagSuggestions, $productSuggestions, $categorySuggestions))
+                ->map(function ($value) {
+                    return is_string($value) ? trim($value) : '';
+                })
+                ->filter()
+                ->unique()
+                ->values()
+                ->take($suggestionsLimit)
+                ->all();
+        });
+    }
+
+    private function buildSearchResultsPayload(string $queryString, int $page, int $pageSize): array
+    {
+        [$normalizedQuery, $booleanQuery] = $this->buildSearchTokens($queryString);
+        $cacheSeconds = 120;
+        $cacheToken = md5($normalizedQuery);
+        $resultsCacheKey = 'product_search:v1:results:'.$cacheToken.':'.$page.':'.$pageSize;
+
+        return Cache::remember($resultsCacheKey, $cacheSeconds, function () use ($queryString, $normalizedQuery, $booleanQuery, $page, $pageSize) {
+            $likeQuery = '%'.$queryString.'%';
+            $likePrefix = $queryString.'%';
+
+            $isMysql = DB::getDriverName() === 'mysql';
+
+            $hasFulltextIndex = function (string $table, string $index) use ($isMysql): bool {
+                if (! $isMysql) {
+                    return false;
+                }
+
+                $row = DB::selectOne(
+                    "select count(*) as total from information_schema.statistics where table_schema = database() and table_name = ? and index_name = ? and index_type = 'FULLTEXT'",
+                    [$table, $index]
+                );
+
+                return (int) ($row->total ?? 0) > 0;
+            };
+
+            $hasProductsFulltext = $hasFulltextIndex('products', 'products_fulltext');
+            $hasTagsFulltext = $hasFulltextIndex('tags', 'tags_fulltext');
+            $hasCategoriesFulltext = $hasFulltextIndex('categories', 'categories_fulltext');
+            $hasConditionLevelsFulltext = $hasFulltextIndex('condition_levels', 'condition_levels_fulltext');
+            $hasDormitoriesFulltext = $hasFulltextIndex('dormitories', 'dormitories_fulltext');
+            $hasUsersFulltext = $hasFulltextIndex('users', 'users_fulltext');
+
+            $query = Product::query()
+                ->leftJoin('product_tags', 'products.id', '=', 'product_tags.product_id')
+                ->leftJoin('tags', 'product_tags.tag_id', '=', 'tags.id')
+                ->leftJoin('categories', 'products.category_id', '=', 'categories.id')
+                ->leftJoin('condition_levels', 'products.condition_level_id', '=', 'condition_levels.id')
+                ->leftJoin('dormitories', 'products.dormitory_id', '=', 'dormitories.id')
+                ->leftJoin('users', 'products.seller_id', '=', 'users.id')
+                ->where('products.status', 'available')
+                ->whereNull('products.deleted_at');
+
+            $query->where(function ($inner) use ($queryString, $likeQuery, $booleanQuery, $isMysql, $hasProductsFulltext, $hasTagsFulltext, $hasCategoriesFulltext, $hasConditionLevelsFulltext, $hasDormitoriesFulltext, $hasUsersFulltext) {
+                $inner->where('products.title', 'like', $likeQuery)
+                    ->orWhere('products.description', 'like', $likeQuery)
+                    ->orWhere('tags.name', 'like', $likeQuery)
+                    ->orWhere('categories.name', 'like', $likeQuery)
+                    ->orWhere('categories.description', 'like', $likeQuery)
+                    ->orWhere('condition_levels.name', 'like', $likeQuery)
+                    ->orWhere('condition_levels.description', 'like', $likeQuery)
+                    ->orWhere('dormitories.dormitory_name', 'like', $likeQuery)
+                    ->orWhere('dormitories.domain', 'like', $likeQuery)
+                    ->orWhere('dormitories.address', 'like', $likeQuery)
+                    ->orWhere('users.username', 'like', $likeQuery)
+                    ->orWhere('users.full_name', 'like', $likeQuery);
+
+                if ($isMysql) {
+                    if ($hasProductsFulltext) {
+                        $inner->orWhereRaw('MATCH(products.title, products.description) AGAINST (? IN BOOLEAN MODE)', [$booleanQuery]);
+                    }
+                    if ($hasTagsFulltext) {
+                        $inner->orWhereRaw('MATCH(tags.name) AGAINST (? IN BOOLEAN MODE)', [$booleanQuery]);
+                    }
+                    if ($hasCategoriesFulltext) {
+                        $inner->orWhereRaw('MATCH(categories.name, categories.description) AGAINST (? IN BOOLEAN MODE)', [$booleanQuery]);
+                    }
+                    if ($hasConditionLevelsFulltext) {
+                        $inner->orWhereRaw('MATCH(condition_levels.name, condition_levels.description) AGAINST (? IN BOOLEAN MODE)', [$booleanQuery]);
+                    }
+                    if ($hasDormitoriesFulltext) {
+                        $inner->orWhereRaw('MATCH(dormitories.dormitory_name, dormitories.domain, dormitories.address) AGAINST (? IN BOOLEAN MODE)', [$booleanQuery]);
+                    }
+                    if ($hasUsersFulltext) {
+                        $inner->orWhereRaw('MATCH(users.username, users.full_name) AGAINST (? IN BOOLEAN MODE)', [$booleanQuery]);
+                    }
+                    $inner->orWhereRaw('SOUNDEX(products.title) = SOUNDEX(?)', [$queryString])
+                        ->orWhereRaw('SOUNDEX(tags.name) = SOUNDEX(?)', [$queryString])
+                        ->orWhereRaw('SOUNDEX(categories.name) = SOUNDEX(?)', [$queryString]);
+                }
+            });
+
+            $query->select([
+                'products.id',
+                'products.seller_id',
+                'products.dormitory_id',
+                'products.category_id',
+                'products.condition_level_id',
+                'products.title',
+                'products.description',
+                'products.price',
+                'products.currency',
+                'products.status',
+                'products.created_at',
+            ]);
+
+            $orderByRelevance = false;
+            if ($isMysql) {
+                $relevancePieces = [];
+                $relevanceBindings = [];
+                if ($hasProductsFulltext) {
+                    $relevancePieces[] = '(MATCH(products.title, products.description) AGAINST (? IN BOOLEAN MODE) * 4)';
+                    $relevanceBindings[] = $booleanQuery;
+                }
+                if ($hasTagsFulltext) {
+                    $relevancePieces[] = '(MATCH(tags.name) AGAINST (? IN BOOLEAN MODE) * 2.5)';
+                    $relevanceBindings[] = $booleanQuery;
+                }
+                if ($hasCategoriesFulltext) {
+                    $relevancePieces[] = '(MATCH(categories.name, categories.description) AGAINST (? IN BOOLEAN MODE) * 1.5)';
+                    $relevanceBindings[] = $booleanQuery;
+                }
+                if ($hasConditionLevelsFulltext) {
+                    $relevancePieces[] = '(MATCH(condition_levels.name, condition_levels.description) AGAINST (? IN BOOLEAN MODE) * 1.2)';
+                    $relevanceBindings[] = $booleanQuery;
+                }
+                if ($hasDormitoriesFulltext) {
+                    $relevancePieces[] = '(MATCH(dormitories.dormitory_name, dormitories.domain, dormitories.address) AGAINST (? IN BOOLEAN MODE) * 1.1)';
+                    $relevanceBindings[] = $booleanQuery;
+                }
+                if ($hasUsersFulltext) {
+                    $relevancePieces[] = '(MATCH(users.username, users.full_name) AGAINST (? IN BOOLEAN MODE) * 1.3)';
+                    $relevanceBindings[] = $booleanQuery;
+                }
+                $relevancePieces[] = '(CASE WHEN products.title LIKE ? THEN 1.6 ELSE 0 END)';
+                $relevanceBindings[] = $likePrefix;
+                $relevancePieces[] = '(CASE WHEN tags.name LIKE ? THEN 1.1 ELSE 0 END)';
+                $relevanceBindings[] = $likePrefix;
+                $relevancePieces[] = '(CASE WHEN categories.name LIKE ? THEN 0.9 ELSE 0 END)';
+                $relevanceBindings[] = $likePrefix;
+
+                $query->selectRaw('MAX(('.implode(' + ', $relevancePieces).')) as relevance', $relevanceBindings);
+                $orderByRelevance = true;
+            } else {
+                $query->selectRaw('0 as relevance');
+            }
+
+            $query->groupBy([
+                'products.id',
+                'products.seller_id',
+                'products.dormitory_id',
+                'products.category_id',
+                'products.condition_level_id',
+                'products.title',
+                'products.description',
+                'products.price',
+                'products.currency',
+                'products.status',
+                'products.created_at',
+            ]);
+
+            if ($orderByRelevance) {
+                $query->orderByDesc('relevance');
+            }
+
+            $query->orderByDesc('products.id');
+
+            $paginator = $query->paginate($pageSize, ['*'], 'page', $page);
+            $rows = $paginator->getCollection();
+
+            $productIds = $rows->pluck('id')->all();
+            $sellerIds = $rows->pluck('seller_id')->filter()->unique()->values()->all();
+            $dormitoryIds = $rows->pluck('dormitory_id')->filter()->unique()->values()->all();
+            $categoryIds = $rows->pluck('category_id')->filter()->unique()->values()->all();
+            $conditionLevelIds = $rows->pluck('condition_level_id')->filter()->unique()->values()->all();
+
+            $sellersById = collect();
+            if (count($sellerIds) > 0) {
+                $sellersById = User::query()
+                    ->select(['id', 'full_name', 'username', 'profile_picture'])
+                    ->whereIn('id', $sellerIds)
+                    ->get()
+                    ->keyBy('id');
+            }
+
+            $dormitoriesById = collect();
+            if (count($dormitoryIds) > 0) {
+                $dormitoriesById = Dormitory::query()
+                    ->select(['id', 'address', 'latitude', 'longitude', 'is_active'])
+                    ->whereIn('id', $dormitoryIds)
+                    ->get()
+                    ->keyBy('id');
+            }
+
+            $categoriesById = collect();
+            if (count($categoryIds) > 0) {
+                $categoriesById = Category::query()
+                    ->select(['id', 'name', 'parent_id', 'logo'])
+                    ->whereIn('id', $categoryIds)
+                    ->get()
+                    ->keyBy('id');
+            }
+
+            $conditionLevelsById = collect();
+            if (count($conditionLevelIds) > 0) {
+                $conditionLevelsById = ConditionLevel::query()
+                    ->select(['id', 'name', 'sort_order'])
+                    ->whereIn('id', $conditionLevelIds)
+                    ->get()
+                    ->keyBy('id');
+            }
+
+            $imagesByProductId = [];
+            if (count($productIds) > 0) {
+                $imagesByProductId = ProductImage::query()
+                    ->whereIn('product_id', $productIds)
+                    ->orderByDesc('is_primary')
+                    ->orderBy('id')
+                    ->get()
+                    ->groupBy('product_id')
+                    ->all();
+            }
+
+            $tagsByProductId = [];
+            if (count($productIds) > 0) {
+                $tagRows = DB::table('product_tags')
+                    ->join('tags', 'product_tags.tag_id', '=', 'tags.id')
+                    ->whereIn('product_tags.product_id', $productIds)
+                    ->select([
+                        'product_tags.product_id',
+                        'tags.id',
+                        'tags.name',
+                    ])
+                    ->orderBy('tags.id')
+                    ->get();
+
+                foreach ($tagRows as $row) {
+                    $tagsByProductId[$row->product_id][] = [
+                        'id' => (int) $row->id,
+                        'name' => $row->name,
+                    ];
+                }
+            }
+
+            $productsPayload = $rows
+                ->map(function ($row) use ($sellersById, $dormitoriesById, $categoriesById, $conditionLevelsById, $imagesByProductId, $tagsByProductId) {
+                    $seller = $sellersById->get($row->seller_id);
+                    $dormitory = $dormitoriesById->get($row->dormitory_id);
+                    $category = $categoriesById->get($row->category_id);
+                    $conditionLevel = $conditionLevelsById->get($row->condition_level_id);
+                    $images = ($imagesByProductId[$row->id] ?? collect())
+                        ->map(function ($image) {
+                            return [
+                                'id' => $image->id,
+                                'product_id' => $image->product_id,
+                                'image_url' => $image->image_url,
+                                'image_thumbnail_url' => $image->image_thumbnail_url,
+                                'is_primary' => (bool) $image->is_primary,
+                            ];
+                        })
+                        ->values();
+
+                    return [
+                        'id' => (int) $row->id,
+                        'seller' => $seller ? [
+                            'id' => (int) $seller->id,
+                            'full_name' => $seller->full_name,
+                            'username' => $seller->username,
+                            'profile_picture' => $seller->profile_picture,
+                        ] : null,
+                        'dormitory' => $dormitory ? [
+                            'id' => (int) $dormitory->id,
+                            'location' => $dormitory->address,
+                            'lat' => $dormitory->latitude !== null ? (float) $dormitory->latitude : null,
+                            'lng' => $dormitory->longitude !== null ? (float) $dormitory->longitude : null,
+                            'is_active' => (bool) $dormitory->is_active,
+                        ] : null,
+                        'category' => $category ? [
+                            'id' => (int) $category->id,
+                            'name' => $category->name,
+                            'parent_id' => $category->parent_id !== null ? (int) $category->parent_id : null,
+                            'icon' => $category->logo,
+                        ] : null,
+                        'condition_level' => $conditionLevel ? [
+                            'id' => (int) $conditionLevel->id,
+                            'name' => $conditionLevel->name,
+                            'sort_order' => (int) $conditionLevel->sort_order,
+                        ] : null,
+                        'title' => $row->title,
+                        'description' => $row->description,
+                        'price' => $row->price !== null ? (float) $row->price : null,
+                        'currency' => strtoupper((string) ($row->currency ?? 'CNY')),
+                        'status' => $row->status,
+                        'is_promoted' => false,
+                        'created_at' => $row->created_at,
+                        'images' => $images,
+                        'tags' => $tagsByProductId[$row->id] ?? [],
+                    ];
+                })
+                ->values();
+
+            return [
+                'page' => (int) $paginator->currentPage(),
+                'page_size' => (int) $paginator->perPage(),
+                'total' => (int) $paginator->total(),
+                'total_pages' => (int) $paginator->lastPage(),
+                'products' => $productsPayload,
+            ];
+        });
+    }
+
     public function categories(Request $request)
     {
         $user = $request->user();
@@ -1709,7 +2074,6 @@ class ProductController extends Controller
                 'q' => 'required|string|max:255',
                 'page' => 'nullable|integer|min:1',
                 'page_size' => 'nullable|integer|min:1|max:50',
-                'suggestions_limit' => 'nullable|integer|min:1|max:15',
             ])->validate();
         } catch (ValidationException $e) {
             return response()->json([
@@ -1730,351 +2094,8 @@ class ProductController extends Controller
 
         $page = (int) ($validated['page'] ?? 1);
         $pageSize = (int) ($validated['page_size'] ?? 12);
-        $suggestionsLimit = (int) ($validated['suggestions_limit'] ?? 8);
-        $normalizedQuery = Str::lower($queryString);
-
-        $tokens = collect(preg_split('/\s+/', $normalizedQuery, -1, PREG_SPLIT_NO_EMPTY))
-            ->filter()
-            ->values();
-        $booleanQuery = $tokens
-            ->map(function (string $token) {
-                return $token.'*';
-            })
-            ->implode(' ');
-        if ($booleanQuery === '') {
-            $booleanQuery = $normalizedQuery.'*';
-        }
-
-        $cacheSeconds = 120;
-        $cacheToken = md5($normalizedQuery);
-        $suggestionsCacheKey = 'product_search:v1:suggestions:'.$cacheToken.':'.$suggestionsLimit;
-        $resultsCacheKey = 'product_search:v1:results:'.$cacheToken.':'.$page.':'.$pageSize;
-
-        $isMysql = DB::getDriverName() === 'mysql';
-
-        $suggestions = Cache::remember($suggestionsCacheKey, $cacheSeconds, function () use ($queryString, $suggestionsLimit) {
-            $prefix = $queryString.'%';
-
-            $tagSuggestions = Tag::query()
-                ->where('name', 'like', $prefix)
-                ->orderBy('name')
-                ->limit($suggestionsLimit)
-                ->pluck('name')
-                ->all();
-
-            $productSuggestions = Product::query()
-                ->where('status', 'available')
-                ->whereNull('deleted_at')
-                ->where('title', 'like', $prefix)
-                ->orderBy('title')
-                ->limit($suggestionsLimit)
-                ->pluck('title')
-                ->all();
-
-            $categorySuggestions = Category::query()
-                ->where('name', 'like', $prefix)
-                ->orderBy('name')
-                ->limit($suggestionsLimit)
-                ->pluck('name')
-                ->all();
-
-            return collect(array_merge($tagSuggestions, $productSuggestions, $categorySuggestions))
-                ->map(function ($value) {
-                    return is_string($value) ? trim($value) : '';
-                })
-                ->filter()
-                ->unique()
-                ->values()
-                ->take($suggestionsLimit)
-                ->all();
-        });
-
-        $resultsPayload = Cache::remember($resultsCacheKey, $cacheSeconds, function () use ($queryString, $normalizedQuery, $booleanQuery, $page, $pageSize, $isMysql) {
-            $likeQuery = '%'.$queryString.'%';
-            $likePrefix = $queryString.'%';
-
-            $hasFulltextIndex = function (string $table, string $index): bool {
-                $row = DB::selectOne(
-                    "select count(*) as total from information_schema.statistics where table_schema = database() and table_name = ? and index_name = ? and index_type = 'FULLTEXT'",
-                    [$table, $index]
-                );
-
-                return (int) ($row->total ?? 0) > 0;
-            };
-
-            $hasProductsFulltext = $isMysql && $hasFulltextIndex('products', 'products_fulltext');
-            $hasTagsFulltext = $isMysql && $hasFulltextIndex('tags', 'tags_fulltext');
-            $hasCategoriesFulltext = $isMysql && $hasFulltextIndex('categories', 'categories_fulltext');
-            $hasConditionLevelsFulltext = $isMysql && $hasFulltextIndex('condition_levels', 'condition_levels_fulltext');
-            $hasDormitoriesFulltext = $isMysql && $hasFulltextIndex('dormitories', 'dormitories_fulltext');
-            $hasUsersFulltext = $isMysql && $hasFulltextIndex('users', 'users_fulltext');
-
-            $query = Product::query()
-                ->leftJoin('product_tags', 'products.id', '=', 'product_tags.product_id')
-                ->leftJoin('tags', 'product_tags.tag_id', '=', 'tags.id')
-                ->leftJoin('categories', 'products.category_id', '=', 'categories.id')
-                ->leftJoin('condition_levels', 'products.condition_level_id', '=', 'condition_levels.id')
-                ->leftJoin('dormitories', 'products.dormitory_id', '=', 'dormitories.id')
-                ->leftJoin('users', 'products.seller_id', '=', 'users.id')
-                ->where('products.status', 'available')
-                ->whereNull('products.deleted_at');
-
-            $query->where(function ($inner) use ($queryString, $likeQuery, $booleanQuery, $isMysql, $hasProductsFulltext, $hasTagsFulltext, $hasCategoriesFulltext, $hasConditionLevelsFulltext, $hasDormitoriesFulltext, $hasUsersFulltext) {
-                $inner->where('products.title', 'like', $likeQuery)
-                    ->orWhere('products.description', 'like', $likeQuery)
-                    ->orWhere('tags.name', 'like', $likeQuery)
-                    ->orWhere('categories.name', 'like', $likeQuery)
-                    ->orWhere('categories.description', 'like', $likeQuery)
-                    ->orWhere('condition_levels.name', 'like', $likeQuery)
-                    ->orWhere('condition_levels.description', 'like', $likeQuery)
-                    ->orWhere('dormitories.dormitory_name', 'like', $likeQuery)
-                    ->orWhere('dormitories.domain', 'like', $likeQuery)
-                    ->orWhere('dormitories.address', 'like', $likeQuery)
-                    ->orWhere('users.username', 'like', $likeQuery)
-                    ->orWhere('users.full_name', 'like', $likeQuery);
-
-                if ($isMysql) {
-                    if ($hasProductsFulltext) {
-                        $inner->orWhereRaw('MATCH(products.title, products.description) AGAINST (? IN BOOLEAN MODE)', [$booleanQuery]);
-                    }
-                    if ($hasTagsFulltext) {
-                        $inner->orWhereRaw('MATCH(tags.name) AGAINST (? IN BOOLEAN MODE)', [$booleanQuery]);
-                    }
-                    if ($hasCategoriesFulltext) {
-                        $inner->orWhereRaw('MATCH(categories.name, categories.description) AGAINST (? IN BOOLEAN MODE)', [$booleanQuery]);
-                    }
-                    if ($hasConditionLevelsFulltext) {
-                        $inner->orWhereRaw('MATCH(condition_levels.name, condition_levels.description) AGAINST (? IN BOOLEAN MODE)', [$booleanQuery]);
-                    }
-                    if ($hasDormitoriesFulltext) {
-                        $inner->orWhereRaw('MATCH(dormitories.dormitory_name, dormitories.domain, dormitories.address) AGAINST (? IN BOOLEAN MODE)', [$booleanQuery]);
-                    }
-                    if ($hasUsersFulltext) {
-                        $inner->orWhereRaw('MATCH(users.username, users.full_name) AGAINST (? IN BOOLEAN MODE)', [$booleanQuery]);
-                    }
-                    $inner->orWhereRaw('SOUNDEX(products.title) = SOUNDEX(?)', [$queryString])
-                        ->orWhereRaw('SOUNDEX(tags.name) = SOUNDEX(?)', [$queryString])
-                        ->orWhereRaw('SOUNDEX(categories.name) = SOUNDEX(?)', [$queryString]);
-                }
-            });
-
-            $query->select([
-                'products.id',
-                'products.seller_id',
-                'products.dormitory_id',
-                'products.category_id',
-                'products.condition_level_id',
-                'products.title',
-                'products.description',
-                'products.price',
-                'products.currency',
-                'products.status',
-                'products.created_at',
-            ]);
-
-            $orderByRelevance = false;
-            if ($isMysql) {
-                $relevancePieces = [];
-                $relevanceBindings = [];
-                if ($hasProductsFulltext) {
-                    $relevancePieces[] = '(MATCH(products.title, products.description) AGAINST (? IN BOOLEAN MODE) * 4)';
-                    $relevanceBindings[] = $booleanQuery;
-                }
-                if ($hasTagsFulltext) {
-                    $relevancePieces[] = '(MATCH(tags.name) AGAINST (? IN BOOLEAN MODE) * 2.5)';
-                    $relevanceBindings[] = $booleanQuery;
-                }
-                if ($hasCategoriesFulltext) {
-                    $relevancePieces[] = '(MATCH(categories.name, categories.description) AGAINST (? IN BOOLEAN MODE) * 1.5)';
-                    $relevanceBindings[] = $booleanQuery;
-                }
-                if ($hasConditionLevelsFulltext) {
-                    $relevancePieces[] = '(MATCH(condition_levels.name, condition_levels.description) AGAINST (? IN BOOLEAN MODE) * 1.2)';
-                    $relevanceBindings[] = $booleanQuery;
-                }
-                if ($hasDormitoriesFulltext) {
-                    $relevancePieces[] = '(MATCH(dormitories.dormitory_name, dormitories.domain, dormitories.address) AGAINST (? IN BOOLEAN MODE) * 1.1)';
-                    $relevanceBindings[] = $booleanQuery;
-                }
-                if ($hasUsersFulltext) {
-                    $relevancePieces[] = '(MATCH(users.username, users.full_name) AGAINST (? IN BOOLEAN MODE) * 1.3)';
-                    $relevanceBindings[] = $booleanQuery;
-                }
-                $relevancePieces[] = '(CASE WHEN products.title LIKE ? THEN 1.6 ELSE 0 END)';
-                $relevanceBindings[] = $likePrefix;
-                $relevancePieces[] = '(CASE WHEN tags.name LIKE ? THEN 1.1 ELSE 0 END)';
-                $relevanceBindings[] = $likePrefix;
-                $relevancePieces[] = '(CASE WHEN categories.name LIKE ? THEN 0.9 ELSE 0 END)';
-                $relevanceBindings[] = $likePrefix;
-
-                $query->selectRaw('MAX(('.implode(' + ', $relevancePieces).')) as relevance', $relevanceBindings);
-                $orderByRelevance = true;
-            } else {
-                $query->selectRaw('0 as relevance');
-            }
-
-            $query->groupBy([
-                'products.id',
-                'products.seller_id',
-                'products.dormitory_id',
-                'products.category_id',
-                'products.condition_level_id',
-                'products.title',
-                'products.description',
-                'products.price',
-                'products.currency',
-                'products.status',
-                'products.created_at',
-            ]);
-
-            if ($orderByRelevance) {
-                $query->orderByDesc('relevance');
-            }
-
-            $query->orderByDesc('products.id');
-
-            $paginator = $query->paginate($pageSize, ['*'], 'page', $page);
-            $rows = $paginator->getCollection();
-
-            $productIds = $rows->pluck('id')->all();
-            $sellerIds = $rows->pluck('seller_id')->filter()->unique()->values()->all();
-            $dormitoryIds = $rows->pluck('dormitory_id')->filter()->unique()->values()->all();
-            $categoryIds = $rows->pluck('category_id')->filter()->unique()->values()->all();
-            $conditionLevelIds = $rows->pluck('condition_level_id')->filter()->unique()->values()->all();
-
-            $sellersById = collect();
-            if (count($sellerIds) > 0) {
-                $sellersById = User::query()
-                    ->select(['id', 'full_name', 'username', 'profile_picture'])
-                    ->whereIn('id', $sellerIds)
-                    ->get()
-                    ->keyBy('id');
-            }
-
-            $dormitoriesById = collect();
-            if (count($dormitoryIds) > 0) {
-                $dormitoriesById = Dormitory::query()
-                    ->select(['id', 'address', 'latitude', 'longitude', 'is_active'])
-                    ->whereIn('id', $dormitoryIds)
-                    ->get()
-                    ->keyBy('id');
-            }
-
-            $categoriesById = collect();
-            if (count($categoryIds) > 0) {
-                $categoriesById = Category::query()
-                    ->select(['id', 'name', 'parent_id', 'logo'])
-                    ->whereIn('id', $categoryIds)
-                    ->get()
-                    ->keyBy('id');
-            }
-
-            $conditionLevelsById = collect();
-            if (count($conditionLevelIds) > 0) {
-                $conditionLevelsById = ConditionLevel::query()
-                    ->select(['id', 'name', 'sort_order'])
-                    ->whereIn('id', $conditionLevelIds)
-                    ->get()
-                    ->keyBy('id');
-            }
-
-            $imagesByProductId = [];
-            if (count($productIds) > 0) {
-                $imagesByProductId = ProductImage::query()
-                    ->whereIn('product_id', $productIds)
-                    ->orderByDesc('is_primary')
-                    ->orderBy('id')
-                    ->get()
-                    ->groupBy('product_id')
-                    ->all();
-            }
-
-            $tagsByProductId = [];
-            if (count($productIds) > 0) {
-                $tagRows = DB::table('product_tags')
-                    ->join('tags', 'product_tags.tag_id', '=', 'tags.id')
-                    ->whereIn('product_tags.product_id', $productIds)
-                    ->select([
-                        'product_tags.product_id',
-                        'tags.id',
-                        'tags.name',
-                    ])
-                    ->orderBy('tags.id')
-                    ->get();
-
-                foreach ($tagRows as $row) {
-                    $tagsByProductId[$row->product_id][] = [
-                        'id' => (int) $row->id,
-                        'name' => $row->name,
-                    ];
-                }
-            }
-
-            $productsPayload = $rows
-                ->map(function ($row) use ($sellersById, $dormitoriesById, $categoriesById, $conditionLevelsById, $imagesByProductId, $tagsByProductId) {
-                    $seller = $sellersById->get($row->seller_id);
-                    $dormitory = $dormitoriesById->get($row->dormitory_id);
-                    $category = $categoriesById->get($row->category_id);
-                    $conditionLevel = $conditionLevelsById->get($row->condition_level_id);
-                    $images = ($imagesByProductId[$row->id] ?? collect())
-                        ->map(function ($image) {
-                            return [
-                                'id' => $image->id,
-                                'product_id' => $image->product_id,
-                                'image_url' => $image->image_url,
-                                'image_thumbnail_url' => $image->image_thumbnail_url,
-                                'is_primary' => (bool) $image->is_primary,
-                            ];
-                        })
-                        ->values();
-
-                    return [
-                        'id' => (int) $row->id,
-                        'seller' => $seller ? [
-                            'id' => (int) $seller->id,
-                            'full_name' => $seller->full_name,
-                            'username' => $seller->username,
-                            'profile_picture' => $seller->profile_picture,
-                        ] : null,
-                        'dormitory' => $dormitory ? [
-                            'id' => (int) $dormitory->id,
-                            'location' => $dormitory->address,
-                            'lat' => $dormitory->latitude !== null ? (float) $dormitory->latitude : null,
-                            'lng' => $dormitory->longitude !== null ? (float) $dormitory->longitude : null,
-                            'is_active' => (bool) $dormitory->is_active,
-                        ] : null,
-                        'category' => $category ? [
-                            'id' => (int) $category->id,
-                            'name' => $category->name,
-                            'parent_id' => $category->parent_id !== null ? (int) $category->parent_id : null,
-                            'icon' => $category->logo,
-                        ] : null,
-                        'condition_level' => $conditionLevel ? [
-                            'id' => (int) $conditionLevel->id,
-                            'name' => $conditionLevel->name,
-                            'sort_order' => (int) $conditionLevel->sort_order,
-                        ] : null,
-                        'title' => $row->title,
-                        'description' => $row->description,
-                        'price' => $row->price !== null ? (float) $row->price : null,
-                        'currency' => strtoupper((string) ($row->currency ?? 'CNY')),
-                        'status' => $row->status,
-                        'is_promoted' => false,
-                        'created_at' => $row->created_at,
-                        'images' => $images,
-                        'tags' => $tagsByProductId[$row->id] ?? [],
-                    ];
-                })
-                ->values();
-
-            return [
-                'page' => (int) $paginator->currentPage(),
-                'page_size' => (int) $paginator->perPage(),
-                'total' => (int) $paginator->total(),
-                'total_pages' => (int) $paginator->lastPage(),
-                'products' => $productsPayload,
-            ];
-        });
+        [$normalizedQuery] = $this->buildSearchTokens($queryString);
+        $resultsPayload = $this->buildSearchResultsPayload($queryString, $page, $pageSize);
 
         return response()->json([
             'message' => 'Search completed successfully',
@@ -2082,12 +2103,57 @@ class ProductController extends Controller
                 'q' => $queryString,
                 'normalized' => $normalizedQuery,
             ],
-            'suggestions' => $suggestions,
             'page' => $resultsPayload['page'],
             'page_size' => $resultsPayload['page_size'],
             'total' => $resultsPayload['total'],
             'total_pages' => $resultsPayload['total_pages'],
             'products' => $resultsPayload['products'],
+        ], 200);
+    }
+
+    public function searchSuggestions(Request $request)
+    {
+        $user = $request->user();
+
+        if (($user->role ?? 'user') !== 'user') {
+            return response()->json([
+                'message' => 'Unauthorized: Only users can access this endpoint.',
+            ], 403);
+        }
+
+        try {
+            $validated = validator($request->query(), [
+                'q' => 'required|string|max:255',
+                'suggestions_limit' => 'nullable|integer|min:1|max:15',
+            ])->validate();
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation Error',
+                'errors' => $e->errors(),
+            ], 422);
+        }
+
+        $queryString = trim((string) $validated['q']);
+        if ($queryString === '') {
+            return response()->json([
+                'message' => 'Validation Error',
+                'errors' => [
+                    'q' => ['The q field is required.'],
+                ],
+            ], 422);
+        }
+
+        $suggestionsLimit = (int) ($validated['suggestions_limit'] ?? 8);
+        [$normalizedQuery] = $this->buildSearchTokens($queryString);
+        $suggestions = $this->buildSearchSuggestions($queryString, $suggestionsLimit);
+
+        return response()->json([
+            'message' => 'Search suggestions retrieved successfully',
+            'query' => [
+                'q' => $queryString,
+                'normalized' => $normalizedQuery,
+            ],
+            'suggestions' => $suggestions,
         ], 200);
     }
 
