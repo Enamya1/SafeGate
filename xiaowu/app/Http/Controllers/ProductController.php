@@ -1029,7 +1029,7 @@ class ProductController extends Controller
             $orderMap = array_flip($orderedIds);
             $products = Product::query()
                 ->with([
-                    'dormitory:id,dormitory_name,university_id',
+                    'dormitory:id,address',
                 ])
                 ->whereIn('id', $orderedIds)
                 ->where('status', 'available')
@@ -1101,7 +1101,7 @@ class ProductController extends Controller
 
             if (count($categoryIds) > 0) {
                 $categoriesById = Category::query()
-                    ->select(['id', 'name', 'description', 'parent_id'])
+                    ->select(['id', 'name'])
                     ->whereIn('id', $categoryIds)
                     ->get()
                     ->keyBy('id');
@@ -1109,7 +1109,7 @@ class ProductController extends Controller
 
             if (count($conditionLevelIds) > 0) {
                 $conditionLevelsById = ConditionLevel::query()
-                    ->select(['id', 'name', 'description', 'sort_order', 'level'])
+                    ->select(['id', 'name', 'sort_order', 'level'])
                     ->whereIn('id', $conditionLevelIds)
                     ->get()
                     ->keyBy('id');
@@ -1123,7 +1123,6 @@ class ProductController extends Controller
                 $data = [
                     'id' => (int) $product->id,
                     'seller_id' => (int) $product->seller_id,
-                    'dormitory_id' => $product->dormitory_id !== null ? (int) $product->dormitory_id : null,
                     'category_id' => $product->category_id !== null ? (int) $product->category_id : null,
                     'condition_level_id' => $product->condition_level_id !== null ? (int) $product->condition_level_id : null,
                     'title' => $product->title,
@@ -1133,8 +1132,8 @@ class ProductController extends Controller
                     'created_at' => optional($product->created_at)->toISOString(),
                     'dormitory' => $product->dormitory ? [
                         'id' => $product->dormitory->id,
-                        'dormitory_name' => $product->dormitory->dormitory_name,
-                        'university_id' => $product->dormitory->university_id,
+                        'location' => $product->dormitory->address,
+                        'address' => $product->dormitory->address,
                     ] : null,
                     'category' => $categoriesById->get($product->category_id),
                     'condition_level' => $conditionLevelsById->get($product->condition_level_id),
