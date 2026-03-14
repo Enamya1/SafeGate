@@ -52,7 +52,7 @@ class LedgerController extends Controller
             'created_at' => now(),
         ]);
 
-        $fraud = new FraudDetectionService();
+        $fraud = new FraudDetectionService;
         $fraud->evaluateAndRecord([
             'transaction_ledger_id' => $ledgerId,
             'wallet_id' => $payload['wallet_id'],

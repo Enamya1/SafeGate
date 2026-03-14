@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use App\Services\FraudDetectionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -33,6 +34,20 @@ class WalletController extends Controller
         return DB::table('wallet_types')->where('code', $code)->value('id');
     }
 
+    private function notifyUser(int $userId, string $type, array $payload): void
+    {
+        DB::table('notifications')->insert([
+            'id' => (string) Str::uuid(),
+            'type' => $type,
+            'notifiable_type' => User::class,
+            'notifiable_id' => $userId,
+            'data' => json_encode($payload),
+            'read_at' => null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    }
+
     private function loadWallet(int $walletId, int $userId)
     {
         return DB::table('wallets')
@@ -45,6 +60,8 @@ class WalletController extends Controller
                 'wallets.user_id',
                 'wallets.wallet_type_id',
                 'wallets.status_id',
+                'wallets.name',
+                'wallets.description',
                 'wallets.currency',
                 'wallets.balance',
                 'wallets.available_balance',
@@ -90,7 +107,7 @@ class WalletController extends Controller
             'created_at' => now(),
         ]);
 
-        $fraud = new FraudDetectionService();
+        $fraud = new FraudDetectionService;
         $fraud->evaluateAndRecord([
             'transaction_ledger_id' => $ledgerId,
             'wallet_id' => $payload['wallet_id'],
@@ -111,6 +128,8 @@ class WalletController extends Controller
         try {
             $validated = $request->validate([
                 'wallet_type_id' => 'nullable|integer|exists:wallet_types,id',
+                'name' => 'nullable|string|max:120',
+                'description' => 'nullable|string|max:500',
                 'currency' => 'nullable|string|size:3',
                 'initial_balance' => 'nullable|numeric|min:0',
             ]);
@@ -147,11 +166,13 @@ class WalletController extends Controller
         $initialBalance = (float) ($validated['initial_balance'] ?? 0);
         $walletId = null;
 
-        DB::transaction(function () use ($user, $walletTypeId, $statusId, $currency, $initialBalance, &$walletId) {
+        DB::transaction(function () use ($user, $walletTypeId, $statusId, $currency, $initialBalance, $validated, &$walletId) {
             $walletId = DB::table('wallets')->insertGetId([
                 'user_id' => $user->id,
                 'wallet_type_id' => $walletTypeId,
                 'status_id' => $statusId,
+                'name' => $validated['name'] ?? null,
+                'description' => $validated['description'] ?? null,
                 'currency' => $currency,
                 'balance' => 0,
                 'available_balance' => 0,
@@ -160,6 +181,15 @@ class WalletController extends Controller
                 'freeze_reason' => null,
                 'created_at' => now(),
                 'updated_at' => now(),
+            ]);
+
+            DB::table('wallet_status_histories')->insert([
+                'wallet_id' => $walletId,
+                'from_status_id' => null,
+                'to_status_id' => $statusId,
+                'changed_by' => $user->id,
+                'reason' => null,
+                'created_at' => now(),
             ]);
 
             if ($initialBalance > 0) {
@@ -204,6 +234,8 @@ class WalletController extends Controller
             ->orderBy('wallets.id')
             ->select([
                 'wallets.id',
+                'wallets.name',
+                'wallets.description',
                 'wallets.currency',
                 'wallets.balance',
                 'wallets.available_balance',
@@ -246,7 +278,7 @@ class WalletController extends Controller
         ], 200);
     }
 
-    public function updateBalance(Request $request, string $walletId)
+    public function updateWallet(Request $request, string $walletId)
     {
         [$user, $errorResponse] = $this->userGuard($request);
         if ($errorResponse) {
@@ -255,8 +287,56 @@ class WalletController extends Controller
 
         try {
             $validated = $request->validate([
+                'name' => 'nullable|string|max:120',
+                'description' => 'nullable|string|max:500',
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation Error',
+                'errors' => $e->errors(),
+            ], 422);
+        }
+
+        $wallet = DB::table('wallets')
+            ->where('id', $walletId)
+            ->where('user_id', $user->id)
+            ->first();
+
+        if (! $wallet) {
+            return response()->json([
+                'message' => 'Wallet not found.',
+            ], 404);
+        }
+
+        DB::table('wallets')->where('id', $walletId)->update([
+            'name' => $validated['name'] ?? $wallet->name,
+            'description' => $validated['description'] ?? $wallet->description,
+            'updated_at' => now(),
+        ]);
+
+        $wallet = $this->loadWallet((int) $walletId, $user->id);
+
+        return response()->json([
+            'message' => 'Wallet updated successfully',
+            'wallet' => $wallet,
+        ], 200);
+    }
+
+    private function processBalanceChange(
+        Request $request,
+        string $walletId,
+        string $direction,
+        string $defaultType,
+        string $successMessage
+    ) {
+        [$user, $errorResponse] = $this->userGuard($request);
+        if ($errorResponse) {
+            return $errorResponse;
+        }
+
+        try {
+            $validated = $request->validate([
                 'amount' => 'required|numeric|min:0.01',
-                'direction' => 'required|string|in:credit,debit',
                 'type' => 'nullable|string|max:50',
                 'reference' => 'nullable|string|max:100',
                 'metadata' => 'nullable|array',
@@ -271,8 +351,9 @@ class WalletController extends Controller
         $wallet = null;
         $ledgerId = null;
         $statusActiveId = $this->walletStatusId('active');
+        $statusClosedId = $this->walletStatusId('closed');
 
-        if (! $statusActiveId) {
+        if (! $statusActiveId || ! $statusClosedId) {
             return response()->json([
                 'message' => 'Wallet status configuration missing.',
             ], 500);
@@ -280,7 +361,7 @@ class WalletController extends Controller
 
         $amount = (float) $validated['amount'];
 
-        $result = DB::transaction(function () use ($walletId, $user, $amount, $validated, $statusActiveId, &$wallet, &$ledgerId) {
+        $result = DB::transaction(function () use ($walletId, $user, $amount, $validated, $statusActiveId, $statusClosedId, $direction, $defaultType, &$wallet, &$ledgerId) {
             $walletRow = DB::table('wallets')
                 ->where('id', $walletId)
                 ->where('user_id', $user->id)
@@ -291,6 +372,10 @@ class WalletController extends Controller
                 return ['error' => response()->json(['message' => 'Wallet not found.'], 404)];
             }
 
+            if ((int) $walletRow->status_id === (int) $statusClosedId) {
+                return ['error' => response()->json(['message' => 'Wallet is closed.'], 409)];
+            }
+
             if ((int) $walletRow->status_id !== (int) $statusActiveId || $walletRow->frozen_at) {
                 return ['error' => response()->json(['message' => 'Wallet is not active.'], 409)];
             }
@@ -298,7 +383,7 @@ class WalletController extends Controller
             $balance = (float) $walletRow->balance;
             $available = (float) $walletRow->available_balance;
 
-            if ($validated['direction'] === 'debit') {
+            if ($direction === 'debit') {
                 if ($available < $amount) {
                     return ['error' => response()->json(['message' => 'Insufficient available balance.'], 409)];
                 }
@@ -317,15 +402,15 @@ class WalletController extends Controller
 
             $ledgerId = $this->createLedger([
                 'wallet_id' => $walletRow->id,
-                'direction' => $validated['direction'],
+                'direction' => $direction,
                 'amount' => $amount,
                 'currency' => $walletRow->currency,
                 'status' => 'completed',
-                'type' => $validated['type'] ?? 'balance_update',
+                'type' => $validated['type'] ?? $defaultType,
                 'reference' => $validated['reference'] ?? null,
                 'metadata' => array_key_exists('metadata', $validated) ? json_encode($validated['metadata']) : null,
                 'initiated_by' => $user->id,
-                'audit_action' => 'balance_update',
+                'audit_action' => $defaultType,
             ]);
 
             $wallet = $this->loadWallet((int) $walletRow->id, $user->id);
@@ -338,10 +423,20 @@ class WalletController extends Controller
         }
 
         return response()->json([
-            'message' => 'Wallet balance updated successfully',
+            'message' => $successMessage,
             'wallet' => $result['wallet'],
             'ledger_id' => $ledgerId,
         ], 200);
+    }
+
+    public function topUp(Request $request, string $walletId)
+    {
+        return $this->processBalanceChange($request, $walletId, 'credit', 'top_up', 'Wallet topped up successfully');
+    }
+
+    public function withdraw(Request $request, string $walletId)
+    {
+        return $this->processBalanceChange($request, $walletId, 'debit', 'withdraw', 'Wallet withdrawal completed successfully');
     }
 
     public function transfer(Request $request)
@@ -367,7 +462,8 @@ class WalletController extends Controller
         }
 
         $statusActiveId = $this->walletStatusId('active');
-        if (! $statusActiveId) {
+        $statusClosedId = $this->walletStatusId('closed');
+        if (! $statusActiveId || ! $statusClosedId) {
             return response()->json([
                 'message' => 'Wallet status configuration missing.',
             ], 500);
@@ -376,6 +472,10 @@ class WalletController extends Controller
         $amount = (float) $validated['amount'];
         $fromWalletId = (int) $validated['from_wallet_id'];
         $toWalletId = (int) $validated['to_wallet_id'];
+        $sender = DB::table('users')
+            ->select(['id', 'username', 'profile_picture'])
+            ->where('id', $user->id)
+            ->first();
         $atomicId = DB::table('atomic_transactions')->insertGetId([
             'atomic_uuid' => (string) Str::uuid(),
             'status' => 'pending',
@@ -390,7 +490,7 @@ class WalletController extends Controller
             'updated_at' => now(),
         ]);
 
-        $result = DB::transaction(function () use ($amount, $fromWalletId, $toWalletId, $statusActiveId, $validated, $user, $atomicId) {
+        $result = DB::transaction(function () use ($amount, $fromWalletId, $toWalletId, $statusActiveId, $statusClosedId, $validated, $user, $atomicId) {
             $walletIds = [$fromWalletId, $toWalletId];
             sort($walletIds);
 
@@ -412,8 +512,16 @@ class WalletController extends Controller
                 return ['error' => response()->json(['message' => 'Unauthorized: You can only transfer from your own wallet.'], 403)];
             }
 
+            if ((int) $fromWallet->status_id === (int) $statusClosedId) {
+                return ['error' => response()->json(['message' => 'Source wallet is closed.'], 409)];
+            }
+
             if ((int) $fromWallet->status_id !== (int) $statusActiveId || $fromWallet->frozen_at) {
                 return ['error' => response()->json(['message' => 'Source wallet is not active.'], 409)];
+            }
+
+            if ((int) $toWallet->status_id === (int) $statusClosedId) {
+                return ['error' => response()->json(['message' => 'Destination wallet is closed.'], 409)];
             }
 
             if ((int) $toWallet->status_id !== (int) $statusActiveId || $toWallet->frozen_at) {
@@ -514,6 +622,8 @@ class WalletController extends Controller
                 'debit_ledger_id' => $debitLedgerId,
                 'credit_ledger_id' => $creditLedgerId,
                 'from_wallet' => $fromWalletFresh,
+                'to_wallet_user_id' => (int) $toWallet->user_id,
+                'currency' => $fromWallet->currency,
             ];
         });
 
@@ -524,6 +634,26 @@ class WalletController extends Controller
             ]);
 
             return $result['error'];
+        }
+
+        if ((int) $result['to_wallet_user_id'] !== (int) $user->id) {
+            $senderName = $sender?->username;
+            $notificationText = $senderName
+                ? "You received {$amount} {$result['currency']} from {$senderName}"
+                : "You received {$amount} {$result['currency']}";
+
+            $this->notifyUser((int) $result['to_wallet_user_id'], 'wallet_transfer_received', [
+                'sender_id' => (int) $user->id,
+                'sender_username' => $sender?->username,
+                'sender_profile_picture' => $sender?->profile_picture,
+                'amount' => $amount,
+                'currency' => $result['currency'],
+                'wallet_id' => $toWalletId,
+                'related_wallet_id' => $fromWalletId,
+                'transaction_ledger_id' => $result['credit_ledger_id'],
+                'atomic_transaction_id' => $atomicId,
+                'notification_text' => $notificationText,
+            ]);
         }
 
         return response()->json([
@@ -580,12 +710,172 @@ class WalletController extends Controller
         $limit = (int) $request->input('limit', 50);
         $limit = max(1, min(200, $limit));
 
-        $transactions = $query->limit($limit)->get();
+        $transactions = $query->limit($limit)->get()->map(function ($transaction) {
+            $transaction->flow = $transaction->direction === 'debit'
+                ? 'send'
+                : ($transaction->direction === 'credit' ? 'receive' : null);
+
+            return $transaction;
+        });
 
         return response()->json([
             'message' => 'Wallet transactions retrieved successfully',
             'wallet_id' => (int) $wallet->id,
             'transactions' => $transactions,
+        ], 200);
+    }
+
+    public function closeWallet(Request $request, string $walletId)
+    {
+        [$user, $errorResponse] = $this->userGuard($request);
+        if ($errorResponse) {
+            return $errorResponse;
+        }
+
+        try {
+            $validated = $request->validate([
+                'reason' => 'nullable|string|max:500',
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation Error',
+                'errors' => $e->errors(),
+            ], 422);
+        }
+
+        $statusClosedId = $this->walletStatusId('closed');
+        $primaryTypeId = $this->walletTypeId('primary') ?? 1;
+
+        if (! $statusClosedId) {
+            return response()->json([
+                'message' => 'Wallet status configuration missing.',
+            ], 500);
+        }
+
+        $result = DB::transaction(function () use ($walletId, $user, $statusClosedId, $primaryTypeId, $validated) {
+            $wallet = DB::table('wallets')
+                ->where('id', $walletId)
+                ->where('user_id', $user->id)
+                ->lockForUpdate()
+                ->first();
+
+            if (! $wallet) {
+                return ['error' => response()->json(['message' => 'Wallet not found.'], 404)];
+            }
+
+            if ((int) $wallet->wallet_type_id !== (int) $primaryTypeId) {
+                return ['error' => response()->json(['message' => 'Only primary wallets can be closed.'], 409)];
+            }
+
+            if ((int) $wallet->status_id === (int) $statusClosedId) {
+                return ['error' => response()->json(['message' => 'Wallet is already closed.'], 409)];
+            }
+
+            $fromStatusId = (int) $wallet->status_id;
+
+            DB::table('wallets')->where('id', $wallet->id)->update([
+                'status_id' => $statusClosedId,
+                'frozen_at' => null,
+                'freeze_reason' => null,
+                'updated_at' => now(),
+            ]);
+
+            DB::table('wallet_status_histories')->insert([
+                'wallet_id' => $wallet->id,
+                'from_status_id' => $fromStatusId,
+                'to_status_id' => $statusClosedId,
+                'changed_by' => $user->id,
+                'reason' => $validated['reason'] ?? null,
+                'created_at' => now(),
+            ]);
+
+            return ['wallet' => $this->loadWallet((int) $wallet->id, $user->id)];
+        });
+
+        if (isset($result['error'])) {
+            return $result['error'];
+        }
+
+        return response()->json([
+            'message' => 'Wallet closed successfully',
+            'wallet' => $result['wallet'],
+        ], 200);
+    }
+
+    public function openWallet(Request $request, string $walletId)
+    {
+        [$user, $errorResponse] = $this->userGuard($request);
+        if ($errorResponse) {
+            return $errorResponse;
+        }
+
+        try {
+            $validated = $request->validate([
+                'reason' => 'nullable|string|max:500',
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation Error',
+                'errors' => $e->errors(),
+            ], 422);
+        }
+
+        $statusActiveId = $this->walletStatusId('active');
+        $primaryTypeId = $this->walletTypeId('primary') ?? 1;
+
+        if (! $statusActiveId) {
+            return response()->json([
+                'message' => 'Wallet status configuration missing.',
+            ], 500);
+        }
+
+        $result = DB::transaction(function () use ($walletId, $user, $statusActiveId, $primaryTypeId, $validated) {
+            $wallet = DB::table('wallets')
+                ->where('id', $walletId)
+                ->where('user_id', $user->id)
+                ->lockForUpdate()
+                ->first();
+
+            if (! $wallet) {
+                return ['error' => response()->json(['message' => 'Wallet not found.'], 404)];
+            }
+
+            if ((int) $wallet->wallet_type_id !== (int) $primaryTypeId) {
+                return ['error' => response()->json(['message' => 'Only primary wallets can be opened.'], 409)];
+            }
+
+            if ((int) $wallet->status_id === (int) $statusActiveId && ! $wallet->frozen_at) {
+                return ['error' => response()->json(['message' => 'Wallet is already active.'], 409)];
+            }
+
+            $fromStatusId = (int) $wallet->status_id;
+
+            DB::table('wallets')->where('id', $wallet->id)->update([
+                'status_id' => $statusActiveId,
+                'frozen_at' => null,
+                'freeze_reason' => null,
+                'updated_at' => now(),
+            ]);
+
+            DB::table('wallet_status_histories')->insert([
+                'wallet_id' => $wallet->id,
+                'from_status_id' => $fromStatusId,
+                'to_status_id' => $statusActiveId,
+                'changed_by' => $user->id,
+                'reason' => $validated['reason'] ?? null,
+                'created_at' => now(),
+            ]);
+
+            return ['wallet' => $this->loadWallet((int) $wallet->id, $user->id)];
+        });
+
+        if (isset($result['error'])) {
+            return $result['error'];
+        }
+
+        return response()->json([
+            'message' => 'Wallet opened successfully',
+            'wallet' => $result['wallet'],
         ], 200);
     }
 

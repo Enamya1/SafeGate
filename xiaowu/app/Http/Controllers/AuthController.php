@@ -87,7 +87,7 @@ class AuthController extends Controller
             $statusId = DB::table('wallet_statuses')->where('code', 'active')->value('id');
 
             if ($walletTypeId && $statusId) {
-                DB::table('wallets')->insert([
+                $walletId = DB::table('wallets')->insertGetId([
                     'user_id' => $user->id,
                     'wallet_type_id' => $walletTypeId,
                     'status_id' => $statusId,
@@ -99,6 +99,15 @@ class AuthController extends Controller
                     'freeze_reason' => null,
                     'created_at' => now(),
                     'updated_at' => now(),
+                ]);
+
+                DB::table('wallet_status_histories')->insert([
+                    'wallet_id' => $walletId,
+                    'from_status_id' => null,
+                    'to_status_id' => $statusId,
+                    'changed_by' => $user->id,
+                    'reason' => null,
+                    'created_at' => now(),
                 ]);
             }
         });
@@ -562,10 +571,50 @@ class AuthController extends Controller
             })
             ->values();
 
+        $rawNotifications = DB::table('notifications')
+            ->where('notifiable_type', User::class)
+            ->where('notifiable_id', (int) $user->id)
+            ->whereNull('read_at')
+            ->orderByDesc('created_at')
+            ->limit($limit)
+            ->get();
+
+        $notifications = $rawNotifications
+            ->map(function ($notification) {
+                $payload = json_decode($notification->data, true);
+                $payload = is_array($payload) ? $payload : [];
+
+                return [
+                    'id' => $notification->id,
+                    'conversation_id' => null,
+                    'sender_id' => $payload['sender_id'] ?? null,
+                    'sender_username' => $payload['sender_username'] ?? null,
+                    'sender_profile_picture' => $payload['sender_profile_picture'] ?? null,
+                    'product_id' => null,
+                    'notification_type' => $notification->type,
+                    'notification_text' => $payload['notification_text'] ?? 'You have a new notification',
+                    'notification_count' => 1,
+                    'amount' => $payload['amount'] ?? null,
+                    'currency' => $payload['currency'] ?? null,
+                    'wallet_id' => $payload['wallet_id'] ?? null,
+                    'transaction_ledger_id' => $payload['transaction_ledger_id'] ?? null,
+                    'data' => $payload,
+                    'created_at' => $notification->created_at,
+                ];
+            })
+            ->values();
+
+        $items = $messages
+            ->merge($notifications)
+            ->sortByDesc('created_at')
+            ->values()
+            ->take($limit)
+            ->values();
+
         return response()->json([
             'message' => 'Unread messages retrieved successfully',
-            'total' => $messages->count(),
-            'messages' => $messages,
+            'total' => $items->count(),
+            'messages' => $items,
         ], 200);
     }
 

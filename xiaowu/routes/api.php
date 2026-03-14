@@ -6,6 +6,8 @@ use App\Http\Controllers\AiChatController;
 use App\Http\Controllers\AtomicTransactionController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BehavioralEventController;
+use App\Http\Controllers\ExchangeProductController;
+use App\Http\Controllers\ExchangeTransactionController;
 use App\Http\Controllers\HealthCheckController;
 use App\Http\Controllers\LedgerController;
 use App\Http\Controllers\ProductController;
@@ -36,6 +38,8 @@ Route::middleware('auth:sanctum')->get('/user/products/cards', [ProductControlle
 Route::middleware('auth:sanctum')->get('/user/get_product/{product_id}', [ProductController::class, 'getProduct']);
 Route::middleware('auth:sanctum')->get('/user/sellers/{seller_id}', [ProductController::class, 'sellerProfile']);
 Route::middleware('auth:sanctum')->get('/user/products/{product_id}/edit', [ProductController::class, 'getMyProductForEdit']);
+Route::middleware('auth:sanctum')->patch('/user/products/{product_id}', [ProductController::class, 'updateMyProduct']);
+Route::middleware('auth:sanctum')->get('/user/products/{product_id}/engagement', [ProductController::class, 'productEngagement']);
 Route::middleware('auth:sanctum')->patch('/user/products/{product_id}/mark-sold', [ProductController::class, 'markMyProductAsSold']);
 Route::middleware('auth:sanctum')->get('/user/products/by-tag/{tag_name}', [ProductController::class, 'listProductsByTagName']);
 Route::middleware('auth:sanctum')->get('/user/products/by-category/{category_name}', [ProductController::class, 'listProductsByCategoryName']);
@@ -54,11 +58,15 @@ Route::middleware('auth:sanctum')->prefix('wallets')->group(function () {
     Route::post('/', [WalletController::class, 'createWallet']);
     Route::get('/', [WalletController::class, 'listWallets']);
     Route::get('/{wallet_id}', [WalletController::class, 'showWallet']);
-    Route::post('/{wallet_id}/balance', [WalletController::class, 'updateBalance']);
+    Route::patch('/{wallet_id}', [WalletController::class, 'updateWallet']);
+    Route::post('/{wallet_id}/top-up', [WalletController::class, 'topUp']);
+    Route::post('/{wallet_id}/withdraw', [WalletController::class, 'withdraw']);
     Route::post('/transfer', [WalletController::class, 'transfer']);
     Route::get('/{wallet_id}/transactions', [WalletController::class, 'transactionHistory']);
     Route::get('/{wallet_id}/status-history', [WalletController::class, 'statusHistory']);
     Route::post('/{wallet_id}/status-requests', [WalletController::class, 'createStatusRequest']);
+    Route::post('/{wallet_id}/close', [WalletController::class, 'closeWallet']);
+    Route::post('/{wallet_id}/open', [WalletController::class, 'openWallet']);
 });
 
 Route::middleware('auth:sanctum')->prefix('atomic-transactions')->group(function () {
@@ -71,6 +79,17 @@ Route::middleware('auth:sanctum')->prefix('ai')->group(function () {
     Route::post('/sessions', [AiChatController::class, 'createSession']);
     Route::post('/sessions/{session_id}/messages', [AiChatController::class, 'sendMessage']);
     Route::get('/sessions/{session_id}/messages', [AiChatController::class, 'listMessages']);
+});
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/exchange-products', [ExchangeProductController::class, 'index']);
+    Route::post('/exchange-products', [ExchangeProductController::class, 'store']);
+    Route::get('/exchange-products/{id}', [ExchangeProductController::class, 'show']);
+    Route::post('/exchange-transactions', [ExchangeTransactionController::class, 'store']);
+    Route::put('/exchange-transactions/{id}/status', [ExchangeTransactionController::class, 'updateStatus']);
+    Route::get('/exchange-transactions/user/{userId}', [ExchangeTransactionController::class, 'userHistory']);
+    Route::get('/exchange-transactions/{id}/messages', [ExchangeTransactionController::class, 'listMessages']);
+    Route::post('/exchange-transactions/{id}/messages', [ExchangeTransactionController::class, 'sendMessage']);
 });
 
 Route::prefix('admin')->group(function () {

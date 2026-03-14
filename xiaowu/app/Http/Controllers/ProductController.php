@@ -235,7 +235,7 @@ class ProductController extends Controller
         $cacheToken = md5($normalizedQuery);
         $resultsCacheKey = 'product_search:v1:results:'.$cacheToken.':'.$page.':'.$pageSize;
 
-        return Cache::remember($resultsCacheKey, $cacheSeconds, function () use ($queryString, $normalizedQuery, $booleanQuery, $page, $pageSize) {
+        return Cache::remember($resultsCacheKey, $cacheSeconds, function () use ($queryString, $booleanQuery, $page, $pageSize) {
             $likeQuery = '%'.$queryString.'%';
             $likePrefix = $queryString.'%';
 
@@ -1147,6 +1147,16 @@ class ProductController extends Controller
             })
             ->values();
 
+        $matchedForEvents = $products->filter(static function (Product $product) use ($scoreByProductId) {
+            $score = $scoreByProductId[(int) $product->id] ?? null;
+
+            return $score !== null && $score > 0.7;
+        });
+
+        if ($matchedForEvents->isNotEmpty()) {
+            $this->recordProductBehaviorEventBatch($request, $user, $matchedForEvents, 'search');
+        }
+
         return response()->json([
             'message' => 'Visual search completed successfully',
             'query' => [
@@ -1512,6 +1522,241 @@ class ProductController extends Controller
         return response()->json([
             'message' => 'User product retrieved successfully',
             'product' => $payload,
+        ], 200);
+    }
+
+    public function updateMyProduct(Request $request, string $product_id)
+    {
+        $user = $request->user();
+
+        if (($user->role ?? 'user') !== 'user') {
+            return response()->json([
+                'message' => 'Unauthorized: Only users can access this endpoint.',
+            ], 403);
+        }
+
+        $productId = trim($product_id);
+
+        try {
+            $validatedId = validator(['product_id' => $productId], [
+                'product_id' => 'required|integer|min:1',
+            ])->validate();
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation Error',
+                'errors' => $e->errors(),
+            ], 422);
+        }
+
+        $product = Product::query()
+            ->with(['dormitory'])
+            ->whereKey((int) $validatedId['product_id'])
+            ->where('seller_id', $user->id)
+            ->whereNull('deleted_at')
+            ->first();
+
+        if (! $product) {
+            return response()->json([
+                'message' => 'Product not found.',
+            ], 404);
+        }
+
+        $fields = [
+            'category_id',
+            'condition_level_id',
+            'title',
+            'description',
+            'price',
+            'dormitory_id',
+            'tag_ids',
+        ];
+
+        $hasAnyField = false;
+        foreach ($fields as $field) {
+            if ($request->exists($field)) {
+                $hasAnyField = true;
+                break;
+            }
+        }
+
+        if (! $hasAnyField) {
+            return response()->json([
+                'message' => 'Validation Error',
+                'errors' => [
+                    'fields' => ['At least one updatable field is required.'],
+                ],
+            ], 422);
+        }
+
+        try {
+            $validated = $request->validate([
+                'category_id' => 'nullable|integer|exists:categories,id',
+                'condition_level_id' => 'nullable|integer|exists:condition_levels,id',
+                'title' => 'nullable|string|max:255',
+                'description' => 'nullable|string',
+                'price' => 'nullable|numeric|min:0.01',
+                'dormitory_id' => 'nullable|integer|exists:dormitories,id',
+                'tag_ids' => 'nullable|array',
+                'tag_ids.*' => 'integer|exists:tags,id',
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation Error',
+                'errors' => $e->errors(),
+            ], 422);
+        }
+
+        $updates = [];
+
+        if (array_key_exists('category_id', $validated)) {
+            $updates['category_id'] = $validated['category_id'];
+        }
+
+        if (array_key_exists('condition_level_id', $validated)) {
+            $updates['condition_level_id'] = $validated['condition_level_id'];
+        }
+
+        if (array_key_exists('title', $validated)) {
+            $updates['title'] = $validated['title'];
+        }
+
+        if (array_key_exists('description', $validated)) {
+            $updates['description'] = $validated['description'];
+        }
+
+        if (array_key_exists('price', $validated)) {
+            $updates['price'] = $validated['price'];
+        }
+
+        if (array_key_exists('dormitory_id', $validated)) {
+            $updates['dormitory_id'] = $validated['dormitory_id'];
+        }
+
+        if (count($updates) > 0) {
+            $product->fill($updates);
+            $product->save();
+        }
+
+        if ($request->exists('tag_ids')) {
+            $tagIds = array_values(array_unique(array_map('intval', $validated['tag_ids'] ?? [])));
+
+            DB::table('product_tags')
+                ->where('product_id', $product->id)
+                ->delete();
+
+            if (count($tagIds) > 0) {
+                foreach ($tagIds as $tagId) {
+                    ProductTag::create([
+                        'product_id' => $product->id,
+                        'tag_id' => $tagId,
+                    ]);
+                }
+            }
+        }
+
+        $images = ProductImage::query()
+            ->where('product_id', $product->id)
+            ->orderByDesc('is_primary')
+            ->orderBy('id')
+            ->get()
+            ->values();
+
+        $tags = DB::table('product_tags')
+            ->join('tags', 'product_tags.tag_id', '=', 'tags.id')
+            ->where('product_tags.product_id', $product->id)
+            ->select([
+                'tags.id',
+                'tags.name',
+            ])
+            ->orderBy('tags.id')
+            ->get()
+            ->values();
+
+        $tagIds = $tags->pluck('id')->values();
+
+        $payload = $product->fresh(['dormitory'])->toArray();
+        $payload['images'] = $images;
+        $payload['tags'] = $tags;
+        $payload['tag_ids'] = $tagIds;
+
+        return response()->json([
+            'message' => 'User product updated successfully',
+            'product' => $payload,
+        ], 200);
+    }
+
+    public function productEngagement(Request $request, string $product_id)
+    {
+        $user = $request->user();
+
+        if (($user->role ?? 'user') !== 'user') {
+            return response()->json([
+                'message' => 'Unauthorized: Only users can access this endpoint.',
+            ], 403);
+        }
+
+        $productId = trim($product_id);
+
+        try {
+            $validated = validator(['product_id' => $productId], [
+                'product_id' => 'required|integer|min:1',
+            ])->validate();
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation Error',
+                'errors' => $e->errors(),
+            ], 422);
+        }
+
+        $product = Product::query()
+            ->whereKey((int) $validated['product_id'])
+            ->where('seller_id', $user->id)
+            ->whereNull('deleted_at')
+            ->first();
+
+        if (! $product) {
+            return response()->json([
+                'message' => 'Product not found.',
+            ], 404);
+        }
+
+        $viewsCount = DB::table('behavioral_events')
+            ->where('product_id', $product->id)
+            ->where('event_type', 'view')
+            ->count();
+
+        $clicksCount = DB::table('behavioral_events')
+            ->where('product_id', $product->id)
+            ->where('event_type', 'click')
+            ->count();
+
+        $recentClickers = DB::table('behavioral_events')
+            ->join('users', 'behavioral_events.user_id', '=', 'users.id')
+            ->where('behavioral_events.product_id', $product->id)
+            ->where('behavioral_events.event_type', 'click')
+            ->select([
+                'users.id',
+                'users.profile_picture',
+                DB::raw('max(behavioral_events.occurred_at) as last_clicked_at'),
+            ])
+            ->groupBy('users.id', 'users.profile_picture')
+            ->orderByDesc('last_clicked_at')
+            ->limit(6)
+            ->get()
+            ->map(static function ($row) {
+                return [
+                    'id' => (int) $row->id,
+                    'profile_picture' => $row->profile_picture,
+                ];
+            })
+            ->values();
+
+        return response()->json([
+            'message' => 'Product engagement retrieved successfully',
+            'product_id' => (int) $product->id,
+            'views' => $viewsCount,
+            'clicks' => $clicksCount,
+            'recent_clickers' => $recentClickers,
         ], 200);
     }
 
@@ -2095,6 +2340,35 @@ class ProductController extends Controller
         $pageSize = (int) ($validated['page_size'] ?? 12);
         [$normalizedQuery] = $this->buildSearchTokens($queryString);
         $resultsPayload = $this->buildSearchResultsPayload($queryString, $page, $pageSize);
+
+        $productsForEvents = $resultsPayload['products'] ?? [];
+        $eventRows = [];
+        $eventTimestamp = now();
+
+        foreach ($productsForEvents as $productRow) {
+            $productId = (int) data_get($productRow, 'id', 0);
+            if ($productId <= 0) {
+                continue;
+            }
+            $eventRows[] = [
+                'user_id' => $user->id,
+                'event_type' => 'search',
+                'product_id' => $productId,
+                'category_id' => data_get($productRow, 'category.id'),
+                'seller_id' => data_get($productRow, 'seller.id'),
+                'metadata' => null,
+                'occurred_at' => $eventTimestamp,
+                'session_id' => null,
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+                'created_at' => $eventTimestamp,
+                'updated_at' => $eventTimestamp,
+            ];
+        }
+
+        if (count($eventRows) > 0) {
+            DB::table('behavioral_events')->insert($eventRows);
+        }
 
         return response()->json([
             'message' => 'Search completed successfully',

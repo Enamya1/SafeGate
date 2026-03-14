@@ -196,7 +196,7 @@ def _event_weight(event_type: str) -> float:
         return 2.0
     if t in {"purchase", "buy", "transaction"}:
         return 5.0
-    if t in {"view", "click"}:
+    if t in {"view", "click", "search"}:
         return 1.0
     return 0.5
 

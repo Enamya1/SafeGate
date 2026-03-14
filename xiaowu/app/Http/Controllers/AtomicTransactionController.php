@@ -65,7 +65,7 @@ class AtomicTransactionController extends Controller
             'created_at' => now(),
         ]);
 
-        $fraud = new FraudDetectionService();
+        $fraud = new FraudDetectionService;
         $fraud->evaluateAndRecord([
             'transaction_ledger_id' => $ledgerId,
             'wallet_id' => $payload['wallet_id'],
@@ -148,6 +148,11 @@ class AtomicTransactionController extends Controller
                     ->keyBy('id');
 
                 $statusActiveId = DB::table('wallet_statuses')->where('code', 'active')->value('id');
+                $statusClosedId = DB::table('wallet_statuses')->where('code', 'closed')->value('id');
+
+                if (! $statusActiveId || ! $statusClosedId) {
+                    throw new \RuntimeException('Wallet status configuration missing.');
+                }
 
                 foreach ($validated['steps'] as $index => $step) {
                     $fromWallet = $step['from_wallet_id'] ? $wallets->get((int) $step['from_wallet_id']) : null;
@@ -163,6 +168,9 @@ class AtomicTransactionController extends Controller
                     }
 
                     if ($fromWallet) {
+                        if ((int) $fromWallet->status_id === (int) $statusClosedId) {
+                            throw new \RuntimeException('Source wallet is closed.');
+                        }
                         if ((int) $fromWallet->status_id !== (int) $statusActiveId || $fromWallet->frozen_at) {
                             throw new \RuntimeException('Source wallet is not active.');
                         }
@@ -178,6 +186,9 @@ class AtomicTransactionController extends Controller
                     }
 
                     if ($toWallet) {
+                        if ((int) $toWallet->status_id === (int) $statusClosedId) {
+                            throw new \RuntimeException('Destination wallet is closed.');
+                        }
                         if ((int) $toWallet->status_id !== (int) $statusActiveId || $toWallet->frozen_at) {
                             throw new \RuntimeException('Destination wallet is not active.');
                         }

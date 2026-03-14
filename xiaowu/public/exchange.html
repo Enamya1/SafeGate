@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exchange Console</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 24px; background: #f6f7fb; }
+        h1, h2 { margin: 0 0 12px; }
+        .card { background: #fff; padding: 16px; border-radius: 10px; margin-bottom: 16px; box-shadow: 0 2px 6px rgba(0,0,0,0.06); }
+        label { display: block; font-weight: 600; margin-top: 10px; }
+        input, select, textarea { width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #d9dbe1; }
+        textarea { min-height: 90px; font-family: monospace; }
+        button { margin-top: 12px; padding: 10px 14px; border: none; background: #f63049; color: #fff; border-radius: 6px; cursor: pointer; }
+        button.secondary { background: #111f35; }
+        .row { display: flex; gap: 16px; flex-wrap: wrap; }
+        .col { flex: 1; min-width: 240px; }
+        pre { background: #111f35; color: #fff; padding: 12px; border-radius: 6px; overflow: auto; }
+    </style>
+</head>
+<body>
+    <h1>Exchange Console</h1>
+
+    <div class="card">
+        <h2>API Settings</h2>
+        <label for="apiBase">API Base URL</label>
+        <input id="apiBase" value="/api">
+        <label for="token">Bearer Token</label>
+        <input id="token" placeholder="Paste user token">
+    </div>
+
+    <div class="card">
+        <h2>Create Exchange Listing</h2>
+        <div class="row">
+            <div class="col">
+                <label for="exchangeType">Exchange Type</label>
+                <select id="exchangeType">
+                    <option value="exchange_only">exchange_only</option>
+                    <option value="exchange_or_purchase">exchange_or_purchase</option>
+                </select>
+                <label for="productId">Existing Product ID (optional)</label>
+                <input id="productId">
+                <label for="targetCategoryId">Target Category ID</label>
+                <input id="targetCategoryId">
+                <label for="targetConditionId">Target Condition ID</label>
+                <input id="targetConditionId">
+                <label for="targetTitle">Target Product Title</label>
+                <input id="targetTitle">
+                <label for="expirationDate">Expiration Date (YYYY-MM-DD)</label>
+                <input id="expirationDate">
+            </div>
+            <div class="col">
+                <label for="categoryId">Category ID</label>
+                <input id="categoryId">
+                <label for="conditionId">Condition Level ID</label>
+                <input id="conditionId">
+                <label for="title">Title</label>
+                <input id="title">
+                <label for="description">Description</label>
+                <input id="description">
+                <label for="price">Price</label>
+                <input id="price">
+                <label for="currency">Currency</label>
+                <input id="currency" value="CNY">
+                <label for="imageUrls">Image URLs (JSON array)</label>
+                <textarea id="imageUrls">[]</textarea>
+            </div>
+        </div>
+        <button id="createExchange">Create Listing</button>
+    </div>
+
+    <div class="card">
+        <h2>Browse Exchange Listings</h2>
+        <label for="searchQuery">Search</label>
+        <input id="searchQuery">
+        <label for="searchCategoryId">Category ID</label>
+        <input id="searchCategoryId">
+        <label for="searchTargetCategoryId">Target Category ID</label>
+        <input id="searchTargetCategoryId">
+        <label for="searchExchangeStatus">Exchange Status</label>
+        <input id="searchExchangeStatus" value="open">
+        <button class="secondary" id="searchListings">Search</button>
+    </div>
+
+    <div class="card">
+        <h2>Initiate Exchange</h2>
+        <label for="offeredProductId">Offered Product ID</label>
+        <input id="offeredProductId">
+        <label for="requestedProductId">Requested Product ID</label>
+        <input id="requestedProductId">
+        <label for="exchangeTerms">Exchange Terms (JSON)</label>
+        <textarea id="exchangeTerms">{}</textarea>
+        <button id="initiateExchange">Send Exchange Request</button>
+    </div>
+
+    <div class="card">
+        <h2>Update Exchange Status</h2>
+        <label for="transactionId">Exchange Transaction ID</label>
+        <input id="transactionId">
+        <label for="transactionStatus">Status</label>
+        <select id="transactionStatus">
+            <option value="accept">accept</option>
+            <option value="reject">reject</option>
+            <option value="cancel">cancel</option>
+            <option value="complete">complete</option>
+            <option value="negotiate">negotiate</option>
+        </select>
+        <label for="statusNote">Note</label>
+        <input id="statusNote">
+        <button id="updateStatus">Update Status</button>
+    </div>
+
+    <div class="card">
+        <h2>Exchange Messages</h2>
+        <label for="messageExchangeId">Exchange ID</label>
+        <input id="messageExchangeId">
+        <label for="messageText">Message Text</label>
+        <input id="messageText">
+        <label for="negotiationDetails">Negotiation Details (JSON)</label>
+        <textarea id="negotiationDetails">{}</textarea>
+        <button id="sendMessage">Send Message</button>
+        <button class="secondary" id="loadMessages">Load Messages</button>
+    </div>
+
+    <div class="card">
+        <h2>Exchange History</h2>
+        <label for="historyUserId">User ID</label>
+        <input id="historyUserId">
+        <label for="historyStatus">Status (optional)</label>
+        <input id="historyStatus">
+        <button class="secondary" id="loadHistory">Load History</button>
+    </div>
+
+    <div class="card">
+        <h2>Response</h2>
+        <pre id="output">{}</pre>
+    </div>
+
+    <script>
+        const output = document.getElementById("output");
+        const apiBaseInput = document.getElementById("apiBase");
+        const tokenInput = document.getElementById("token");
+
+        const apiFetch = async (path, options = {}) => {
+            const base = apiBaseInput.value.replace(/\/$/, "");
+            const token = tokenInput.value.trim();
+            const headers = { "Content-Type": "application/json" };
+            if (token) {
+                headers.Authorization = `Bearer ${token}`;
+            }
+            const response = await fetch(`${base}${path}`, { ...options, headers });
+            const payload = await response.json().catch(() => ({}));
+            output.textContent = JSON.stringify(payload, null, 2);
+        };
+
+        document.getElementById("createExchange").addEventListener("click", () => {
+            const body = {
+                exchange_type: document.getElementById("exchangeType").value,
+                product_id: document.getElementById("productId").value || null,
+                target_product_category_id: document.getElementById("targetCategoryId").value || null,
+                target_product_condition_id: document.getElementById("targetConditionId").value || null,
+                target_product_title: document.getElementById("targetTitle").value || null,
+                expiration_date: document.getElementById("expirationDate").value || null,
+                category_id: document.getElementById("categoryId").value || null,
+                condition_level_id: document.getElementById("conditionId").value || null,
+                title: document.getElementById("title").value || null,
+                description: document.getElementById("description").value || null,
+                price: document.getElementById("price").value || null,
+                currency: document.getElementById("currency").value || null,
+                image_urls: JSON.parse(document.getElementById("imageUrls").value || "[]"),
+            };
+            if (!body.product_id) {
+                delete body.product_id;
+            }
+            apiFetch("/exchange-products", {
+                method: "POST",
+                body: JSON.stringify(body),
+            });
+        });
+
+        document.getElementById("searchListings").addEventListener("click", () => {
+            const params = new URLSearchParams();
+            const q = document.getElementById("searchQuery").value;
+            const categoryId = document.getElementById("searchCategoryId").value;
+            const targetCategoryId = document.getElementById("searchTargetCategoryId").value;
+            const status = document.getElementById("searchExchangeStatus").value;
+            if (q) params.set("q", q);
+            if (categoryId) params.set("category_id", categoryId);
+            if (targetCategoryId) params.set("target_category_id", targetCategoryId);
+            if (status) params.set("exchange_status", status);
+            apiFetch(`/exchange-products?${params.toString()}`, { method: "GET" });
+        });
+
+        document.getElementById("initiateExchange").addEventListener("click", () => {
+            const body = {
+                offered_product_id: document.getElementById("offeredProductId").value,
+                requested_product_id: document.getElementById("requestedProductId").value,
+                exchange_terms: JSON.parse(document.getElementById("exchangeTerms").value || "{}"),
+            };
+            apiFetch("/exchange-transactions", {
+                method: "POST",
+                body: JSON.stringify(body),
+            });
+        });
+
+        document.getElementById("updateStatus").addEventListener("click", () => {
+            const id = document.getElementById("transactionId").value;
+            const body = {
+                status: document.getElementById("transactionStatus").value,
+                note: document.getElementById("statusNote").value || null,
+            };
+            apiFetch(`/exchange-transactions/${id}/status`, {
+                method: "PUT",
+                body: JSON.stringify(body),
+            });
+        });
+
+        document.getElementById("sendMessage").addEventListener("click", () => {
+            const id = document.getElementById("messageExchangeId").value;
+            const messageText = document.getElementById("messageText").value || null;
+            const negotiation = JSON.parse(document.getElementById("negotiationDetails").value || "{}");
+            const body = {
+                message_text: messageText,
+                negotiation_details: negotiation,
+            };
+            apiFetch(`/exchange-transactions/${id}/messages`, {
+                method: "POST",
+                body: JSON.stringify(body),
+            });
+        });
+
+        document.getElementById("loadMessages").addEventListener("click", () => {
+            const id = document.getElementById("messageExchangeId").value;
+            apiFetch(`/exchange-transactions/${id}/messages`, { method: "GET" });
+        });
+
+        document.getElementById("loadHistory").addEventListener("click", () => {
+            const userId = document.getElementById("historyUserId").value;
+            const status = document.getElementById("historyStatus").value;
+            const params = new URLSearchParams();
+            if (status) params.set("status", status);
+            apiFetch(`/exchange-transactions/user/${userId}?${params.toString()}`, { method: "GET" });
+        });
+    </script>
+</body>
+</html>

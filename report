@@ -233,6 +233,43 @@ User Products
    - Response 403: {"message":"Unauthorized: Only users can access this endpoint."}
    - Response 401: {"message":"Unauthenticated."}
 
+13a) PATCH /api/user/products/{product_id}
+   - Auth: auth:sanctum, role=user
+   - Path params:
+     - product_id (required integer)
+   - Request body (any of):
+     - category_id (integer, exists categories.id)
+     - condition_level_id (integer, exists condition_levels.id)
+     - title (string, max 255)
+     - description (nullable string)
+     - price (numeric, min 0.01)
+     - dormitory_id (nullable integer, exists dormitories.id)
+     - tag_ids (array of integers, exists tags.id)
+   - Response 200: {"message":"User product updated successfully","product":{...,"images":[...],"tags":[...],"tag_ids":[...]}}
+   - Response 404: {"message":"Product not found."}
+   - Response 422: {"message":"Validation Error","errors":{...}}
+   - Response 403: {"message":"Unauthorized: Only users can access this endpoint."}
+   - Response 401: {"message":"Unauthenticated."}
+
+13b) GET /api/user/products/{product_id}/engagement
+   - Auth: auth:sanctum, role=user
+   - Path params:
+     - product_id (required integer)
+   - Response 200:
+     {
+       "message":"Product engagement retrieved successfully",
+       "product_id":1,
+       "views":12,
+       "clicks":4,
+       "recent_clickers":[
+         {"id":...,"profile_picture":"..."}
+       ]
+     }
+   - Response 404: {"message":"Product not found."}
+   - Response 422: {"message":"Validation Error","errors":{...}}
+   - Response 403: {"message":"Unauthorized: Only users can access this endpoint."}
+   - Response 401: {"message":"Unauthenticated."}
+
 14) PATCH /api/user/products/{product_id}/mark-sold
    - Auth: auth:sanctum, role=user
    - Path params:
@@ -310,13 +347,15 @@ User Products
   - Auth: auth:sanctum, role=user
   - Query:
     - limit (optional integer 1-100, default 20)
-  - Note: groups notifications by sender and type
+  - Note: includes unread message notifications and payment notifications
   - Response 200:
     {
       "message":"Unread messages retrieved successfully",
       "total":2,
-      "messages":[{"id":...,"conversation_id":...,"sender_id":...,"sender_username":"...","sender_profile_picture":"...","product_id":...,"notification_type":"...","notification_text":"...","notification_count":2,"created_at":"..."}]
+      "messages":[{"id":...,"conversation_id":...,"sender_id":...,"sender_username":"...","sender_profile_picture":"...","product_id":...,"notification_type":"...","notification_text":"...","notification_count":2,"data":{...},"created_at":"..."}]
     }
+  - Payment notification item example:
+    {"id":"...","conversation_id":null,"sender_id":...,"sender_username":"...","sender_profile_picture":"...","product_id":null,"notification_type":"wallet_transfer_received","notification_text":"You received 12.5 USD from alice","notification_count":1,"amount":12.5,"currency":"USD","wallet_id":...,"transaction_ledger_id":...,"data":{"sender_id":...,"sender_username":"...","sender_profile_picture":"...","amount":12.5,"currency":"USD","wallet_id":...,"related_wallet_id":...,"transaction_ledger_id":...,"atomic_transaction_id":...,"notification_text":"You received 12.5 USD from alice"},"created_at":"..."}
   - Response 422: {"message":"Validation Error","errors":{...}}
   - Response 403: {"message":"Unauthorized: Only users can access this endpoint."}
 
@@ -463,6 +502,7 @@ User Metadata
     - Returns full product results matching product title, description, tags, category, condition level, dormitory info, and seller info.
     - Uses full-text indexes (MySQL) and fuzzy matching (SOUNDEX) to handle typos and partial matches.
     - Caches frequent queries for faster responses.
+  - Side effect: creates behavioral_events records with event_type "search" for returned products
   - Response 200:
     {
       "message":"Search completed successfully",
@@ -936,6 +976,7 @@ AI Runtime Config Options
      - random_count (default 3, min 0, max 50)
      - lookback_days (default 30, min 1, max 365)
      - seed (optional integer)
+  - Behavior: considers behavioral_events including event_type "search"
   - Response 200:
   - Dormitory in each product is the uploader's dormitory at upload time
      {
@@ -1038,6 +1079,7 @@ AI Runtime Config Options
   - Request (multipart/form-data):
     - image (required file, image, mimes: jpg|jpeg|png|webp, max 8MB)
     - top_k (optional integer, min 1, max 50, default 12)
+  - Side effect: creates behavioral_events records with event_type "search" for returned products with visual_similarity_score > 0.7
   - Response 200:
     {
       "message":"Visual search completed successfully",
@@ -1127,6 +1169,119 @@ AI Runtime Config Options
   - Response 503: {"detail":"Database unavailable"}
   - Response 503: {"detail":"Database '<name>' missing table: <table>. Check DB_* env or run Laravel migrations."}
 
+Exchange System Schema Additions (Laravel)
+- Exchange listings
+  - exchange_products (product_id, exchange_type, target_product_category_id, target_product_condition_id, target_product_title, exchange_status, expiration_date)
+- Exchange transactions
+  - exchange_transactions (initiator_id, responder_id, offered_product_id, requested_product_id, exchange_terms, status, status_timeline, initiator_accepted_at, responder_accepted_at, completed_at)
+- Exchange messaging
+  - exchange_messages (exchange_id, sender_id, message_type, message_text, negotiation_details)
+
+Exchange APIs (User)
+60) GET /api/exchange-products
+  - Auth: auth:sanctum, role=user
+  - Query:
+    - page (optional integer, default 1)
+    - page_size (optional integer, default 20, max 50)
+    - q (optional string)
+    - category_id (optional integer)
+    - condition_level_id (optional integer)
+    - dormitory_id (optional integer)
+    - seller_id (optional integer)
+    - exchange_type (optional string)
+    - exchange_status (optional string, default open)
+    - target_category_id (optional integer)
+    - target_condition_id (optional integer)
+    - min_price (optional number)
+    - max_price (optional number)
+  - Response 200: {"message":"Exchange products retrieved successfully","page":1,"page_size":20,"total":0,"exchange_products":[...]}
+  - Response 403: {"message":"Unauthorized: Only users can access this endpoint."}
+  - Response 422: {"message":"Validation Error","errors":{...}}
+
+61) POST /api/exchange-products
+  - Auth: auth:sanctum, role=user
+  - Request body:
+    - product_id (optional integer, existing product owned by user)
+    - exchange_type (required exchange_only|exchange_or_purchase)
+    - target_product_category_id (optional integer)
+    - target_product_condition_id (optional integer)
+    - target_product_title (optional string)
+    - expiration_date (optional datetime)
+    - category_id (required when product_id absent)
+    - condition_level_id (required when product_id absent)
+    - title (required when product_id absent)
+    - description (optional string)
+    - price (required when product_id absent)
+    - currency (optional string size 3)
+    - dormitory_id (required if user has no dormitory_id)
+    - tag_ids (optional array)
+    - primary_image_index (optional integer)
+    - image_urls (optional array)
+    - image_thumbnail_urls (optional array)
+  - Response 201: {"message":"Exchange listing created successfully","exchange_product":{...},"product":{...},"images":[...]}
+  - Response 403: {"message":"Unauthorized: Only users can access this endpoint."}
+  - Response 404: {"message":"Product not found or not owned by user."}
+  - Response 409: {"message":"Exchange listing already exists for this product."}
+  - Response 422: {"message":"Validation Error","errors":{...}}
+
+62) GET /api/exchange-products/{id}
+  - Auth: auth:sanctum, role=user
+  - Response 200: {"message":"Exchange product retrieved successfully","exchange_product":{...},"product":{...}}
+  - Response 403: {"message":"Unauthorized: Only users can access this endpoint."}
+  - Response 404: {"message":"Exchange product not found."}
+
+63) POST /api/exchange-transactions
+  - Auth: auth:sanctum, role=user
+  - Request body:
+    - offered_product_id (required integer, exchange listing product)
+    - requested_product_id (required integer, initiator-owned product)
+    - exchange_terms (optional array)
+  - Response 201: {"message":"Exchange request created successfully","exchange_transaction":{...}}
+  - Response 403: {"message":"Unauthorized: Only users can access this endpoint."}
+  - Response 404: {"message":"Exchange listing not found for offered product."}
+  - Response 409: {"message":"Exchange listing is not open."}
+  - Response 422: {"message":"Validation Error","errors":{...}}
+
+64) PUT /api/exchange-transactions/{id}/status
+  - Auth: auth:sanctum, role=user
+  - Request body:
+    - status (required accept|reject|cancel|complete|negotiate)
+    - note (optional string)
+  - Response 200: {"message":"Exchange status updated successfully","exchange_transaction":{...}}
+  - Response 403: {"message":"Unauthorized: You are not part of this exchange."}
+  - Response 404: {"message":"Exchange transaction not found."}
+  - Response 409: {"message":"Exchange is already finalized."}
+  - Response 422: {"message":"Validation Error","errors":{...}}
+
+65) GET /api/exchange-transactions/user/{userId}
+  - Auth: auth:sanctum, role=user
+  - Query:
+    - limit (optional integer, default 50, max 100)
+    - status (optional string)
+  - Response 200: {"message":"Exchange history retrieved successfully","user_id":...,"exchanges":[...]}
+  - Response 403: {"message":"Unauthorized: You can only view your own exchange history."}
+  - Response 422: {"message":"Validation Error","errors":{...}}
+
+66) GET /api/exchange-transactions/{id}/messages
+  - Auth: auth:sanctum, role=user
+  - Query:
+    - limit (optional integer, default 50, max 100)
+    - before_id (optional integer)
+  - Response 200: {"message":"Exchange messages retrieved successfully","exchange_id":...,"messages":[...]}
+  - Response 403: {"message":"Unauthorized: You are not part of this exchange."}
+  - Response 404: {"message":"Exchange transaction not found."}
+
+67) POST /api/exchange-transactions/{id}/messages
+  - Auth: auth:sanctum, role=user
+  - Request body:
+    - message_type (optional string)
+    - message_text (optional string)
+    - negotiation_details (optional array)
+  - Response 201: {"message":"Exchange message sent successfully","exchange_id":...,"message_data":{...}}
+  - Response 403: {"message":"Unauthorized: You are not part of this exchange."}
+  - Response 404: {"message":"Exchange transaction not found."}
+  - Response 422: {"message":"Validation Error","errors":{...}}
+
 Financial System Schema Additions (Laravel)
 - Wallet management
   - wallet_types (id, code, name)
@@ -1158,6 +1313,8 @@ Financial APIs (User)
   - Auth: auth:sanctum, role=user
   - Request body:
     - wallet_type_id (nullable integer, exists wallet_types.id)
+    - name (nullable string, max 120)
+    - description (nullable string, max 500)
     - currency (nullable string size 3, default CNY)
     - initial_balance (nullable numeric >= 0)
   - Response 201: {"message":"Wallet created successfully","wallet":{...}}
@@ -1166,25 +1323,36 @@ Financial APIs (User)
 
 61) GET /api/wallets
   - Auth: auth:sanctum, role=user
-  - Response 200: {"message":"Wallets retrieved successfully","wallets":[...]}
+  - Response 200: {"message":"Wallets retrieved successfully","wallets":[{"name":...,"description":...}]}
 
 62) GET /api/wallets/{wallet_id}
   - Auth: auth:sanctum, role=user
   - Response 200: {"message":"Wallet retrieved successfully","wallet":{...}}
   - Response 404: {"message":"Wallet not found."}
 
-63) POST /api/wallets/{wallet_id}/balance
+63) POST /api/wallets/{wallet_id}/top-up
   - Auth: auth:sanctum, role=user
   - Request body:
     - amount (required numeric >= 0.01)
-    - direction (required credit|debit)
     - type (optional string)
     - reference (optional string)
     - metadata (optional array)
-  - Response 200: {"message":"Wallet balance updated successfully","wallet":{...},"ledger_id":...}
-  - Response 409: {"message":"Insufficient available balance."}
+  - Response 200: {"message":"Wallet topped up successfully","wallet":{...},"ledger_id":...}
+  - Response 409: {"message":"Wallet is not active."}
+  - Response 409: {"message":"Wallet is closed."}
 
-64) POST /api/wallets/transfer
+64) POST /api/wallets/{wallet_id}/withdraw
+  - Auth: auth:sanctum, role=user
+  - Request body:
+    - amount (required numeric >= 0.01)
+    - type (optional string)
+    - reference (optional string)
+    - metadata (optional array)
+  - Response 200: {"message":"Wallet withdrawal completed successfully","wallet":{...},"ledger_id":...}
+  - Response 409: {"message":"Insufficient available balance."}
+  - Response 409: {"message":"Wallet is closed."}
+
+65) POST /api/wallets/transfer
   - Auth: auth:sanctum, role=user
   - Request body:
     - from_wallet_id (required integer)
@@ -1194,8 +1362,10 @@ Financial APIs (User)
     - metadata (optional array)
   - Response 200: {"message":"Transfer completed successfully","atomic_transaction_id":...,"debit_ledger_id":...,"credit_ledger_id":...}
   - Response 409: {"message":"Wallet currencies do not match."}
+  - Response 409: {"message":"Source wallet is closed."}
+  - Response 409: {"message":"Destination wallet is closed."}
 
-65) GET /api/wallets/{wallet_id}/transactions
+66) GET /api/wallets/{wallet_id}/transactions
   - Auth: auth:sanctum, role=user
   - Query:
     - status (optional string)
@@ -1206,18 +1376,34 @@ Financial APIs (User)
     - limit (optional integer, default 50, max 200)
   - Response 200: {"message":"Wallet transactions retrieved successfully","wallet_id":...,"transactions":[...]}
 
-66) GET /api/wallets/{wallet_id}/status-history
+67) GET /api/wallets/{wallet_id}/status-history
   - Auth: auth:sanctum, role=user
   - Response 200: {"message":"Wallet status history retrieved successfully","wallet_id":...,"history":[...]}
 
-67) POST /api/wallets/{wallet_id}/status-requests
+68) POST /api/wallets/{wallet_id}/status-requests
   - Auth: auth:sanctum, role=user
   - Request body:
     - action (required freeze|unfreeze)
     - reason (optional string)
   - Response 201: {"message":"Wallet status request submitted successfully","request_id":...}
 
-68) POST /api/atomic-transactions
+69) POST /api/wallets/{wallet_id}/close
+  - Auth: auth:sanctum, role=user
+  - Request body:
+    - reason (optional string)
+  - Response 200: {"message":"Wallet closed successfully","wallet":{...}}
+  - Response 409: {"message":"Only primary wallets can be closed."}
+  - Response 409: {"message":"Wallet is already closed."}
+
+70) POST /api/wallets/{wallet_id}/open
+  - Auth: auth:sanctum, role=user
+  - Request body:
+    - reason (optional string)
+  - Response 200: {"message":"Wallet opened successfully","wallet":{...}}
+  - Response 409: {"message":"Only primary wallets can be opened."}
+  - Response 409: {"message":"Wallet is already active."}
+
+71) POST /api/atomic-transactions
   - Auth: auth:sanctum, role=user
   - Request body:
     - steps (required array of step objects)
@@ -1230,28 +1416,28 @@ Financial APIs (User)
   - Response 201: {"message":"Atomic transaction completed successfully","atomic_transaction":{...},"steps":[...]}
   - Response 409: {"message":"Atomic transaction failed","error":"...","atomic_transaction_id":...}
 
-69) GET /api/atomic-transactions/{atomic_id}
+72) GET /api/atomic-transactions/{atomic_id}
   - Auth: auth:sanctum, role=user
   - Response 200: {"message":"Atomic transaction retrieved successfully","atomic_transaction":{...},"steps":[...]}
 
-70) GET /api/atomic-transactions/{atomic_id}/verify
+73) GET /api/atomic-transactions/{atomic_id}/verify
   - Auth: auth:sanctum, role=user
   - Response 200: {"message":"Atomic transaction verification completed","credits":...,"debits":...,"integrity_ok":true}
 
 Financial APIs (Admin)
-71) POST /api/admin/wallets/{wallet_id}/freeze
+74) POST /api/admin/wallets/{wallet_id}/freeze
   - Auth: token_auth (Sanctum token), role=admin
   - Request body:
     - reason (optional string)
   - Response 200: {"message":"Wallet frozen successfully","freeze_request_id":...}
 
-72) POST /api/admin/wallets/{wallet_id}/unfreeze
+75) POST /api/admin/wallets/{wallet_id}/unfreeze
   - Auth: token_auth (Sanctum token), role=admin
   - Request body:
     - reason (optional string)
   - Response 200: {"message":"Wallet unfrozen successfully","freeze_request_id":...}
 
-73) GET /api/admin/wallets/freeze-requests
+76) GET /api/admin/wallets/freeze-requests
   - Auth: token_auth (Sanctum token), role=admin
   - Query:
     - status (optional string)
@@ -1259,11 +1445,11 @@ Financial APIs (Admin)
     - limit (optional integer, default 100)
   - Response 200: {"message":"Freeze requests retrieved successfully","requests":[...]}
 
-74) POST /api/admin/wallets/freeze-requests/{request_id}/approve
+77) POST /api/admin/wallets/freeze-requests/{request_id}/approve
   - Auth: token_auth (Sanctum token), role=admin
   - Response 200: {"message":"Freeze request approved successfully","freeze_request_id":...}
 
-75) POST /api/admin/ledgers
+78) POST /api/admin/ledgers
   - Auth: token_auth (Sanctum token), role=admin
   - Request body:
     - wallet_id (required integer)
@@ -1276,17 +1462,17 @@ Financial APIs (Admin)
     - metadata (optional array)
   - Response 201: {"message":"Ledger entry created successfully","ledger":{...}}
 
-76) GET /api/admin/ledgers/{ledger_id}
+79) GET /api/admin/ledgers/{ledger_id}
   - Auth: token_auth (Sanctum token), role=admin
   - Response 200: {"message":"Ledger entry retrieved successfully","ledger":{...},"audits":[...]}
 
-77) GET /api/admin/ledgers
+80) GET /api/admin/ledgers
   - Auth: token_auth (Sanctum token), role=admin
   - Query:
     - wallet_id, status, direction, currency, from, to, min_amount, max_amount, limit
   - Response 200: {"message":"Ledger entries retrieved successfully","count":...,"ledgers":[...]}
 
-78) POST /api/admin/ledgers/reconcile
+81) POST /api/admin/ledgers/reconcile
   - Auth: token_auth (Sanctum token), role=admin
   - Request body:
     - wallet_id (required integer)
@@ -1294,21 +1480,21 @@ Financial APIs (Admin)
     - to (optional date)
   - Response 200: {"message":"Ledger reconciliation completed","wallet_balance":...,"ledger_balance":...,"delta":...}
 
-79) POST /api/admin/ledgers/{ledger_id}/reverse
+82) POST /api/admin/ledgers/{ledger_id}/reverse
   - Auth: token_auth (Sanctum token), role=admin
   - Request body:
     - reason (optional string)
   - Response 201: {"message":"Reversal request created successfully","reversal_id":...,"approval_required_level":1|2}
 
-80) POST /api/admin/reversals/{reversal_id}/approve
+83) POST /api/admin/reversals/{reversal_id}/approve
   - Auth: token_auth (Sanctum token), role=admin
   - Response 200: {"message":"Reversal approval recorded successfully","reversal_id":...}
 
-81) POST /api/admin/atomic-transactions/{atomic_id}/rollback
+84) POST /api/admin/atomic-transactions/{atomic_id}/rollback
   - Auth: token_auth (Sanctum token), role=admin
   - Response 200: {"message":"Atomic transaction rolled back successfully","atomic_transaction_id":...}
 
-82) GET /api/admin/fraud/alerts
+85) GET /api/admin/fraud/alerts
   - Auth: token_auth (Sanctum token), role=admin
   - Query:
     - status (optional open|reviewing|resolved|ignored)
@@ -1316,7 +1502,7 @@ Financial APIs (Admin)
     - limit (optional integer, default 100)
   - Response 200: {"message":"Fraud alerts retrieved successfully","alerts":[...]}
 
-83) PATCH /api/admin/fraud/alerts/{alert_id}
+86) PATCH /api/admin/fraud/alerts/{alert_id}
   - Auth: token_auth (Sanctum token), role=admin
   - Request body:
     - status (required open|reviewing|resolved|ignored)
