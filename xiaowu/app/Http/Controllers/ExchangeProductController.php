@@ -4,14 +4,19 @@ namespace App\Http\Controllers;
 
 use App\Models\ExchangeProduct;
 use App\Models\Product;
-use App\Models\ProductImage;
 use App\Models\ProductTag;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Validation\ValidationException;
 
 class ExchangeProductController extends Controller
 {
+    private function pythonServiceBaseUrl(): string
+    {
+        return rtrim((string) env('PYTHON_SERVICE_BASE_URL', 'http://127.0.0.1:8001'), '/');
+    }
+
     public function index(Request $request)
     {
         $user = $request->user();
@@ -225,6 +230,82 @@ class ExchangeProductController extends Controller
         ], 200);
     }
 
+    public function recommendations(Request $request)
+    {
+        $user = $request->user();
+
+        if (($user->role ?? 'user') !== 'user') {
+            return response()->json([
+                'message' => 'Unauthorized: Only users can access this endpoint.',
+            ], 403);
+        }
+
+        try {
+            $validated = $request->validate([
+                'page' => 'nullable|integer|min:1',
+                'page_size' => 'nullable|integer|min:1|max:50',
+                'random_count' => 'nullable|integer|min:0|max:50',
+                'lookback_days' => 'nullable|integer|min:1|max:365',
+                'seed' => 'nullable|integer',
+                'exchange_type' => 'nullable|string|in:exchange_only,exchange_or_purchase',
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation Error',
+                'errors' => $e->errors(),
+            ], 422);
+        }
+
+        $params = array_filter($validated, static fn ($value) => $value !== null && $value !== '');
+        $authHeader = (string) $request->header('Authorization', '');
+        $pythonInternalToken = (string) env('PYTHON_INTERNAL_TOKEN', '');
+        $pythonTimeoutSeconds = (int) env('PYTHON_SERVICE_TIMEOUT_SECONDS', 45);
+        $pythonConnectTimeoutSeconds = (int) env('PYTHON_SERVICE_CONNECT_TIMEOUT_SECONDS', 5);
+        $baseUrl = $this->pythonServiceBaseUrl();
+
+        try {
+            $pythonResponse = Http::connectTimeout($pythonConnectTimeoutSeconds)
+                ->timeout($pythonTimeoutSeconds)
+                ->acceptJson()
+                ->withHeaders([
+                    'Authorization' => $authHeader,
+                    'X-Internal-Token' => $pythonInternalToken,
+                    'X-User-Id' => (string) $user->id,
+                    'X-User-Role' => (string) ($user->role ?? 'user'),
+                    'X-User-Dormitory-Id' => $user->dormitory_id !== null ? (string) $user->dormitory_id : '',
+                ])
+                ->get($baseUrl.'/py/api/user/recommendations/exchange-products', $params);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'message' => 'Recommendation service unavailable.',
+                'detail' => [
+                    'exception' => class_basename($e),
+                    'message' => $e->getMessage(),
+                ],
+            ], 502);
+        }
+
+        if (! $pythonResponse->successful()) {
+            $body = $pythonResponse->json();
+
+            return response()->json([
+                'message' => 'Recommendation service unavailable.',
+                'detail' => is_array($body) ? $body : ['raw' => (string) $pythonResponse->body()],
+                'upstream_status' => $pythonResponse->status(),
+            ], 502);
+        }
+
+        $payload = $pythonResponse->json();
+        if (! is_array($payload)) {
+            return response()->json([
+                'message' => 'Recommendation service response invalid.',
+                'detail' => ['raw' => (string) $pythonResponse->body()],
+            ], 502);
+        }
+
+        return response()->json($payload, 200);
+    }
+
     public function store(Request $request)
     {
         $user = $request->user();
@@ -255,11 +336,6 @@ class ExchangeProductController extends Controller
             'dormitory_id' => $dormitoryRule,
             'tag_ids' => 'nullable|array',
             'tag_ids.*' => 'integer|exists:tags,id',
-            'primary_image_index' => 'nullable|integer|min:0',
-            'image_urls' => 'nullable|array|max:6',
-            'image_urls.*' => ['string', 'max:2048', 'regex:/^(https?:\/\/|\/)/'],
-            'image_thumbnail_urls' => 'nullable|array|max:6',
-            'image_thumbnail_urls.*' => ['nullable', 'string', 'max:2048', 'regex:/^(https?:\/\/|\/)/'],
         ];
 
         try {
@@ -294,24 +370,11 @@ class ExchangeProductController extends Controller
             }
         }
 
-        $primaryIndex = (int) ($validated['primary_image_index'] ?? 0);
-        $imageUrls = $validated['image_urls'] ?? [];
-        $imageThumbnailUrls = $validated['image_thumbnail_urls'] ?? [];
-
-        if (count($imageThumbnailUrls) > 0 && count($imageThumbnailUrls) !== count($imageUrls)) {
-            return response()->json([
-                'message' => 'Validation Error',
-                'errors' => [
-                    'image_thumbnail_urls' => ['The image_thumbnail_urls count must match image_urls count.'],
-                ],
-            ], 422);
-        }
-
         if ($product === null) {
             $dormitoryId = $user->dormitory_id ?? data_get($validated, 'dormitory_id');
             $tagIds = array_values(array_unique(array_map('intval', $validated['tag_ids'] ?? [])));
 
-            $result = DB::transaction(function () use ($validated, $user, $dormitoryId, $imageUrls, $imageThumbnailUrls, $primaryIndex, $tagIds) {
+            $result = DB::transaction(function () use ($validated, $user, $dormitoryId, $tagIds) {
                 $product = Product::create([
                     'seller_id' => $user->id,
                     'dormitory_id' => $dormitoryId,
@@ -324,16 +387,6 @@ class ExchangeProductController extends Controller
                     'status' => 'available',
                 ]);
 
-                $images = [];
-                foreach ($imageUrls as $index => $url) {
-                    $images[] = ProductImage::create([
-                        'product_id' => $product->id,
-                        'image_url' => $url,
-                        'image_thumbnail_url' => $imageThumbnailUrls[$index] ?? null,
-                        'is_primary' => $index === $primaryIndex,
-                    ]);
-                }
-
                 foreach ($tagIds as $tagId) {
                     ProductTag::create([
                         'product_id' => $product->id,
@@ -343,7 +396,6 @@ class ExchangeProductController extends Controller
 
                 return [
                     'product' => $product,
-                    'images' => $images,
                 ];
             });
 

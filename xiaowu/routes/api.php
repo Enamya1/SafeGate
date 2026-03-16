@@ -54,6 +54,10 @@ Route::middleware('auth:sanctum')->get('/user/meta/options', [ProductController:
 Route::middleware('auth:sanctum')->get('/user/meta/dormitories', [ProductController::class, 'dormitories']);
 Route::middleware('auth:sanctum')->get('/user/meta/dormitories/by-university', [ProductController::class, 'dormitoriesByUserUniversity']);
 Route::middleware('auth:sanctum')->post('/user/tags', [ProductController::class, 'createTag']);
+Route::middleware('auth:sanctum')->get('/user/exchange-products/recommendations', [ExchangeProductController::class, 'recommendations']);
+Route::middleware('auth:sanctum')->get('/user/exchange-products', [ExchangeProductController::class, 'index']);
+Route::middleware('auth:sanctum')->post('/user/exchange-products', [ExchangeProductController::class, 'store']);
+Route::middleware('auth:sanctum')->get('/user/exchange-products/{id}', [ExchangeProductController::class, 'show']);
 Route::middleware('auth:sanctum')->prefix('wallets')->group(function () {
     Route::post('/', [WalletController::class, 'createWallet']);
     Route::get('/', [WalletController::class, 'listWallets']);
@@ -82,6 +86,7 @@ Route::middleware('auth:sanctum')->prefix('ai')->group(function () {
 });
 
 Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/exchange-products/recommendations', [ExchangeProductController::class, 'recommendations']);
     Route::get('/exchange-products', [ExchangeProductController::class, 'index']);
     Route::post('/exchange-products', [ExchangeProductController::class, 'store']);
     Route::get('/exchange-products/{id}', [ExchangeProductController::class, 'show']);

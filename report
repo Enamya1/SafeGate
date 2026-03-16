@@ -1024,6 +1024,64 @@ AI Runtime Config Options
    - Response 503: {"detail":"Database '<name>' missing table: <table>. Check DB_* env or run Laravel migrations."}
    - Response 502: {"detail":"Could not reach Laravel"}
 
+55a) GET /py/api/user/recommendations/exchange-products
+  - Headers:
+    - Authorization: Bearer <Laravel token> (required)
+  - Query params:
+    - page (default 1, min 1)
+    - page_size (default 10, min 1, max 50)
+    - random_count (default 3, min 0, max 50)
+    - lookback_days (default 30, min 1, max 365)
+    - seed (optional integer)
+    - exchange_type (optional exchange_only|exchange_or_purchase)
+  - Response 200:
+    {
+      "message":"Recommended exchange products retrieved successfully",
+      "page":1,
+      "page_size":10,
+      "random_count":3,
+      "last_event_id":0,
+      "last_event_at":null,
+      "last_exchange_product_id":0,
+      "last_exchange_product_at":null,
+      "exchange_products":[
+        {
+          "exchange_product":{
+            "id":...,
+            "exchange_type":"exchange_only",
+            "exchange_status":"open",
+            "expiration_date":"...",
+            "target_product_title":"...",
+            "target_product_category":{"id":...,"name":"..."},
+            "target_product_condition":{"id":...,"name":"...","level":...}
+          },
+          "product":{
+            "id":...,
+            "title":"...",
+            "price":...,
+            "currency":"CNY",
+            "status":"available",
+            "created_at":"...",
+            "category_id":...,
+            "condition_level_id":...,
+            "is_promoted":0,
+            "seller":{"id":...,"username":"...","profile_picture":"..."},
+            "dormitory":{"latitude":...,"longitude":...},
+            "condition_level":{"id":...,"name":"...","level":...},
+            "image_thumbnail_url":"...",
+            "tags":[{"id":...,"name":"..."}]
+          }
+        }
+      ]
+    }
+  - Response 401: {"detail":"Missing Authorization header"}
+  - Response 401: {"detail":"Invalid user"}
+  - Response 403: {"detail":"Only users can access this endpoint"}
+  - Response 422: {"detail":"Invalid exchange_type"}
+  - Response 503: {"detail":"Database unavailable"}
+  - Response 503: {"detail":"Database '<name>' missing table: <table>. Check DB_* env or run Laravel migrations."}
+  - Response 502: {"detail":"Could not reach Laravel"}
+
 56) GET /py/api/user/products/{product_id}/similar
   - Headers:
     - Authorization: Bearer <Laravel token> (required)
@@ -1180,6 +1238,7 @@ Exchange System Schema Additions (Laravel)
 Exchange APIs (User)
 60) GET /api/exchange-products
   - Auth: auth:sanctum, role=user
+  - Alias: GET /api/user/exchange-products
   - Query:
     - page (optional integer, default 1)
     - page_size (optional integer, default 20, max 50)
@@ -1200,6 +1259,7 @@ Exchange APIs (User)
 
 61) POST /api/exchange-products
   - Auth: auth:sanctum, role=user
+  - Alias: POST /api/user/exchange-products
   - Request body:
     - product_id (optional integer, existing product owned by user)
     - exchange_type (required exchange_only|exchange_or_purchase)
@@ -1215,9 +1275,6 @@ Exchange APIs (User)
     - currency (optional string size 3)
     - dormitory_id (required if user has no dormitory_id)
     - tag_ids (optional array)
-    - primary_image_index (optional integer)
-    - image_urls (optional array)
-    - image_thumbnail_urls (optional array)
   - Response 201: {"message":"Exchange listing created successfully","exchange_product":{...},"product":{...},"images":[...]}
   - Response 403: {"message":"Unauthorized: Only users can access this endpoint."}
   - Response 404: {"message":"Product not found or not owned by user."}
@@ -1226,6 +1283,7 @@ Exchange APIs (User)
 
 62) GET /api/exchange-products/{id}
   - Auth: auth:sanctum, role=user
+  - Alias: GET /api/user/exchange-products/{id}
   - Response 200: {"message":"Exchange product retrieved successfully","exchange_product":{...},"product":{...}}
   - Response 403: {"message":"Unauthorized: Only users can access this endpoint."}
   - Response 404: {"message":"Exchange product not found."}
@@ -1252,6 +1310,21 @@ Exchange APIs (User)
   - Response 404: {"message":"Exchange transaction not found."}
   - Response 409: {"message":"Exchange is already finalized."}
   - Response 422: {"message":"Validation Error","errors":{...}}
+
+65) GET /api/exchange-products/recommendations
+  - Auth: auth:sanctum, role=user
+  - Alias: GET /api/user/exchange-products/recommendations
+  - Query params:
+    - page (optional integer, default 1)
+    - page_size (optional integer, min 1, max 50)
+    - random_count (optional integer, min 0, max 50)
+    - lookback_days (optional integer, min 1, max 365)
+    - seed (optional integer)
+    - exchange_type (optional exchange_only|exchange_or_purchase)
+  - Response 200: returns python_service payload from /py/api/user/recommendations/exchange-products
+  - Response 403: {"message":"Unauthorized: Only users can access this endpoint."}
+  - Response 422: {"message":"Validation Error","errors":{...}}
+  - Response 502: {"message":"Recommendation service unavailable.","detail":{...},"upstream_status":...}
 
 65) GET /api/exchange-transactions/user/{userId}
   - Auth: auth:sanctum, role=user
