@@ -10,6 +10,7 @@ use App\Models\ProductImage;
 use App\Models\University;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
@@ -223,6 +224,10 @@ class AdminController extends Controller
             'university_id' => $university->id,
         ]);
 
+        Cache::forget('meta:dormitories:v1');
+        Cache::forget('meta:options:v1');
+        Cache::forget('meta:dormitories:university:'.$university->id);
+
         $payload = $dormitory->toArray();
         $payload['created_at'] = $dormitory->created_at ? $dormitory->created_at->format('Y.m.d') : null;
 
@@ -272,6 +277,10 @@ class AdminController extends Controller
         }
 
         $dormitory->update($validatedData);
+
+        Cache::forget('meta:dormitories:v1');
+        Cache::forget('meta:options:v1');
+        Cache::forget('meta:dormitories:university:'.$dormitory->university_id);
 
         return response()->json([
             'message' => 'Dormitory updated successfully',
@@ -495,6 +504,9 @@ class AdminController extends Controller
             'parent_id' => $validatedData['parent_id'] ?? null,
         ]);
 
+        Cache::forget('meta:categories:v1');
+        Cache::forget('meta:options:v1');
+
         return response()->json([
             'message' => 'Category created successfully',
             'category' => $category,
@@ -567,6 +579,9 @@ class AdminController extends Controller
             'description' => $validatedData['description'] ?? null,
             'level' => $validatedData['level'] ?? 0,
         ]);
+
+        Cache::forget('meta:condition_levels:v1');
+        Cache::forget('meta:options:v1');
 
         return response()->json([
             'message' => 'Condition level created successfully',
@@ -1459,6 +1474,10 @@ class AdminController extends Controller
         }
 
         $dormitory->delete();
+
+        Cache::forget('meta:dormitories:v1');
+        Cache::forget('meta:options:v1');
+        Cache::forget('meta:dormitories:university:'.$dormitory->university_id);
 
         return response()->json([
             'message' => 'Dormitory deleted successfully',

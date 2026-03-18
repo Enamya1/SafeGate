@@ -484,6 +484,37 @@ User Metadata
            "distance_km":...
          }
        ],
+      "exchange_products":[
+        {
+          "exchange_product":{
+            "id":...,
+            "exchange_type":"exchange_only|exchange_or_purchase",
+            "exchange_status":"open",
+            "expiration_date":"...",
+            "target_product_title":"...",
+            "target_product_category":{"id":...,"name":"..."},
+            "target_product_condition":{"id":...,"name":"...","sort_order":...}
+          },
+          "product":{
+            "id":...,
+            "seller_id":...,
+            "dormitory_id":...,
+            "lat":...,
+            "lng":...,
+            "title":"...",
+            "description":"...",
+            "price":...,
+            "currency":"CNY",
+            "status":"available",
+            "created_at":"...",
+            "dormitory":{"id":...,"dormitory_name":"...","domain":"...","address":"...","lat":...,"lng":...,"is_active":true},
+            "category":{"id":...,"name":"...","parent_id":...,"icon":"..."},
+            "condition_level":{"id":...,"name":"...","sort_order":...},
+            "images":[{"id":...,"product_id":...,"image_url":"...","image_thumbnail_url":"...","is_primary":true}],
+            "distance_km":...
+          }
+        }
+      ],
        "meta":{
          "categories":[{"id":...,"name":"...","icon":"..."}],
          "condition_levels":[{"id":...,"name":"...","description":"...","sort_order":...}]

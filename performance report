@@ -1,0 +1,30 @@
+Performance Updates
+
+- Cached full-text index detection for search to avoid repeated information_schema lookups.
+  - File: d:\ty_now\SafeGate\xiaowu\app\Http\Controllers\ProductController.php
+  - Area: buildSearchResultsPayload
+  - Cache key prefix: db:fulltext:
+  - TTL: 3600 seconds
+
+- Cached metadata endpoints to reduce repeat DB scans.
+  - Files:
+    - d:\ty_now\SafeGate\xiaowu\app\Http\Controllers\ProductController.php
+    - d:\ty_now\SafeGate\xiaowu\app\Http\Controllers\AdminController.php
+  - Endpoints:
+    - categories, conditionLevels, tags, metadataOptions, dormitories, dormitoriesByUserUniversity
+  - Cache key prefixes:
+    - meta:categories:v1
+    - meta:condition_levels:v1
+    - meta:tags:v1
+    - meta:options:v1
+    - meta:dormitories:v1
+    - meta:dormitories:university:{id}
+  - TTL: 600 seconds
+
+- Cache invalidation added on data changes to keep metadata fresh.
+  - Trigger points:
+    - createTag (user)
+    - createCategory, createConditionLevel, set_dormitory, updateDormitory, deleteDormitory (admin)
+  - Keys invalidated:
+    - meta:tags:v1, meta:categories:v1, meta:condition_levels:v1, meta:options:v1
+    - meta:dormitories:v1, meta:dormitories:university:{id}

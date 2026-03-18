@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Category;
 use App\Models\ConditionLevel;
 use App\Models\Dormitory;
+use App\Models\ExchangeProduct;
 use App\Models\Product;
 use App\Models\ProductImage;
 use App\Models\ProductTag;
@@ -99,6 +100,12 @@ class UserNearbyProductsTest extends TestCase
             'tag_id' => $tag->id,
         ]);
 
+        $exchangeProduct = ExchangeProduct::create([
+            'product_id' => $nearProduct->id,
+            'exchange_type' => 'exchange_only',
+            'exchange_status' => 'open',
+        ]);
+
         Product::create([
             'seller_id' => $seller->id,
             'dormitory_id' => $farDorm->id,
@@ -127,9 +134,15 @@ class UserNearbyProductsTest extends TestCase
             ->assertJsonPath('products.0.category.id', $category->id)
             ->assertJsonPath('products.0.condition_level.id', $conditionLevel->id)
             ->assertJsonPath('products.0.tags.0.id', $tag->id)
+            ->assertJsonPath('exchange_products.0.exchange_product.id', $exchangeProduct->id)
+            ->assertJsonPath('exchange_products.0.product.id', $nearProduct->id)
+            ->assertJsonPath('exchange_products.0.product.dormitory.id', $nearDorm->id)
+            ->assertJsonPath('exchange_products.0.product.lat', 30.061)
+            ->assertJsonPath('exchange_products.0.product.lng', 31.241)
             ->assertJsonPath('meta.categories.0.id', $category->id)
             ->assertJsonPath('meta.condition_levels.0.id', $conditionLevel->id)
-            ->assertJsonCount(1, 'products');
+            ->assertJsonCount(1, 'products')
+            ->assertJsonCount(1, 'exchange_products');
 
         $distance = $response->json('products.0.distance_km');
         $this->assertIsNumeric($distance);

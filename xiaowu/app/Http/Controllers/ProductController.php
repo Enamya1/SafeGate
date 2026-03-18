@@ -240,18 +240,23 @@ class ProductController extends Controller
             $likePrefix = $queryString.'%';
 
             $isMysql = DB::getDriverName() === 'mysql';
+            $indexCacheSeconds = 3600;
 
-            $hasFulltextIndex = function (string $table, string $index) use ($isMysql): bool {
+            $hasFulltextIndex = function (string $table, string $index) use ($isMysql, $indexCacheSeconds): bool {
                 if (! $isMysql) {
                     return false;
                 }
 
-                $row = DB::selectOne(
-                    "select count(*) as total from information_schema.statistics where table_schema = database() and table_name = ? and index_name = ? and index_type = 'FULLTEXT'",
-                    [$table, $index]
-                );
+                $cacheKey = 'db:fulltext:'.$table.':'.$index;
 
-                return (int) ($row->total ?? 0) > 0;
+                return Cache::remember($cacheKey, $indexCacheSeconds, function () use ($table, $index) {
+                    $row = DB::selectOne(
+                        "select count(*) as total from information_schema.statistics where table_schema = database() and table_name = ? and index_name = ? and index_type = 'FULLTEXT'",
+                        [$table, $index]
+                    );
+
+                    return (int) ($row->total ?? 0) > 0;
+                });
             };
 
             $hasProductsFulltext = $hasFulltextIndex('products', 'products_fulltext');
@@ -539,10 +544,13 @@ class ProductController extends Controller
             ], 403);
         }
 
-        $categories = Category::query()
-            ->select(['id', 'name', 'description', 'logo', 'parent_id'])
-            ->orderBy('id')
-            ->get();
+        $cacheSeconds = 600;
+        $categories = Cache::remember('meta:categories:v1', $cacheSeconds, function () {
+            return Category::query()
+                ->select(['id', 'name', 'description', 'logo', 'parent_id'])
+                ->orderBy('id')
+                ->get();
+        });
 
         return response()->json([
             'message' => 'Categories retrieved successfully',
@@ -560,11 +568,14 @@ class ProductController extends Controller
             ], 403);
         }
 
-        $conditionLevels = ConditionLevel::query()
-            ->select(['id', 'name', 'description', 'sort_order', 'level'])
-            ->orderBy('sort_order')
-            ->orderBy('id')
-            ->get();
+        $cacheSeconds = 600;
+        $conditionLevels = Cache::remember('meta:condition_levels:v1', $cacheSeconds, function () {
+            return ConditionLevel::query()
+                ->select(['id', 'name', 'description', 'sort_order', 'level'])
+                ->orderBy('sort_order')
+                ->orderBy('id')
+                ->get();
+        });
 
         return response()->json([
             'message' => 'Condition levels retrieved successfully',
@@ -582,10 +593,13 @@ class ProductController extends Controller
             ], 403);
         }
 
-        $tags = Tag::query()
-            ->select(['id', 'name'])
-            ->orderBy('id')
-            ->get();
+        $cacheSeconds = 600;
+        $tags = Cache::remember('meta:tags:v1', $cacheSeconds, function () {
+            return Tag::query()
+                ->select(['id', 'name'])
+                ->orderBy('id')
+                ->get();
+        });
 
         return response()->json([
             'message' => 'Tags retrieved successfully',
@@ -603,27 +617,36 @@ class ProductController extends Controller
             ], 403);
         }
 
-        $categories = Category::query()
-            ->select(['id', 'name', 'description', 'logo', 'parent_id'])
-            ->orderBy('id')
-            ->get();
+        $cacheSeconds = 600;
+        $payload = Cache::remember('meta:options:v1', $cacheSeconds, function () {
+            $categories = Category::query()
+                ->select(['id', 'name', 'description', 'logo', 'parent_id'])
+                ->orderBy('id')
+                ->get();
 
-        $conditionLevels = ConditionLevel::query()
-            ->select(['id', 'name', 'description', 'sort_order', 'level'])
-            ->orderBy('sort_order')
-            ->orderBy('id')
-            ->get();
+            $conditionLevels = ConditionLevel::query()
+                ->select(['id', 'name', 'description', 'sort_order', 'level'])
+                ->orderBy('sort_order')
+                ->orderBy('id')
+                ->get();
 
-        $tags = Tag::query()
-            ->select(['id', 'name'])
-            ->orderBy('id')
-            ->get();
+            $tags = Tag::query()
+                ->select(['id', 'name'])
+                ->orderBy('id')
+                ->get();
+
+            return [
+                'categories' => $categories,
+                'condition_levels' => $conditionLevels,
+                'tags' => $tags,
+            ];
+        });
 
         return response()->json([
             'message' => 'Metadata options retrieved successfully',
-            'categories' => $categories,
-            'condition_levels' => $conditionLevels,
-            'tags' => $tags,
+            'categories' => $payload['categories'],
+            'condition_levels' => $payload['condition_levels'],
+            'tags' => $payload['tags'],
         ], 200);
     }
 
@@ -652,6 +675,9 @@ class ProductController extends Controller
             'name' => $validated['name'],
         ]);
 
+        Cache::forget('meta:tags:v1');
+        Cache::forget('meta:options:v1');
+
         return response()->json([
             'message' => 'Tag created successfully',
             'tag' => $tag,
@@ -668,10 +694,13 @@ class ProductController extends Controller
             ], 403);
         }
 
-        $dormitories = Dormitory::query()
-            ->select(['id', 'dormitory_name', 'domain', 'latitude', 'longitude', 'address', 'full_capacity', 'is_active', 'university_id'])
-            ->orderBy('id')
-            ->get();
+        $cacheSeconds = 600;
+        $dormitories = Cache::remember('meta:dormitories:v1', $cacheSeconds, function () {
+            return Dormitory::query()
+                ->select(['id', 'dormitory_name', 'domain', 'latitude', 'longitude', 'address', 'full_capacity', 'is_active', 'university_id'])
+                ->orderBy('id')
+                ->get();
+        });
 
         return response()->json([
             'message' => 'Dormitories retrieved successfully',
@@ -710,11 +739,15 @@ class ProductController extends Controller
             ], 404);
         }
 
-        $dormitories = Dormitory::query()
-            ->select(['id', 'dormitory_name', 'domain', 'latitude', 'longitude', 'address', 'full_capacity', 'is_active', 'university_id'])
-            ->where('university_id', $userDormitory->university_id)
-            ->orderBy('id')
-            ->get();
+        $cacheSeconds = 600;
+        $cacheKey = 'meta:dormitories:university:'.$userDormitory->university_id;
+        $dormitories = Cache::remember($cacheKey, $cacheSeconds, function () use ($userDormitory) {
+            return Dormitory::query()
+                ->select(['id', 'dormitory_name', 'domain', 'latitude', 'longitude', 'address', 'full_capacity', 'is_active', 'university_id'])
+                ->where('university_id', $userDormitory->university_id)
+                ->orderBy('id')
+                ->get();
+        });
 
         return response()->json([
             'message' => 'Dormitories retrieved successfully',
@@ -2265,6 +2298,184 @@ class ProductController extends Controller
             })
             ->values();
 
+        $exchangeQuery = DB::table('exchange_products')
+            ->join('products', 'exchange_products.product_id', '=', 'products.id')
+            ->join('dormitories', 'products.dormitory_id', '=', 'dormitories.id')
+            ->leftJoin('categories as product_categories', 'products.category_id', '=', 'product_categories.id')
+            ->leftJoin('condition_levels as product_conditions', 'products.condition_level_id', '=', 'product_conditions.id')
+            ->leftJoin('categories as target_categories', 'exchange_products.target_product_category_id', '=', 'target_categories.id')
+            ->leftJoin('condition_levels as target_conditions', 'exchange_products.target_product_condition_id', '=', 'target_conditions.id')
+            ->whereNull('products.deleted_at')
+            ->where('products.status', 'available')
+            ->where('exchange_products.exchange_status', 'open')
+            ->whereNotNull('dormitories.latitude')
+            ->whereNotNull('dormitories.longitude')
+            ->whereBetween('dormitories.latitude', [$centerLat - $latRadius, $centerLat + $latRadius])
+            ->whereBetween('dormitories.longitude', [$centerLng - $lngRadius, $centerLng + $lngRadius])
+            ->select([
+                'exchange_products.id as exchange_product_id',
+                'exchange_products.exchange_type',
+                'exchange_products.exchange_status',
+                'exchange_products.expiration_date',
+                'exchange_products.target_product_title',
+                'exchange_products.target_product_category_id',
+                'exchange_products.target_product_condition_id',
+                'products.id as product_id',
+                'products.seller_id',
+                'products.dormitory_id',
+                'products.category_id',
+                'products.condition_level_id',
+                'products.title',
+                'products.description',
+                'products.price',
+                'products.currency',
+                'products.status',
+                'products.created_at',
+                'product_categories.name as product_category_name',
+                'product_categories.parent_id as product_category_parent_id',
+                'product_categories.logo as product_category_icon',
+                'product_conditions.name as product_condition_name',
+                'product_conditions.sort_order as product_condition_sort_order',
+                'dormitories.dormitory_name',
+                'dormitories.domain as dormitory_domain',
+                'dormitories.address as dormitory_address',
+                'dormitories.latitude as dormitory_latitude',
+                'dormitories.longitude as dormitory_longitude',
+                'dormitories.is_active as dormitory_is_active',
+                'target_categories.name as target_category_name',
+                'target_conditions.name as target_condition_name',
+                'target_conditions.sort_order as target_condition_sort_order',
+            ])
+            ->orderByDesc('exchange_products.id');
+
+        $now = now();
+        $exchangeQuery->where(function ($sub) use ($now) {
+            $sub->whereNull('exchange_products.expiration_date')
+                ->orWhere('exchange_products.expiration_date', '>', $now);
+        });
+
+        if (! empty($validated['category_id'])) {
+            $exchangeQuery->where('products.category_id', (int) $validated['category_id']);
+        }
+
+        if (! empty($validated['condition_level_id'])) {
+            $exchangeQuery->where('products.condition_level_id', (int) $validated['condition_level_id']);
+        }
+
+        if (! empty($validated['q'])) {
+            $q = trim((string) $validated['q']);
+            $exchangeQuery->where(function ($inner) use ($q) {
+                $inner
+                    ->where('products.title', 'like', '%'.$q.'%')
+                    ->orWhere('products.description', 'like', '%'.$q.'%')
+                    ->orWhere('exchange_products.target_product_title', 'like', '%'.$q.'%');
+            });
+        }
+
+        if (! empty($validated['location_q'])) {
+            $locationQ = trim((string) $validated['location_q']);
+            $exchangeQuery->where(function ($inner) use ($locationQ) {
+                $inner
+                    ->where('dormitories.dormitory_name', 'like', '%'.$locationQ.'%')
+                    ->orWhere('dormitories.domain', 'like', '%'.$locationQ.'%')
+                    ->orWhere('dormitories.address', 'like', '%'.$locationQ.'%');
+            });
+        }
+
+        $exchangeRows = $exchangeQuery->get();
+
+        $nearbyExchangeRows = $exchangeRows
+            ->map(function ($row) use ($centerLat, $centerLng) {
+                $distance = $this->haversineDistanceKm(
+                    $centerLat,
+                    $centerLng,
+                    (float) $row->dormitory_latitude,
+                    (float) $row->dormitory_longitude
+                );
+                $row->distance_km = round($distance, 3);
+
+                return $row;
+            })
+            ->filter(function ($row) use ($distanceKm) {
+                return (float) $row->distance_km <= $distanceKm;
+            })
+            ->sortBy([
+                ['distance_km', 'asc'],
+                ['exchange_product_id', 'desc'],
+            ])
+            ->values();
+
+        $exchangeProductIds = $nearbyExchangeRows->pluck('product_id')->unique()->values()->all();
+        $exchangeImagesByProductId = collect();
+        if (count($exchangeProductIds) > 0) {
+            $exchangeImagesByProductId = DB::table('product_images')
+                ->whereIn('product_id', $exchangeProductIds)
+                ->orderByDesc('is_primary')
+                ->orderBy('id')
+                ->get()
+                ->groupBy('product_id');
+        }
+
+        $exchangeProductsPayload = $nearbyExchangeRows
+            ->map(function ($row) use ($exchangeImagesByProductId) {
+                $images = $exchangeImagesByProductId->get($row->product_id) ?? collect();
+
+                return [
+                    'exchange_product' => [
+                        'id' => (int) $row->exchange_product_id,
+                        'exchange_type' => $row->exchange_type,
+                        'exchange_status' => $row->exchange_status,
+                        'expiration_date' => $row->expiration_date,
+                        'target_product_title' => $row->target_product_title,
+                        'target_product_category' => $row->target_product_category_id ? [
+                            'id' => (int) $row->target_product_category_id,
+                            'name' => $row->target_category_name,
+                        ] : null,
+                        'target_product_condition' => $row->target_product_condition_id ? [
+                            'id' => (int) $row->target_product_condition_id,
+                            'name' => $row->target_condition_name,
+                            'sort_order' => $row->target_condition_sort_order !== null ? (int) $row->target_condition_sort_order : null,
+                        ] : null,
+                    ],
+                    'product' => [
+                        'id' => (int) $row->product_id,
+                        'seller_id' => (int) $row->seller_id,
+                        'dormitory_id' => (int) $row->dormitory_id,
+                        'lat' => $row->dormitory_latitude !== null ? (float) $row->dormitory_latitude : null,
+                        'lng' => $row->dormitory_longitude !== null ? (float) $row->dormitory_longitude : null,
+                        'title' => $row->title,
+                        'description' => $row->description,
+                        'price' => $row->price !== null ? (float) $row->price : null,
+                        'currency' => strtoupper((string) ($row->currency ?? 'CNY')),
+                        'status' => $row->status,
+                        'created_at' => $row->created_at,
+                        'dormitory' => $row->dormitory_id ? [
+                            'id' => (int) $row->dormitory_id,
+                            'dormitory_name' => $row->dormitory_name,
+                            'domain' => $row->dormitory_domain,
+                            'address' => $row->dormitory_address,
+                            'lat' => $row->dormitory_latitude !== null ? (float) $row->dormitory_latitude : null,
+                            'lng' => $row->dormitory_longitude !== null ? (float) $row->dormitory_longitude : null,
+                            'is_active' => $row->dormitory_is_active !== null ? (bool) $row->dormitory_is_active : null,
+                        ] : null,
+                        'category' => $row->category_id ? [
+                            'id' => (int) $row->category_id,
+                            'name' => $row->product_category_name,
+                            'parent_id' => $row->product_category_parent_id !== null ? (int) $row->product_category_parent_id : null,
+                            'icon' => $row->product_category_icon,
+                        ] : null,
+                        'condition_level' => $row->condition_level_id ? [
+                            'id' => (int) $row->condition_level_id,
+                            'name' => $row->product_condition_name,
+                            'sort_order' => $row->product_condition_sort_order !== null ? (int) $row->product_condition_sort_order : null,
+                        ] : null,
+                        'images' => $images->values(),
+                        'distance_km' => (float) $row->distance_km,
+                    ],
+                ];
+            })
+            ->values();
+
         $metaCategories = $categoriesById
             ->values()
             ->map(function ($category) {
@@ -2296,6 +2507,7 @@ class ProductController extends Controller
             ],
             'distance_km' => $distanceKm,
             'products' => $productsPayload,
+            'exchange_products' => $exchangeProductsPayload,
             'meta' => [
                 'categories' => $metaCategories,
                 'condition_levels' => $metaConditionLevels,
