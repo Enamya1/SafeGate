@@ -1141,7 +1141,7 @@ class UserCreateProductTest extends TestCase
 
         $this->assertDatabaseHas('behavioral_events', [
             'user_id' => $viewer->id,
-            'event_type' => 'click',
+            'event_type' => 'view',
             'product_id' => $product->id,
             'category_id' => $category->id,
             'seller_id' => $seller->id,

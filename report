@@ -1099,7 +1099,15 @@ AI Runtime Config Options
             "seller":{"id":...,"username":"...","profile_picture":"..."},
             "dormitory":{"latitude":...,"longitude":...},
             "condition_level":{"id":...,"name":"...","level":...},
+            "image_url":"...",
             "image_thumbnail_url":"...",
+            "images":[
+              {
+                "image_url":"...",
+                "image_thumbnail_url":"...",
+                "is_primary":true
+              }
+            ],
             "tags":[{"id":...,"name":"..."}]
           }
         }

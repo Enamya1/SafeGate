@@ -1272,7 +1272,7 @@ class ProductController extends Controller
 
         DB::table('behavioral_events')->insert([
             'user_id' => $user->id,
-            'event_type' => 'click',
+            'event_type' => 'view',
             'product_id' => $product->id,
             'category_id' => $product->category_id,
             'seller_id' => $product->seller_id,

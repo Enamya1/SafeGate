@@ -4,14 +4,28 @@ namespace App\Http\Controllers;
 
 use App\Models\ExchangeProduct;
 use App\Models\Product;
+use App\Models\ProductImage;
 use App\Models\ProductTag;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class ExchangeProductController extends Controller
 {
+    private function publicDiskUrl(string $path): string
+    {
+        $baseUrl = (string) config('filesystems.disks.public.url', '');
+        $path = ltrim($path, '/');
+
+        if ($baseUrl === '') {
+            return '/storage/'.$path;
+        }
+
+        return rtrim($baseUrl, '/').'/'.$path;
+    }
+
     private function pythonServiceBaseUrl(): string
     {
         return rtrim((string) env('PYTHON_SERVICE_BASE_URL', 'http://127.0.0.1:8001'), '/');
@@ -320,6 +334,17 @@ class ExchangeProductController extends Controller
             ? 'nullable|integer'
             : 'required|integer|exists:dormitories,id';
 
+        $uploadedImages = $request->file('images');
+        $uploadedThumbnailImages = $request->file('thumbnail_images');
+        $imageUrls = $request->input('image_urls');
+        $imageThumbnailUrls = $request->input('image_thumbnail_urls');
+        $imageRules = [
+            'file',
+            'image',
+            'mimes:jpg,jpeg,png,webp',
+            'max:5120',
+        ];
+
         $rules = [
             'product_id' => 'nullable|integer|exists:products,id',
             'exchange_type' => 'required|string|in:exchange_only,exchange_or_purchase',
@@ -336,7 +361,30 @@ class ExchangeProductController extends Controller
             'dormitory_id' => $dormitoryRule,
             'tag_ids' => 'nullable|array',
             'tag_ids.*' => 'integer|exists:tags,id',
+            'primary_image_index' => 'nullable|integer|min:0',
+            'image_urls' => 'nullable|array|max:6',
+            'image_urls.*' => ['string', 'max:2048', 'regex:/^(https?:\/\/|\/)/'],
+            'image_thumbnail_urls' => 'nullable|array|max:6',
+            'image_thumbnail_urls.*' => ['nullable', 'string', 'max:2048', 'regex:/^(https?:\/\/|\/)/'],
         ];
+
+        if (is_array($uploadedImages)) {
+            $rules['images'] = 'nullable|array|max:6';
+            $rules['images.*'] = implode('|', $imageRules);
+        } elseif ($uploadedImages) {
+            $rules['images'] = implode('|', $imageRules);
+        } else {
+            $rules['images'] = 'nullable';
+        }
+
+        if (is_array($uploadedThumbnailImages)) {
+            $rules['thumbnail_images'] = 'nullable|array|max:6';
+            $rules['thumbnail_images.*'] = implode('|', $imageRules);
+        } elseif ($uploadedThumbnailImages) {
+            $rules['thumbnail_images'] = implode('|', $imageRules);
+        } else {
+            $rules['thumbnail_images'] = 'nullable';
+        }
 
         try {
             $validated = $request->validate($rules);
@@ -345,6 +393,92 @@ class ExchangeProductController extends Controller
                 'message' => 'Validation Error',
                 'errors' => $e->errors(),
             ], 422);
+        }
+
+        $uploadedImages = $request->file('images');
+        $uploadedThumbnailImages = $request->file('thumbnail_images');
+        $imageUrls = $request->input('image_urls');
+        $imageThumbnailUrls = $request->input('image_thumbnail_urls');
+
+        $hasFileImages = $uploadedImages !== null;
+        $hasUrlImages = is_array($imageUrls) && count($imageUrls) > 0;
+
+        if ($hasFileImages && $hasUrlImages) {
+            return response()->json([
+                'message' => 'Validation Error',
+                'errors' => [
+                    'image_urls' => ['The image_urls field cannot be used when uploading images files.'],
+                ],
+            ], 422);
+        }
+
+        if ($hasUrlImages && $uploadedThumbnailImages !== null) {
+            return response()->json([
+                'message' => 'Validation Error',
+                'errors' => [
+                    'thumbnail_images' => ['The thumbnail_images field cannot be used with image_urls.'],
+                ],
+            ], 422);
+        }
+
+        if ($hasFileImages && is_array($imageThumbnailUrls) && count($imageThumbnailUrls) > 0) {
+            return response()->json([
+                'message' => 'Validation Error',
+                'errors' => [
+                    'image_thumbnail_urls' => ['The image_thumbnail_urls field cannot be used when uploading images files.'],
+                ],
+            ], 422);
+        }
+
+        $primaryIndex = (int) ($validated['primary_image_index'] ?? 0);
+        $imagesToStore = [];
+        $thumbnailImagesToStore = [];
+        $imageUrlsToStore = [];
+        $imageThumbnailUrlsToStore = [];
+
+        if ($hasUrlImages) {
+            $imageUrlsToStore = array_values(array_map('strval', $imageUrls));
+            if (is_array($imageThumbnailUrls)) {
+                $imageThumbnailUrlsToStore = array_values(array_map(static fn ($v) => $v === null ? null : (string) $v, $imageThumbnailUrls));
+            }
+
+            if (count($imageThumbnailUrlsToStore) > 0 && count($imageThumbnailUrlsToStore) !== count($imageUrlsToStore)) {
+                return response()->json([
+                    'message' => 'Validation Error',
+                    'errors' => [
+                        'image_thumbnail_urls' => ['The image_thumbnail_urls count must match image_urls count.'],
+                    ],
+                ], 422);
+            }
+
+            if ($primaryIndex < 0 || $primaryIndex >= count($imageUrlsToStore)) {
+                $primaryIndex = 0;
+            }
+        } elseif ($hasFileImages) {
+            $imagesToStore = $request->file('images', []);
+            $thumbnailImagesToStore = $request->file('thumbnail_images', []);
+
+            if (! is_array($imagesToStore)) {
+                $imagesToStore = [$imagesToStore];
+            }
+
+            if (! is_array($thumbnailImagesToStore)) {
+                $thumbnailImagesToStore = [$thumbnailImagesToStore];
+            }
+
+            $thumbnailsProvided = count(array_filter($thumbnailImagesToStore)) > 0;
+            if ($thumbnailsProvided && count($thumbnailImagesToStore) !== count($imagesToStore)) {
+                return response()->json([
+                    'message' => 'Validation Error',
+                    'errors' => [
+                        'thumbnail_images' => ['The thumbnail_images count must match images count.'],
+                    ],
+                ], 422);
+            }
+
+            if ($primaryIndex < 0 || $primaryIndex >= count($imagesToStore)) {
+                $primaryIndex = 0;
+            }
         }
 
         $product = null;
@@ -418,6 +552,53 @@ class ExchangeProductController extends Controller
             'exchange_status' => 'open',
             'expiration_date' => data_get($validated, 'expiration_date'),
         ]);
+
+        if ($hasUrlImages || $hasFileImages) {
+            DB::transaction(function () use ($product, $user, $primaryIndex, $imageUrlsToStore, $imageThumbnailUrlsToStore, $imagesToStore, $thumbnailImagesToStore) {
+                ProductImage::query()
+                    ->where('product_id', $product->id)
+                    ->update(['is_primary' => false]);
+
+                if (count($imageUrlsToStore) > 0) {
+                    foreach ($imageUrlsToStore as $index => $url) {
+                        ProductImage::create([
+                            'product_id' => $product->id,
+                            'image_url' => $url,
+                            'image_thumbnail_url' => $imageThumbnailUrlsToStore[$index] ?? null,
+                            'is_primary' => $index === $primaryIndex,
+                        ]);
+                    }
+
+                    return;
+                }
+
+                foreach ($imagesToStore as $index => $file) {
+                    if (! $file) {
+                        continue;
+                    }
+
+                    $extension = $file->getClientOriginalExtension();
+                    $fileName = (string) Str::uuid().($extension ? '.'.$extension : '');
+                    $path = $file->storePubliclyAs('products/'.$user->id.'/'.$product->id, $fileName, 'public');
+
+                    $thumbnailUrl = null;
+                    $thumbnailFile = $thumbnailImagesToStore[$index] ?? null;
+                    if ($thumbnailFile) {
+                        $thumbnailExtension = $thumbnailFile->getClientOriginalExtension();
+                        $thumbnailFileName = (string) Str::uuid().($thumbnailExtension ? '.'.$thumbnailExtension : '');
+                        $thumbnailPath = $thumbnailFile->storePubliclyAs('products/'.$user->id.'/'.$product->id.'/thumbnails', $thumbnailFileName, 'public');
+                        $thumbnailUrl = $this->publicDiskUrl($thumbnailPath);
+                    }
+
+                    ProductImage::create([
+                        'product_id' => $product->id,
+                        'image_url' => $this->publicDiskUrl($path),
+                        'image_thumbnail_url' => $thumbnailUrl,
+                        'is_primary' => $index === $primaryIndex,
+                    ]);
+                }
+            });
+        }
 
         $images = DB::table('product_images')
             ->where('product_id', $product->id)

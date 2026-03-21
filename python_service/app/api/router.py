@@ -1954,10 +1954,20 @@ def recommend_exchange_products(
     for p in combined:
         pid = int(p["id"])
         imgs = images_by_product.get(pid, [])
+        image_url = None
         image_thumbnail_url = None
         if imgs:
             first = imgs[0]
+            image_url = _resolve_image_url(first.get("image_url"))
             image_thumbnail_url = _resolve_image_url(first.get("image_thumbnail_url"))
+        product_images = [
+            {
+                "image_url": _resolve_image_url(img.get("image_url")),
+                "image_thumbnail_url": _resolve_image_url(img.get("image_thumbnail_url")),
+                "is_primary": bool(img.get("is_primary")),
+            }
+            for img in imgs
+        ]
         seller_profile_picture = _resolve_image_url(p.get("seller__profile_picture"))
 
         expiration_date = p.get("expiration_date")
@@ -2025,7 +2035,9 @@ def recommend_exchange_products(
                 "name": p.get("condition_level__name"),
                 "level": p.get("condition_level__level"),
             },
+            "image_url": image_url,
             "image_thumbnail_url": image_thumbnail_url,
+            "images": product_images,
             "tags": [
                 {"id": t.get("id"), "name": t.get("name")} for t in tag_rows_by_product.get(pid, [])
             ],
