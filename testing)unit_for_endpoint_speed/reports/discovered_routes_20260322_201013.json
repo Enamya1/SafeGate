@@ -1,0 +1,842 @@
+[
+  {
+    "method": "GET",
+    "route_uri": "/api/admin/admins",
+    "resolved_path": "/api/admin/admins",
+    "key": "GET /api/admin/admins",
+    "name": "None"
+  },
+  {
+    "method": "POST",
+    "route_uri": "/api/admin/atomic-transactions/{atomic_id}/rollback",
+    "resolved_path": "/api/admin/atomic-transactions/1/rollback",
+    "key": "POST /api/admin/atomic-transactions/{atomic_id}/rollback",
+    "name": "None"
+  },
+  {
+    "method": "POST",
+    "route_uri": "/api/admin/categories",
+    "resolved_path": "/api/admin/categories",
+    "key": "POST /api/admin/categories",
+    "name": "None"
+  },
+  {
+    "method": "GET",
+    "route_uri": "/api/admin/categories",
+    "resolved_path": "/api/admin/categories",
+    "key": "GET /api/admin/categories",
+    "name": "None"
+  },
+  {
+    "method": "POST",
+    "route_uri": "/api/admin/condition-levels",
+    "resolved_path": "/api/admin/condition-levels",
+    "key": "POST /api/admin/condition-levels",
+    "name": "None"
+  },
+  {
+    "method": "GET",
+    "route_uri": "/api/admin/condition-levels",
+    "resolved_path": "/api/admin/condition-levels",
+    "key": "GET /api/admin/condition-levels",
+    "name": "None"
+  },
+  {
+    "method": "GET",
+    "route_uri": "/api/admin/dormitories",
+    "resolved_path": "/api/admin/dormitories",
+    "key": "GET /api/admin/dormitories",
+    "name": "None"
+  },
+  {
+    "method": "GET",
+    "route_uri": "/api/admin/dormitories/{id}",
+    "resolved_path": "/api/admin/dormitories/1",
+    "key": "GET /api/admin/dormitories/{id}",
+    "name": "None"
+  },
+  {
+    "method": "PATCH",
+    "route_uri": "/api/admin/dormitories/{id}",
+    "resolved_path": "/api/admin/dormitories/1",
+    "key": "PATCH /api/admin/dormitories/{id}",
+    "name": "None"
+  },
+  {
+    "method": "DELETE",
+    "route_uri": "/api/admin/dormitories/{id}",
+    "resolved_path": "/api/admin/dormitories/1",
+    "key": "DELETE /api/admin/dormitories/{id}",
+    "name": "None"
+  },
+  {
+    "method": "GET",
+    "route_uri": "/api/admin/dormitories_and_university_/names",
+    "resolved_path": "/api/admin/dormitories_and_university_/names",
+    "key": "GET /api/admin/dormitories_and_university_/names",
+    "name": "None"
+  },
+  {
+    "method": "GET",
+    "route_uri": "/api/admin/fraud/alerts",
+    "resolved_path": "/api/admin/fraud/alerts",
+    "key": "GET /api/admin/fraud/alerts",
+    "name": "None"
+  },
+  {
+    "method": "PATCH",
+    "route_uri": "/api/admin/fraud/alerts/{alert_id}",
+    "resolved_path": "/api/admin/fraud/alerts/1",
+    "key": "PATCH /api/admin/fraud/alerts/{alert_id}",
+    "name": "None"
+  },
+  {
+    "method": "GET",
+    "route_uri": "/api/admin/get_all_users",
+    "resolved_path": "/api/admin/get_all_users",
+    "key": "GET /api/admin/get_all_users",
+    "name": "None"
+  },
+  {
+    "method": "POST",
+    "route_uri": "/api/admin/ledgers",
+    "resolved_path": "/api/admin/ledgers",
+    "key": "POST /api/admin/ledgers",
+    "name": "None"
+  },
+  {
+    "method": "GET",
+    "route_uri": "/api/admin/ledgers",
+    "resolved_path": "/api/admin/ledgers",
+    "key": "GET /api/admin/ledgers",
+    "name": "None"
+  },
+  {
+    "method": "POST",
+    "route_uri": "/api/admin/ledgers/reconcile",
+    "resolved_path": "/api/admin/ledgers/reconcile",
+    "key": "POST /api/admin/ledgers/reconcile",
+    "name": "None"
+  },
+  {
+    "method": "GET",
+    "route_uri": "/api/admin/ledgers/{ledger_id}",
+    "resolved_path": "/api/admin/ledgers/1",
+    "key": "GET /api/admin/ledgers/{ledger_id}",
+    "name": "None"
+  },
+  {
+    "method": "POST",
+    "route_uri": "/api/admin/ledgers/{ledger_id}/reverse",
+    "resolved_path": "/api/admin/ledgers/1/reverse",
+    "key": "POST /api/admin/ledgers/{ledger_id}/reverse",
+    "name": "None"
+  },
+  {
+    "method": "POST",
+    "route_uri": "/api/admin/login",
+    "resolved_path": "/api/admin/login",
+    "key": "POST /api/admin/login",
+    "name": "None"
+  },
+  {
+    "method": "POST",
+    "route_uri": "/api/admin/logout",
+    "resolved_path": "/api/admin/logout",
+    "key": "POST /api/admin/logout",
+    "name": "None"
+  },
+  {
+    "method": "POST",
+    "route_uri": "/api/admin/messages",
+    "resolved_path": "/api/admin/messages",
+    "key": "POST /api/admin/messages",
+    "name": "None"
+  },
+  {
+    "method": "GET",
+    "route_uri": "/api/admin/messages",
+    "resolved_path": "/api/admin/messages",
+    "key": "GET /api/admin/messages",
+    "name": "None"
+  },
+  {
+    "method": "GET",
+    "route_uri": "/api/admin/products",
+    "resolved_path": "/api/admin/products",
+    "key": "GET /api/admin/products",
+    "name": "None"
+  },
+  {
+    "method": "GET",
+    "route_uri": "/api/admin/products/{product_id}",
+    "resolved_path": "/api/admin/products/1",
+    "key": "GET /api/admin/products/{product_id}",
+    "name": "None"
+  },
+  {
+    "method": "PATCH",
+    "route_uri": "/api/admin/products/{product_id}/block",
+    "resolved_path": "/api/admin/products/1/block",
+    "key": "PATCH /api/admin/products/{product_id}/block",
+    "name": "None"
+  },
+  {
+    "method": "POST",
+    "route_uri": "/api/admin/reversals/{reversal_id}/approve",
+    "resolved_path": "/api/admin/reversals/1/approve",
+    "key": "POST /api/admin/reversals/{reversal_id}/approve",
+    "name": "None"
+  },
+  {
+    "method": "POST",
+    "route_uri": "/api/admin/set_dormitory",
+    "resolved_path": "/api/admin/set_dormitory",
+    "key": "POST /api/admin/set_dormitory",
+    "name": "None"
+  },
+  {
+    "method": "POST",
+    "route_uri": "/api/admin/set_university",
+    "resolved_path": "/api/admin/set_university",
+    "key": "POST /api/admin/set_university",
+    "name": "None"
+  },
+  {
+    "method": "POST",
+    "route_uri": "/api/admin/test",
+    "resolved_path": "/api/admin/test",
+    "key": "POST /api/admin/test",
+    "name": "None"
+  },
+  {
+    "method": "GET",
+    "route_uri": "/api/admin/universities",
+    "resolved_path": "/api/admin/universities",
+    "key": "GET /api/admin/universities",
+    "name": "None"
+  },
+  {
+    "method": "GET",
+    "route_uri": "/api/admin/universities/options",
+    "resolved_path": "/api/admin/universities/options",
+    "key": "GET /api/admin/universities/options",
+    "name": "None"
+  },
+  {
+    "method": "PATCH",
+    "route_uri": "/api/admin/universities/{id}",
+    "resolved_path": "/api/admin/universities/1",
+    "key": "PATCH /api/admin/universities/{id}",
+    "name": "None"
+  },
+  {
+    "method": "GET",
+    "route_uri": "/api/admin/universities/{id}",
+    "resolved_path": "/api/admin/universities/1",
+    "key": "GET /api/admin/universities/{id}",
+    "name": "None"
+  },
+  {
+    "method": "DELETE",
+    "route_uri": "/api/admin/universities/{id}",
+    "resolved_path": "/api/admin/universities/1",
+    "key": "DELETE /api/admin/universities/{id}",
+    "name": "None"
+  },
+  {
+    "method": "GET",
+    "route_uri": "/api/admin/universities/{university_name}/dormitories",
+    "resolved_path": "/api/admin/universities/1/dormitories",
+    "key": "GET /api/admin/universities/{university_name}/dormitories",
+    "name": "None"
+  },
+  {
+    "method": "GET",
+    "route_uri": "/api/admin/users/{id}",
+    "resolved_path": "/api/admin/users/1",
+    "key": "GET /api/admin/users/{id}",
+    "name": "None"
+  },
+  {
+    "method": "PATCH",
+    "route_uri": "/api/admin/users/{id}",
+    "resolved_path": "/api/admin/users/1",
+    "key": "PATCH /api/admin/users/{id}",
+    "name": "None"
+  },
+  {
+    "method": "PATCH",
+    "route_uri": "/api/admin/users/{id}/activate",
+    "resolved_path": "/api/admin/users/1/activate",
+    "key": "PATCH /api/admin/users/{id}/activate",
+    "name": "None"
+  },
+  {
+    "method": "PATCH",
+    "route_uri": "/api/admin/users/{id}/deactivate",
+    "resolved_path": "/api/admin/users/1/deactivate",
+    "key": "PATCH /api/admin/users/{id}/deactivate",
+    "name": "None"
+  },
+  {
+    "method": "GET",
+    "route_uri": "/api/admin/wallets/freeze-requests",
+    "resolved_path": "/api/admin/wallets/freeze-requests",
+    "key": "GET /api/admin/wallets/freeze-requests",
+    "name": "None"
+  },
+  {
+    "method": "POST",
+    "route_uri": "/api/admin/wallets/freeze-requests/{request_id}/approve",
+    "resolved_path": "/api/admin/wallets/freeze-requests/1/approve",
+    "key": "POST /api/admin/wallets/freeze-requests/{request_id}/approve",
+    "name": "None"
+  },
+  {
+    "method": "POST",
+    "route_uri": "/api/admin/wallets/{wallet_id}/freeze",
+    "resolved_path": "/api/admin/wallets/1/freeze",
+    "key": "POST /api/admin/wallets/{wallet_id}/freeze",
+    "name": "None"
+  },
+  {
+    "method": "POST",
+    "route_uri": "/api/admin/wallets/{wallet_id}/unfreeze",
+    "resolved_path": "/api/admin/wallets/1/unfreeze",
+    "key": "POST /api/admin/wallets/{wallet_id}/unfreeze",
+    "name": "None"
+  },
+  {
+    "method": "GET",
+    "route_uri": "/api/ai/history",
+    "resolved_path": "/api/ai/history",
+    "key": "GET /api/ai/history",
+    "name": "None"
+  },
+  {
+    "method": "DELETE",
+    "route_uri": "/api/ai/history/{session_id}",
+    "resolved_path": "/api/ai/history/00000000-0000-0000-0000-000000000001",
+    "key": "DELETE /api/ai/history/{session_id}",
+    "name": "None"
+  },
+  {
+    "method": "PATCH",
+    "route_uri": "/api/ai/history/{session_id}/rename",
+    "resolved_path": "/api/ai/history/00000000-0000-0000-0000-000000000001/rename",
+    "key": "PATCH /api/ai/history/{session_id}/rename",
+    "name": "None"
+  },
+  {
+    "method": "POST",
+    "route_uri": "/api/ai/sessions",
+    "resolved_path": "/api/ai/sessions",
+    "key": "POST /api/ai/sessions",
+    "name": "None"
+  },
+  {
+    "method": "POST",
+    "route_uri": "/api/ai/sessions/{session_id}/messages",
+    "resolved_path": "/api/ai/sessions/00000000-0000-0000-0000-000000000001/messages",
+    "key": "POST /api/ai/sessions/{session_id}/messages",
+    "name": "None"
+  },
+  {
+    "method": "GET",
+    "route_uri": "/api/ai/sessions/{session_id}/messages",
+    "resolved_path": "/api/ai/sessions/00000000-0000-0000-0000-000000000001/messages",
+    "key": "GET /api/ai/sessions/{session_id}/messages",
+    "name": "None"
+  },
+  {
+    "method": "POST",
+    "route_uri": "/api/atomic-transactions",
+    "resolved_path": "/api/atomic-transactions",
+    "key": "POST /api/atomic-transactions",
+    "name": "None"
+  },
+  {
+    "method": "GET",
+    "route_uri": "/api/atomic-transactions/{atomic_id}",
+    "resolved_path": "/api/atomic-transactions/1",
+    "key": "GET /api/atomic-transactions/{atomic_id}",
+    "name": "None"
+  },
+  {
+    "method": "GET",
+    "route_uri": "/api/atomic-transactions/{atomic_id}/verify",
+    "resolved_path": "/api/atomic-transactions/1/verify",
+    "key": "GET /api/atomic-transactions/{atomic_id}/verify",
+    "name": "None"
+  },
+  {
+    "method": "GET",
+    "route_uri": "/api/exchange-products",
+    "resolved_path": "/api/exchange-products",
+    "key": "GET /api/exchange-products",
+    "name": "None"
+  },
+  {
+    "method": "POST",
+    "route_uri": "/api/exchange-products",
+    "resolved_path": "/api/exchange-products",
+    "key": "POST /api/exchange-products",
+    "name": "None"
+  },
+  {
+    "method": "GET",
+    "route_uri": "/api/exchange-products/recommendations",
+    "resolved_path": "/api/exchange-products/recommendations",
+    "key": "GET /api/exchange-products/recommendations",
+    "name": "None"
+  },
+  {
+    "method": "GET",
+    "route_uri": "/api/exchange-products/{id}",
+    "resolved_path": "/api/exchange-products/1",
+    "key": "GET /api/exchange-products/{id}",
+    "name": "None"
+  },
+  {
+    "method": "POST",
+    "route_uri": "/api/exchange-transactions",
+    "resolved_path": "/api/exchange-transactions",
+    "key": "POST /api/exchange-transactions",
+    "name": "None"
+  },
+  {
+    "method": "GET",
+    "route_uri": "/api/exchange-transactions/user/{userId}",
+    "resolved_path": "/api/exchange-transactions/user/1",
+    "key": "GET /api/exchange-transactions/user/{userId}",
+    "name": "None"
+  },
+  {
+    "method": "GET",
+    "route_uri": "/api/exchange-transactions/{id}/messages",
+    "resolved_path": "/api/exchange-transactions/1/messages",
+    "key": "GET /api/exchange-transactions/{id}/messages",
+    "name": "None"
+  },
+  {
+    "method": "POST",
+    "route_uri": "/api/exchange-transactions/{id}/messages",
+    "resolved_path": "/api/exchange-transactions/1/messages",
+    "key": "POST /api/exchange-transactions/{id}/messages",
+    "name": "None"
+  },
+  {
+    "method": "PUT",
+    "route_uri": "/api/exchange-transactions/{id}/status",
+    "resolved_path": "/api/exchange-transactions/1/status",
+    "key": "PUT /api/exchange-transactions/{id}/status",
+    "name": "None"
+  },
+  {
+    "method": "GET",
+    "route_uri": "/api/health-check",
+    "resolved_path": "/api/health-check",
+    "key": "GET /api/health-check",
+    "name": "None"
+  },
+  {
+    "method": "POST",
+    "route_uri": "/api/user/behavioral_events",
+    "resolved_path": "/api/user/behavioral_events",
+    "key": "POST /api/user/behavioral_events",
+    "name": "None"
+  },
+  {
+    "method": "GET",
+    "route_uri": "/api/user/exchange-products",
+    "resolved_path": "/api/user/exchange-products",
+    "key": "GET /api/user/exchange-products",
+    "name": "None"
+  },
+  {
+    "method": "POST",
+    "route_uri": "/api/user/exchange-products",
+    "resolved_path": "/api/user/exchange-products",
+    "key": "POST /api/user/exchange-products",
+    "name": "None"
+  },
+  {
+    "method": "GET",
+    "route_uri": "/api/user/exchange-products/recommendations",
+    "resolved_path": "/api/user/exchange-products/recommendations",
+    "key": "GET /api/user/exchange-products/recommendations",
+    "name": "None"
+  },
+  {
+    "method": "GET",
+    "route_uri": "/api/user/exchange-products/{id}",
+    "resolved_path": "/api/user/exchange-products/1",
+    "key": "GET /api/user/exchange-products/{id}",
+    "name": "None"
+  },
+  {
+    "method": "POST",
+    "route_uri": "/api/user/favorites",
+    "resolved_path": "/api/user/favorites",
+    "key": "POST /api/user/favorites",
+    "name": "None"
+  },
+  {
+    "method": "GET",
+    "route_uri": "/api/user/get_favorites",
+    "resolved_path": "/api/user/get_favorites",
+    "key": "GET /api/user/get_favorites",
+    "name": "None"
+  },
+  {
+    "method": "GET",
+    "route_uri": "/api/user/get_product/{product_id}",
+    "resolved_path": "/api/user/get_product/1",
+    "key": "GET /api/user/get_product/{product_id}",
+    "name": "None"
+  },
+  {
+    "method": "POST",
+    "route_uri": "/api/user/login",
+    "resolved_path": "/api/user/login",
+    "key": "POST /api/user/login",
+    "name": "None"
+  },
+  {
+    "method": "POST",
+    "route_uri": "/api/user/logout",
+    "resolved_path": "/api/user/logout",
+    "key": "POST /api/user/logout",
+    "name": "None"
+  },
+  {
+    "method": "GET",
+    "route_uri": "/api/user/me",
+    "resolved_path": "/api/user/me",
+    "key": "GET /api/user/me",
+    "name": "None"
+  },
+  {
+    "method": "POST",
+    "route_uri": "/api/user/messages",
+    "resolved_path": "/api/user/messages",
+    "key": "POST /api/user/messages",
+    "name": "None"
+  },
+  {
+    "method": "GET",
+    "route_uri": "/api/user/messages",
+    "resolved_path": "/api/user/messages",
+    "key": "GET /api/user/messages",
+    "name": "None"
+  },
+  {
+    "method": "GET",
+    "route_uri": "/api/user/messages/contacts",
+    "resolved_path": "/api/user/messages/contacts",
+    "key": "GET /api/user/messages/contacts",
+    "name": "None"
+  },
+  {
+    "method": "GET",
+    "route_uri": "/api/user/messages/notification",
+    "resolved_path": "/api/user/messages/notification",
+    "key": "GET /api/user/messages/notification",
+    "name": "None"
+  },
+  {
+    "method": "GET",
+    "route_uri": "/api/user/meta/categories",
+    "resolved_path": "/api/user/meta/categories",
+    "key": "GET /api/user/meta/categories",
+    "name": "None"
+  },
+  {
+    "method": "GET",
+    "route_uri": "/api/user/meta/condition-levels",
+    "resolved_path": "/api/user/meta/condition-levels",
+    "key": "GET /api/user/meta/condition-levels",
+    "name": "None"
+  },
+  {
+    "method": "GET",
+    "route_uri": "/api/user/meta/dormitories",
+    "resolved_path": "/api/user/meta/dormitories",
+    "key": "GET /api/user/meta/dormitories",
+    "name": "None"
+  },
+  {
+    "method": "GET",
+    "route_uri": "/api/user/meta/dormitories/by-university",
+    "resolved_path": "/api/user/meta/dormitories/by-university",
+    "key": "GET /api/user/meta/dormitories/by-university",
+    "name": "None"
+  },
+  {
+    "method": "GET",
+    "route_uri": "/api/user/meta/options",
+    "resolved_path": "/api/user/meta/options",
+    "key": "GET /api/user/meta/options",
+    "name": "None"
+  },
+  {
+    "method": "GET",
+    "route_uri": "/api/user/meta/tags",
+    "resolved_path": "/api/user/meta/tags",
+    "key": "GET /api/user/meta/tags",
+    "name": "None"
+  },
+  {
+    "method": "GET",
+    "route_uri": "/api/user/nearby",
+    "resolved_path": "/api/user/nearby",
+    "key": "GET /api/user/nearby",
+    "name": "None"
+  },
+  {
+    "method": "POST",
+    "route_uri": "/api/user/products",
+    "resolved_path": "/api/user/products",
+    "key": "POST /api/user/products",
+    "name": "None"
+  },
+  {
+    "method": "GET",
+    "route_uri": "/api/user/products",
+    "resolved_path": "/api/user/products",
+    "key": "GET /api/user/products",
+    "name": "None"
+  },
+  {
+    "method": "GET",
+    "route_uri": "/api/user/products/by-category/{category_name}",
+    "resolved_path": "/api/user/products/by-category/1",
+    "key": "GET /api/user/products/by-category/{category_name}",
+    "name": "None"
+  },
+  {
+    "method": "GET",
+    "route_uri": "/api/user/products/by-tag/{tag_name}",
+    "resolved_path": "/api/user/products/by-tag/1",
+    "key": "GET /api/user/products/by-tag/{tag_name}",
+    "name": "None"
+  },
+  {
+    "method": "GET",
+    "route_uri": "/api/user/products/cards",
+    "resolved_path": "/api/user/products/cards",
+    "key": "GET /api/user/products/cards",
+    "name": "None"
+  },
+  {
+    "method": "PATCH",
+    "route_uri": "/api/user/products/{product_id}",
+    "resolved_path": "/api/user/products/1",
+    "key": "PATCH /api/user/products/{product_id}",
+    "name": "None"
+  },
+  {
+    "method": "GET",
+    "route_uri": "/api/user/products/{product_id}/edit",
+    "resolved_path": "/api/user/products/1/edit",
+    "key": "GET /api/user/products/{product_id}/edit",
+    "name": "None"
+  },
+  {
+    "method": "GET",
+    "route_uri": "/api/user/products/{product_id}/engagement",
+    "resolved_path": "/api/user/products/1/engagement",
+    "key": "GET /api/user/products/{product_id}/engagement",
+    "name": "None"
+  },
+  {
+    "method": "POST",
+    "route_uri": "/api/user/products/{product_id}/images",
+    "resolved_path": "/api/user/products/1/images",
+    "key": "POST /api/user/products/{product_id}/images",
+    "name": "None"
+  },
+  {
+    "method": "PATCH",
+    "route_uri": "/api/user/products/{product_id}/mark-sold",
+    "resolved_path": "/api/user/products/1/mark-sold",
+    "key": "PATCH /api/user/products/{product_id}/mark-sold",
+    "name": "None"
+  },
+  {
+    "method": "GET",
+    "route_uri": "/api/user/search/products",
+    "resolved_path": "/api/user/search/products",
+    "key": "GET /api/user/search/products",
+    "name": "None"
+  },
+  {
+    "method": "GET",
+    "route_uri": "/api/user/search/products/suggestions",
+    "resolved_path": "/api/user/search/products/suggestions",
+    "key": "GET /api/user/search/products/suggestions",
+    "name": "None"
+  },
+  {
+    "method": "POST",
+    "route_uri": "/api/user/search/visual",
+    "resolved_path": "/api/user/search/visual",
+    "key": "POST /api/user/search/visual",
+    "name": "None"
+  },
+  {
+    "method": "GET",
+    "route_uri": "/api/user/sellers/{seller_id}",
+    "resolved_path": "/api/user/sellers/1",
+    "key": "GET /api/user/sellers/{seller_id}",
+    "name": "None"
+  },
+  {
+    "method": "PATCH",
+    "route_uri": "/api/user/settings",
+    "resolved_path": "/api/user/settings",
+    "key": "PATCH /api/user/settings",
+    "name": "None"
+  },
+  {
+    "method": "GET",
+    "route_uri": "/api/user/settings/language",
+    "resolved_path": "/api/user/settings/language",
+    "key": "GET /api/user/settings/language",
+    "name": "None"
+  },
+  {
+    "method": "GET",
+    "route_uri": "/api/user/settings/profile-picture",
+    "resolved_path": "/api/user/settings/profile-picture",
+    "key": "GET /api/user/settings/profile-picture",
+    "name": "None"
+  },
+  {
+    "method": "PATCH",
+    "route_uri": "/api/user/settings/university",
+    "resolved_path": "/api/user/settings/university",
+    "key": "PATCH /api/user/settings/university",
+    "name": "None"
+  },
+  {
+    "method": "GET",
+    "route_uri": "/api/user/settings/university-options",
+    "resolved_path": "/api/user/settings/university-options",
+    "key": "GET /api/user/settings/university-options",
+    "name": "None"
+  },
+  {
+    "method": "POST",
+    "route_uri": "/api/user/signup",
+    "resolved_path": "/api/user/signup",
+    "key": "POST /api/user/signup",
+    "name": "None"
+  },
+  {
+    "method": "POST",
+    "route_uri": "/api/user/tags",
+    "resolved_path": "/api/user/tags",
+    "key": "POST /api/user/tags",
+    "name": "None"
+  },
+  {
+    "method": "POST",
+    "route_uri": "/api/wallets",
+    "resolved_path": "/api/wallets",
+    "key": "POST /api/wallets",
+    "name": "None"
+  },
+  {
+    "method": "GET",
+    "route_uri": "/api/wallets",
+    "resolved_path": "/api/wallets",
+    "key": "GET /api/wallets",
+    "name": "None"
+  },
+  {
+    "method": "POST",
+    "route_uri": "/api/wallets/transfer",
+    "resolved_path": "/api/wallets/transfer",
+    "key": "POST /api/wallets/transfer",
+    "name": "None"
+  },
+  {
+    "method": "GET",
+    "route_uri": "/api/wallets/{wallet_id}",
+    "resolved_path": "/api/wallets/1",
+    "key": "GET /api/wallets/{wallet_id}",
+    "name": "None"
+  },
+  {
+    "method": "PATCH",
+    "route_uri": "/api/wallets/{wallet_id}",
+    "resolved_path": "/api/wallets/1",
+    "key": "PATCH /api/wallets/{wallet_id}",
+    "name": "None"
+  },
+  {
+    "method": "POST",
+    "route_uri": "/api/wallets/{wallet_id}/close",
+    "resolved_path": "/api/wallets/1/close",
+    "key": "POST /api/wallets/{wallet_id}/close",
+    "name": "None"
+  },
+  {
+    "method": "POST",
+    "route_uri": "/api/wallets/{wallet_id}/open",
+    "resolved_path": "/api/wallets/1/open",
+    "key": "POST /api/wallets/{wallet_id}/open",
+    "name": "None"
+  },
+  {
+    "method": "GET",
+    "route_uri": "/api/wallets/{wallet_id}/status-history",
+    "resolved_path": "/api/wallets/1/status-history",
+    "key": "GET /api/wallets/{wallet_id}/status-history",
+    "name": "None"
+  },
+  {
+    "method": "POST",
+    "route_uri": "/api/wallets/{wallet_id}/status-requests",
+    "resolved_path": "/api/wallets/1/status-requests",
+    "key": "POST /api/wallets/{wallet_id}/status-requests",
+    "name": "None"
+  },
+  {
+    "method": "POST",
+    "route_uri": "/api/wallets/{wallet_id}/top-up",
+    "resolved_path": "/api/wallets/1/top-up",
+    "key": "POST /api/wallets/{wallet_id}/top-up",
+    "name": "None"
+  },
+  {
+    "method": "GET",
+    "route_uri": "/api/wallets/{wallet_id}/transactions",
+    "resolved_path": "/api/wallets/1/transactions",
+    "key": "GET /api/wallets/{wallet_id}/transactions",
+    "name": "None"
+  },
+  {
+    "method": "POST",
+    "route_uri": "/api/wallets/{wallet_id}/withdraw",
+    "resolved_path": "/api/wallets/1/withdraw",
+    "key": "POST /api/wallets/{wallet_id}/withdraw",
+    "name": "None"
+  },
+  {
+    "method": "GET",
+    "route_uri": "/storage/{path}",
+    "resolved_path": "/storage/1",
+    "key": "GET /storage/{path}",
+    "name": "storage.local"
+  },
+  {
+    "method": "GET",
+    "route_uri": "/up",
+    "resolved_path": "/up",
+    "key": "GET /up",
+    "name": "None"
+  }
+]

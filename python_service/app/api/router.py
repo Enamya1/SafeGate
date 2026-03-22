@@ -624,10 +624,37 @@ def _infer_function(
     user_dormitory_id: Optional[int],
 ) -> Tuple[str, Dict[str, Any], List[Dict[str, Any]]]:
     category_names = _load_category_names(conn)
-    category_name = _infer_category_name(message, category_names)
+    normalized = _normalize_text(message)
+    product_keywords = {
+        "find",
+        "search",
+        "buy",
+        "sell",
+        "price",
+        "cheap",
+        "budget",
+        "recommend",
+        "suggest",
+        "product",
+        "item",
+        "similar",
+        "detail",
+        "about",
+        "laptop",
+        "phone",
+        "book",
+        "keyboard",
+        "exchange",
+    }
+    has_product_keyword = any(re.search(rf"\b{re.escape(keyword)}\b", normalized) for keyword in product_keywords)
+    has_category_hint = any(re.search(rf"\b{re.escape(_normalize_text(name))}\b", normalized) for name in category_names)
     product_id = _extract_product_id(message)
     price_cap = _extract_price_cap(message)
-    normalized = _normalize_text(message)
+
+    if not has_product_keyword and not has_category_hint and product_id is None and price_cap is None:
+        return "general_chat", {}, []
+
+    category_name = _infer_category_name(message, category_names)
 
     if "similar" in normalized and product_id is not None:
         args = {"product_id": product_id, "limit": 10}
@@ -783,24 +810,36 @@ def ai_respond(
     if ai_key:
         try:
             manager = AIModelManager()
-            ai_result = manager.generate(
-                user_prompt=(
-                    f"User request: {message}\n"
-                    f"Function executed: {function_name}\n"
-                    f"Function arguments: {json.dumps(function_arguments, ensure_ascii=False)}\n"
-                    f"Result JSON: {json.dumps(products[:10], ensure_ascii=False)}"
-                ),
-                system_prompt=(
-                    "You are a shopping assistant for XiaoWu. "
-                    "Use only the provided function result. "
-                    "Be concise and helpful."
-                ),
-            )
+            if function_name == "general_chat":
+                ai_result = manager.generate(
+                    user_prompt=message,
+                    system_prompt=(
+                        "You are XiaoWu assistant. "
+                        "Answer normal questions clearly and concisely. "
+                        "If the user asks to find products, ask for product details like budget, category, or keywords."
+                    ),
+                )
+            else:
+                ai_result = manager.generate(
+                    user_prompt=(
+                        f"User request: {message}\n"
+                        f"Function executed: {function_name}\n"
+                        f"Function arguments: {json.dumps(function_arguments, ensure_ascii=False)}\n"
+                        f"Result JSON: {json.dumps(products[:10], ensure_ascii=False)}"
+                    ),
+                    system_prompt=(
+                        "You are a shopping assistant for XiaoWu. "
+                        "Use only the provided function result. "
+                        "Be concise and helpful."
+                    ),
+                )
             ai_content = ai_result.get("content")
             if isinstance(ai_content, str) and ai_content.strip():
                 response_text = ai_content.strip()
         except Exception:
             pass
+    elif function_name == "general_chat":
+        response_text = "I can help with general questions and product search. Tell me what you need."
 
     prompt_tokens = max(1, len(message.split()))
     completion_tokens = max(1, len(response_text.split()))

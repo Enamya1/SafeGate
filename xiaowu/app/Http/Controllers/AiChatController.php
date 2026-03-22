@@ -12,6 +12,209 @@ use Illuminate\Validation\ValidationException;
 
 class AiChatController extends Controller
 {
+    private function defaultSessionTitleFromMessage(string $message): string
+    {
+        $normalized = preg_replace('/\s+/u', ' ', trim($message));
+        $normalized = is_string($normalized) ? $normalized : '';
+
+        if ($normalized === '') {
+            return 'New Chat';
+        }
+
+        $title = Str::limit($normalized, 80, '');
+        $title = rtrim($title, " \t\n\r\0\x0B.,!?;:-");
+
+        if ($title === '') {
+            return 'New Chat';
+        }
+
+        return Str::limit($title, 80);
+    }
+
+    public function listHistory(Request $request)
+    {
+        $user = $request->user();
+
+        if (($user->role ?? 'user') !== 'user') {
+            return response()->json([
+                'message' => 'Unauthorized: Only users can access this endpoint.',
+            ], 403);
+        }
+
+        try {
+            $validated = $request->validate([
+                'page' => 'nullable|integer|min:1',
+                'page_size' => 'nullable|integer|min:1|max:50',
+                'include_messages' => 'nullable|boolean',
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation Error',
+                'errors' => $e->errors(),
+            ], 422);
+        }
+
+        $page = (int) ($validated['page'] ?? 1);
+        $pageSize = (int) ($validated['page_size'] ?? 20);
+        $includeMessages = (bool) ($validated['include_messages'] ?? true);
+
+        $paginator = AiChatSession::query()
+            ->where('user_id', $user->id)
+            ->orderByDesc('updated_at')
+            ->orderByDesc('id')
+            ->paginate($pageSize, ['*'], 'page', $page);
+
+        $sessions = $paginator->getCollection()->values();
+        $sessionIds = $sessions->pluck('id')->all();
+
+        $messageCountsBySession = collect();
+        $latestMessagesBySession = collect();
+        $messagesBySession = collect();
+
+        if (count($sessionIds) > 0) {
+            $messageCountsBySession = AiChatMessage::query()
+                ->whereIn('session_id', $sessionIds)
+                ->selectRaw('session_id, COUNT(*) as total_messages')
+                ->groupBy('session_id')
+                ->pluck('total_messages', 'session_id');
+
+            $latestMessagesBySession = AiChatMessage::query()
+                ->whereIn('session_id', $sessionIds)
+                ->orderByDesc('id')
+                ->get([
+                    'session_id',
+                    'message_type',
+                    'content_type',
+                    'content',
+                    'created_at',
+                ])
+                ->groupBy('session_id')
+                ->map(fn ($group) => $group->first());
+
+            if ($includeMessages) {
+                $messagesBySession = AiChatMessage::query()
+                    ->whereIn('session_id', $sessionIds)
+                    ->orderBy('id')
+                    ->get([
+                        'id',
+                        'session_id',
+                        'message_type',
+                        'content_type',
+                        'content',
+                        'function_name',
+                        'function_arguments',
+                        'function_response',
+                        'tokens_used',
+                        'audio_duration_seconds',
+                        'created_at',
+                    ])
+                    ->groupBy('session_id');
+            }
+        }
+
+        $history = $sessions->map(function (AiChatSession $session) use ($messageCountsBySession, $latestMessagesBySession, $messagesBySession, $includeMessages) {
+            $latestMessage = $latestMessagesBySession->get($session->id);
+
+            return [
+                'session_id' => $session->session_uuid,
+                'title' => $session->title,
+                'provider' => $session->provider,
+                'model' => $session->model,
+                'created_at' => $session->created_at,
+                'updated_at' => $session->updated_at,
+                'total_messages' => (int) ($messageCountsBySession->get($session->id) ?? 0),
+                'latest_message' => $latestMessage ? [
+                    'message_type' => $latestMessage->message_type,
+                    'content_type' => $latestMessage->content_type,
+                    'content' => $latestMessage->content,
+                    'created_at' => $latestMessage->created_at,
+                ] : null,
+                'messages' => $includeMessages ? ($messagesBySession->get($session->id, collect())->values()) : [],
+            ];
+        })->values();
+
+        return response()->json([
+            'message' => 'Chat history retrieved successfully',
+            'page' => $paginator->currentPage(),
+            'page_size' => $paginator->perPage(),
+            'total' => $paginator->total(),
+            'total_pages' => $paginator->lastPage(),
+            'history' => $history,
+        ], 200);
+    }
+
+    public function deleteHistory(Request $request, string $sessionId)
+    {
+        $user = $request->user();
+
+        if (($user->role ?? 'user') !== 'user') {
+            return response()->json([
+                'message' => 'Unauthorized: Only users can access this endpoint.',
+            ], 403);
+        }
+
+        $session = AiChatSession::query()
+            ->where('session_uuid', $sessionId)
+            ->where('user_id', $user->id)
+            ->first();
+
+        if (! $session) {
+            return response()->json([
+                'message' => 'Session not found.',
+            ], 404);
+        }
+
+        $deletedSessionId = $session->session_uuid;
+        $session->delete();
+
+        return response()->json([
+            'message' => 'Chat history deleted successfully',
+            'session_id' => $deletedSessionId,
+        ], 200);
+    }
+
+    public function renameHistory(Request $request, string $sessionId)
+    {
+        $user = $request->user();
+
+        if (($user->role ?? 'user') !== 'user') {
+            return response()->json([
+                'message' => 'Unauthorized: Only users can access this endpoint.',
+            ], 403);
+        }
+
+        try {
+            $validated = $request->validate([
+                'title' => 'required|string|max:255',
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation Error',
+                'errors' => $e->errors(),
+            ], 422);
+        }
+
+        $session = AiChatSession::query()
+            ->where('session_uuid', $sessionId)
+            ->where('user_id', $user->id)
+            ->first();
+
+        if (! $session) {
+            return response()->json([
+                'message' => 'Session not found.',
+            ], 404);
+        }
+
+        $session->title = $validated['title'];
+        $session->save();
+
+        return response()->json([
+            'message' => 'Chat title updated successfully',
+            'session_id' => $session->session_uuid,
+            'title' => $session->title,
+        ], 200);
+    }
+
     public function createSession(Request $request)
     {
         $user = $request->user();
@@ -98,6 +301,11 @@ class AiChatController extends Controller
             'response_ms' => null,
             'metadata' => null,
         ]);
+
+        if (trim((string) ($session->title ?? '')) === '') {
+            $session->title = $this->defaultSessionTitleFromMessage($validated['message']);
+            $session->save();
+        }
 
         $serviceUrl = rtrim(env('PYTHON_SERVICE_BASE_URL', 'http://127.0.0.1:8001'), '/');
         $pythonTimeoutSeconds = (int) env('PYTHON_SERVICE_TIMEOUT_SECONDS', 45);

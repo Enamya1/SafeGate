@@ -928,11 +928,62 @@ AI Chat
    - Auth: auth:sanctum, role=user
    - Request body:
      - title (nullable string, max 255)
+   - Behavior:
+     - If title is empty, the first user message sets a default chat title based on that conversation text.
    - Response 201: {"session_id":"<uuid>","expires_at":"<iso8601>"}
    - Response 403: {"message":"Unauthorized: Only users can access this endpoint."}
    - Response 422: {"message":"Validation Error","errors":{...}}
 
-52) POST /api/ai/sessions/{session_id}/messages
+52) GET /api/ai/history
+  - Auth: auth:sanctum, role=user
+  - Query params:
+    - page (optional integer, default 1)
+    - page_size (optional integer, default 20, min 1, max 50)
+    - include_messages (optional boolean, default true)
+  - Response 200:
+    {
+      "message":"Chat history retrieved successfully",
+      "page":1,
+      "page_size":20,
+      "total":2,
+      "total_pages":1,
+      "history":[
+        {
+          "session_id":"<uuid>",
+          "title":"...",
+          "provider":"qwen",
+          "model":"qwen-plus",
+          "created_at":"...",
+          "updated_at":"...",
+          "total_messages":2,
+          "latest_message":{"message_type":"assistant","content_type":"text","content":"...","created_at":"..."},
+          "messages":[...]
+        }
+      ]
+    }
+  - Response 403: {"message":"Unauthorized: Only users can access this endpoint."}
+  - Response 422: {"message":"Validation Error","errors":{...}}
+
+53) DELETE /api/ai/history/{session_id}
+  - Auth: auth:sanctum, role=user
+  - Path params:
+    - session_id (required uuid)
+  - Response 200: {"message":"Chat history deleted successfully","session_id":"<uuid>"}
+  - Response 404: {"message":"Session not found."}
+  - Response 403: {"message":"Unauthorized: Only users can access this endpoint."}
+
+53a) PATCH /api/ai/history/{session_id}/rename
+  - Auth: auth:sanctum, role=user
+  - Path params:
+    - session_id (required uuid)
+  - Request body:
+    - title (required string, max 255)
+  - Response 200: {"message":"Chat title updated successfully","session_id":"<uuid>","title":"..."}
+  - Response 404: {"message":"Session not found."}
+  - Response 403: {"message":"Unauthorized: Only users can access this endpoint."}
+  - Response 422: {"message":"Validation Error","errors":{...}}
+
+53b) POST /api/ai/sessions/{session_id}/messages
    - Auth: auth:sanctum, role=user
    - Path params:
      - session_id (required uuid from create session)
@@ -945,7 +996,7 @@ AI Chat
    - Response 422: {"message":"Validation Error","errors":{...}}
    - Response 502: {"message":"AI service unavailable."}
 
-53) GET /api/ai/sessions/{session_id}/messages
+54) GET /api/ai/sessions/{session_id}/messages
    - Auth: auth:sanctum, role=user
    - Path params:
      - session_id (required uuid)
@@ -953,7 +1004,7 @@ AI Chat
    - Response 404: {"message":"Session not found."}
    - Response 403: {"message":"Unauthorized: Only users can access this endpoint."}
 
-54) POST /api/ai/respond
+54a) POST /api/ai/respond
    - Service: python_service endpoint called by Laravel
    - Headers:
      - Authorization: Bearer <Laravel token> (required)
@@ -963,12 +1014,15 @@ AI Chat
    - Response 200:
      {
        "response":"...",
-       "function_calls":[{"name":"search_products|search_by_price|search_by_category|get_product|get_similar_products","arguments":{...},"result_count":...}],
+       "function_calls":[{"name":"general_chat|search_products|search_by_price|search_by_category|get_product|get_similar_products","arguments":{...},"result_count":...}],
        "products":[...],
        "usage":{"total_tokens":...,"prompt_tokens":...,"completion_tokens":...},
        "message_type":"text|voice",
        "user_id":...
      }
+   - Behavior:
+     - For normal conversation prompts, returns general assistant answer with function_name "general_chat" and empty products.
+     - For find/search/product prompts, executes product retrieval functions and returns products.
    - Response 401: {"detail":"Missing Authorization header"}
    - Response 422: {"detail":"message is required"}
    - Response 422: {"detail":"message_type must be text or voice"}

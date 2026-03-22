@@ -1,0 +1,82 @@
+{
+  "base_url": "http://127.0.0.1:8000",
+  "laravel": {
+    "project_path": "d:\\ty_now\\SafeGate\\xiaowu",
+    "base_url": "http://127.0.0.1:8000"
+  },
+  "auth": {
+    "bearer_token": ""
+  },
+  "headers": {
+    "Accept": "application/json"
+  },
+  "path_params": {
+    "id": 1,
+    "product_id": 1,
+    "seller_id": 1,
+    "wallet_id": 1,
+    "atomic_id": 1,
+    "session_id": "00000000-0000-0000-0000-000000000001",
+    "request_id": 1
+  },
+  "benchmark": {
+    "warmup_runs": 1,
+    "measured_runs": 3,
+    "timeout_seconds": 20,
+    "include_methods": [
+      "GET",
+      "POST",
+      "PATCH",
+      "PUT",
+      "DELETE"
+    ],
+    "skip_patterns": [
+      "^GET /sanctum/csrf-cookie$"
+    ]
+  },
+  "endpoint_overrides": {
+    "POST /api/user/login": {
+      "body": {
+        "email": "user@example.com",
+        "password": "password123"
+      }
+    },
+    "POST /api/user/signup": {
+      "body": {
+        "full_name": "Perf User",
+        "username": "perf_user",
+        "email": "perf_user@example.com",
+        "password": "password123"
+      }
+    },
+    "POST /api/user/messages": {
+      "body": {
+        "receiver_id": 2,
+        "message_text": "perf test text"
+      }
+    },
+    "POST /api/user/messages/product": {
+      "body": {
+        "receiver_id": 2,
+        "product_id": 1
+      }
+    },
+    "POST /api/user/payment-requests": {
+      "body": {
+        "conversation_id": 1,
+        "product_id": 1
+      }
+    },
+    "POST /api/user/payment-requests/{request_id}/confirm": {
+      "path_params": {
+        "request_id": 1
+      }
+    },
+    "GET /api/user/payment-request/products": {
+      "query": {
+        "conversation_id": 1
+      }
+    }
+  },
+  "output_dir": "d:\\ty_now\\SafeGate\\testing)unit_for_endpoint_speed\\reports"
+}

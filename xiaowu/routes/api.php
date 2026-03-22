@@ -80,6 +80,9 @@ Route::middleware('auth:sanctum')->prefix('atomic-transactions')->group(function
 });
 
 Route::middleware('auth:sanctum')->prefix('ai')->group(function () {
+    Route::get('/history', [AiChatController::class, 'listHistory']);
+    Route::patch('/history/{session_id}/rename', [AiChatController::class, 'renameHistory']);
+    Route::delete('/history/{session_id}', [AiChatController::class, 'deleteHistory']);
     Route::post('/sessions', [AiChatController::class, 'createSession']);
     Route::post('/sessions/{session_id}/messages', [AiChatController::class, 'sendMessage']);
     Route::get('/sessions/{session_id}/messages', [AiChatController::class, 'listMessages']);
