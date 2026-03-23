@@ -637,29 +637,37 @@ class AdminController extends Controller
         }
 
         $perPage = (int) ($validated['per_page'] ?? 10);
+        $cacheKey = 'admin:universities:list:v2:per_page:'.$perPage.':page:'.(int) $request->query('page', 1);
+        $cacheSeconds = 120;
 
-        $paginator = University::query()
-            ->select([
-                'universities.id',
-                'universities.name',
-                'universities.address',
-                'universities.created_at',
-            ])
-            ->selectSub(
-                Dormitory::query()
-                    ->selectRaw('COUNT(DISTINCT dormitories.id)')
-                    ->whereColumn('dormitories.university_id', 'universities.id'),
-                'dormitories_count'
-            )
-            ->selectSub(
-                User::query()
-                    ->join('dormitories', 'users.dormitory_id', '=', 'dormitories.id')
-                    ->selectRaw('COUNT(DISTINCT users.id)')
-                    ->whereColumn('dormitories.university_id', 'universities.id'),
-                'users_count'
-            )
-            ->orderBy('universities.id')
-            ->paginate($perPage);
+        $paginator = Cache::remember($cacheKey, $cacheSeconds, function () use ($perPage) {
+            $dormitoryCounts = Dormitory::query()
+                ->selectRaw('university_id, COUNT(*) as dormitories_count')
+                ->groupBy('university_id');
+
+            $userCounts = User::query()
+                ->join('dormitories', 'users.dormitory_id', '=', 'dormitories.id')
+                ->selectRaw('dormitories.university_id as university_id, COUNT(users.id) as users_count')
+                ->groupBy('dormitories.university_id');
+
+            return University::query()
+                ->leftJoinSub($dormitoryCounts, 'dc', function ($join) {
+                    $join->on('dc.university_id', '=', 'universities.id');
+                })
+                ->leftJoinSub($userCounts, 'uc', function ($join) {
+                    $join->on('uc.university_id', '=', 'universities.id');
+                })
+                ->select([
+                    'universities.id',
+                    'universities.name',
+                    'universities.address',
+                    'universities.created_at',
+                    DB::raw('COALESCE(dc.dormitories_count, 0) as dormitories_count'),
+                    DB::raw('COALESCE(uc.users_count, 0) as users_count'),
+                ])
+                ->orderBy('universities.id')
+                ->paginate($perPage);
+        });
 
         $paginator->getCollection()->transform(function ($university) {
             $university->created_at = $university->created_at
@@ -685,10 +693,12 @@ class AdminController extends Controller
             ], 403);
         }
 
-        $universities = University::query()
-            ->select(['id', 'name'])
-            ->orderBy('name')
-            ->get();
+        $universities = Cache::remember('admin:universities:options:v1', 600, function () {
+            return University::query()
+                ->select(['id', 'name'])
+                ->orderBy('name')
+                ->get();
+        });
 
         return response()->json([
             'message' => 'University options retrieved successfully',
@@ -725,28 +735,30 @@ class AdminController extends Controller
             ], 403);
         }
 
-        $rows = Dormitory::query()
-            ->join('universities', 'dormitories.university_id', '=', 'universities.id')
-            ->select([
-                'universities.name as university_name',
-                'dormitories.dormitory_name',
-            ])
-            ->orderBy('universities.name')
-            ->orderBy('dormitories.dormitory_name')
-            ->get();
+        $grouped = Cache::remember('admin:dormitory_university_names:v1', 300, function () {
+            $rows = Dormitory::query()
+                ->join('universities', 'dormitories.university_id', '=', 'universities.id')
+                ->select([
+                    'universities.name as university_name',
+                    'dormitories.dormitory_name',
+                ])
+                ->orderBy('universities.name')
+                ->orderBy('dormitories.dormitory_name')
+                ->get();
 
-        $grouped = $rows
-            ->groupBy('university_name')
-            ->map(function ($items, $universityName) {
-                return [
-                    'university_name' => $universityName,
-                    'dormitories' => $items
-                        ->pluck('dormitory_name')
-                        ->unique()
-                        ->values(),
-                ];
-            })
-            ->values();
+            return $rows
+                ->groupBy('university_name')
+                ->map(function ($items, $universityName) {
+                    return [
+                        'university_name' => $universityName,
+                        'dormitories' => $items
+                            ->pluck('dormitory_name')
+                            ->unique()
+                            ->values(),
+                    ];
+                })
+                ->values();
+        });
 
         return response()->json([
             'message' => 'Dormitories retrieved successfully',

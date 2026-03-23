@@ -7,6 +7,7 @@ use App\Models\Product;
 use App\Models\ProductImage;
 use App\Models\ProductTag;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
@@ -273,9 +274,25 @@ class ExchangeProductController extends Controller
         $params = array_filter($validated, static fn ($value) => $value !== null && $value !== '');
         $authHeader = (string) $request->header('Authorization', '');
         $pythonInternalToken = (string) env('PYTHON_INTERNAL_TOKEN', '');
-        $pythonTimeoutSeconds = (int) env('PYTHON_SERVICE_TIMEOUT_SECONDS', 45);
-        $pythonConnectTimeoutSeconds = (int) env('PYTHON_SERVICE_CONNECT_TIMEOUT_SECONDS', 5);
+        $pythonTimeoutSeconds = (float) env('PYTHON_EXCHANGE_RECOMMEND_TIMEOUT_SECONDS', 2.0);
+        $pythonConnectTimeoutSeconds = (float) env('PYTHON_EXCHANGE_RECOMMEND_CONNECT_TIMEOUT_SECONDS', 0.8);
         $baseUrl = $this->pythonServiceBaseUrl();
+        $cacheKey = 'exchange:recommendations:v1:user:'.(int) $user->id.':'.md5(json_encode($params));
+        $cacheTtlSeconds = (int) env('EXCHANGE_RECOMMENDATION_CACHE_SECONDS', 60);
+        $upstreamDownKey = 'exchange:recommendations:upstream_down_until';
+        $upstreamCooldownSeconds = (int) env('EXCHANGE_RECOMMENDATION_UPSTREAM_COOLDOWN_SECONDS', 15);
+
+        $upstreamDownUntil = Cache::get($upstreamDownKey);
+        if (is_int($upstreamDownUntil) && $upstreamDownUntil > time()) {
+            $stalePayload = Cache::get($cacheKey);
+            if (is_array($stalePayload)) {
+                return response()->json($stalePayload, 200);
+            }
+
+            return response()->json([
+                'message' => 'Recommendation service unavailable.',
+            ], 502);
+        }
 
         try {
             $pythonResponse = Http::connectTimeout($pythonConnectTimeoutSeconds)
@@ -290,6 +307,12 @@ class ExchangeProductController extends Controller
                 ])
                 ->get($baseUrl.'/py/api/user/recommendations/exchange-products', $params);
         } catch (\Throwable $e) {
+            Cache::put($upstreamDownKey, time() + $upstreamCooldownSeconds, $upstreamCooldownSeconds);
+            $stalePayload = Cache::get($cacheKey);
+            if (is_array($stalePayload)) {
+                return response()->json($stalePayload, 200);
+            }
+
             return response()->json([
                 'message' => 'Recommendation service unavailable.',
                 'detail' => [
@@ -300,6 +323,12 @@ class ExchangeProductController extends Controller
         }
 
         if (! $pythonResponse->successful()) {
+            Cache::put($upstreamDownKey, time() + $upstreamCooldownSeconds, $upstreamCooldownSeconds);
+            $stalePayload = Cache::get($cacheKey);
+            if (is_array($stalePayload)) {
+                return response()->json($stalePayload, 200);
+            }
+
             $body = $pythonResponse->json();
 
             return response()->json([
@@ -316,6 +345,9 @@ class ExchangeProductController extends Controller
                 'detail' => ['raw' => (string) $pythonResponse->body()],
             ], 502);
         }
+
+        Cache::forget($upstreamDownKey);
+        Cache::put($cacheKey, $payload, $cacheTtlSeconds);
 
         return response()->json($payload, 200);
     }
