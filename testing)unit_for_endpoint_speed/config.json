@@ -5,7 +5,21 @@
     "base_url": "http://127.0.0.1:8000"
   },
   "auth": {
-    "bearer_token": ""
+    "bearer_token": "@file:d:\\ty_now\\SafeGate\\testing)unit_for_endpoint_speed\\user_token.txt",
+    "auth_by_path": [
+      {
+        "path_regex": "^/api/admin/",
+        "bearer_token": "@file:d:\\ty_now\\SafeGate\\testing)unit_for_endpoint_speed\\admin_token.txt"
+      },
+      {
+        "path_regex": "^/api/user/",
+        "bearer_token": "@file:d:\\ty_now\\SafeGate\\testing)unit_for_endpoint_speed\\user_token.txt"
+      },
+      {
+        "path_regex": "^/api/ai/",
+        "bearer_token": "@file:d:\\ty_now\\SafeGate\\testing)unit_for_endpoint_speed\\user_token.txt"
+      }
+    ]
   },
   "headers": {
     "Accept": "application/json"
@@ -31,7 +45,9 @@
       "DELETE"
     ],
     "skip_patterns": [
-      "^GET /sanctum/csrf-cookie$"
+      "^GET /sanctum/csrf-cookie$",
+      "^POST /api/user/logout$",
+      "^POST /api/admin/logout$"
     ]
   },
   "endpoint_overrides": {

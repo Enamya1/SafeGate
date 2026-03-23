@@ -1,0 +1,5942 @@
+{
+  "generated_at": "2026-03-23T20:25:59.415272",
+  "base_url": "http://127.0.0.1:8000",
+  "total_cases": 120,
+  "cases_with_success": 24,
+  "slowest_10_by_avg_ms": [
+    {
+      "key": "GET /api/exchange-products/recommendations",
+      "avg_ms": 18634.097,
+      "p95_ms": 18820.733,
+      "status_histogram": {
+        "502": 3
+      },
+      "error_histogram": {
+        "HTTPError:502": 3
+      }
+    },
+    {
+      "key": "GET /api/user/exchange-products/recommendations",
+      "avg_ms": 18444.729,
+      "p95_ms": 18453.077,
+      "status_histogram": {
+        "502": 3
+      },
+      "error_histogram": {
+        "HTTPError:502": 3
+      }
+    },
+    {
+      "key": "PATCH /api/admin/dormitories/{id}",
+      "avg_ms": 159.046,
+      "p95_ms": 175.225,
+      "status_histogram": {
+        "200": 3
+      },
+      "error_histogram": {}
+    },
+    {
+      "key": "GET /api/admin/categories",
+      "avg_ms": 155.922,
+      "p95_ms": 180.056,
+      "status_histogram": {
+        "200": 3
+      },
+      "error_histogram": {}
+    },
+    {
+      "key": "GET /api/admin/admins",
+      "avg_ms": 154.963,
+      "p95_ms": 161.744,
+      "status_histogram": {
+        "200": 3
+      },
+      "error_histogram": {}
+    },
+    {
+      "key": "GET /api/ai/sessions/{session_id}/messages",
+      "avg_ms": 154.881,
+      "p95_ms": 174.062,
+      "status_histogram": {
+        "404": 3
+      },
+      "error_histogram": {
+        "HTTPError:404": 3
+      }
+    },
+    {
+      "key": "GET /api/wallets/{wallet_id}/status-history",
+      "avg_ms": 154.413,
+      "p95_ms": 166.465,
+      "status_histogram": {
+        "401": 3
+      },
+      "error_histogram": {
+        "HTTPError:401": 3
+      }
+    },
+    {
+      "key": "POST /api/ai/sessions",
+      "avg_ms": 152.465,
+      "p95_ms": 177.282,
+      "status_histogram": {
+        "201": 3
+      },
+      "error_histogram": {}
+    },
+    {
+      "key": "GET /api/exchange-products/{id}",
+      "avg_ms": 149.738,
+      "p95_ms": 154.29,
+      "status_histogram": {
+        "200": 3
+      },
+      "error_histogram": {}
+    },
+    {
+      "key": "POST /api/user/exchange-products",
+      "avg_ms": 149.639,
+      "p95_ms": 176.844,
+      "status_histogram": {
+        "422": 3
+      },
+      "error_histogram": {
+        "HTTPError:422": 3
+      }
+    }
+  ],
+  "results": [
+    {
+      "key": "GET /api/exchange-products/recommendations",
+      "method": "GET",
+      "route_uri": "/api/exchange-products/recommendations",
+      "resolved_path": "/api/exchange-products/recommendations",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\ExchangeProductController@recommendations",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 18634.097,
+        "min_ms": 18492.868,
+        "max_ms": 18849.739,
+        "p50_ms": 18559.683,
+        "p95_ms": 18820.733,
+        "status_histogram": {
+          "502": 3
+        },
+        "error_histogram": {
+          "HTTPError:502": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 502,
+          "elapsed_ms": 18849.739,
+          "body_size_bytes": 135,
+          "error": "HTTPError:502",
+          "url": "http://127.0.0.1:8000/api/exchange-products/recommendations"
+        },
+        {
+          "ok": false,
+          "status_code": 502,
+          "elapsed_ms": 18559.683,
+          "body_size_bytes": 135,
+          "error": "HTTPError:502",
+          "url": "http://127.0.0.1:8000/api/exchange-products/recommendations"
+        },
+        {
+          "ok": false,
+          "status_code": 502,
+          "elapsed_ms": 18492.868,
+          "body_size_bytes": 135,
+          "error": "HTTPError:502",
+          "url": "http://127.0.0.1:8000/api/exchange-products/recommendations"
+        }
+      ]
+    },
+    {
+      "key": "GET /api/user/exchange-products/recommendations",
+      "method": "GET",
+      "route_uri": "/api/user/exchange-products/recommendations",
+      "resolved_path": "/api/user/exchange-products/recommendations",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\ExchangeProductController@recommendations",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 18444.729,
+        "min_ms": 18434.474,
+        "max_ms": 18453.882,
+        "p50_ms": 18445.832,
+        "p95_ms": 18453.077,
+        "status_histogram": {
+          "502": 3
+        },
+        "error_histogram": {
+          "HTTPError:502": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 502,
+          "elapsed_ms": 18434.474,
+          "body_size_bytes": 135,
+          "error": "HTTPError:502",
+          "url": "http://127.0.0.1:8000/api/user/exchange-products/recommendations"
+        },
+        {
+          "ok": false,
+          "status_code": 502,
+          "elapsed_ms": 18453.882,
+          "body_size_bytes": 135,
+          "error": "HTTPError:502",
+          "url": "http://127.0.0.1:8000/api/user/exchange-products/recommendations"
+        },
+        {
+          "ok": false,
+          "status_code": 502,
+          "elapsed_ms": 18445.832,
+          "body_size_bytes": 135,
+          "error": "HTTPError:502",
+          "url": "http://127.0.0.1:8000/api/user/exchange-products/recommendations"
+        }
+      ]
+    },
+    {
+      "key": "PATCH /api/admin/dormitories/{id}",
+      "method": "PATCH",
+      "route_uri": "/api/admin/dormitories/{id}",
+      "resolved_path": "/api/admin/dormitories/1",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\AdminController@updateDormitory",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 3,
+        "avg_ms": 159.046,
+        "min_ms": 143.702,
+        "max_ms": 177.351,
+        "p50_ms": 156.086,
+        "p95_ms": 175.225,
+        "status_histogram": {
+          "200": 3
+        },
+        "error_histogram": {}
+      },
+      "runs": [
+        {
+          "ok": true,
+          "status_code": 200,
+          "elapsed_ms": 143.702,
+          "body_size_bytes": 456,
+          "error": "",
+          "url": "http://127.0.0.1:8000/api/admin/dormitories/1"
+        },
+        {
+          "ok": true,
+          "status_code": 200,
+          "elapsed_ms": 177.351,
+          "body_size_bytes": 456,
+          "error": "",
+          "url": "http://127.0.0.1:8000/api/admin/dormitories/1"
+        },
+        {
+          "ok": true,
+          "status_code": 200,
+          "elapsed_ms": 156.086,
+          "body_size_bytes": 456,
+          "error": "",
+          "url": "http://127.0.0.1:8000/api/admin/dormitories/1"
+        }
+      ]
+    },
+    {
+      "key": "GET /api/admin/categories",
+      "method": "GET",
+      "route_uri": "/api/admin/categories",
+      "resolved_path": "/api/admin/categories",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\AdminController@listCategories",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 3,
+        "avg_ms": 155.922,
+        "min_ms": 136.643,
+        "max_ms": 183.68,
+        "p50_ms": 147.443,
+        "p95_ms": 180.056,
+        "status_histogram": {
+          "200": 3
+        },
+        "error_histogram": {}
+      },
+      "runs": [
+        {
+          "ok": true,
+          "status_code": 200,
+          "elapsed_ms": 183.68,
+          "body_size_bytes": 418,
+          "error": "",
+          "url": "http://127.0.0.1:8000/api/admin/categories"
+        },
+        {
+          "ok": true,
+          "status_code": 200,
+          "elapsed_ms": 136.643,
+          "body_size_bytes": 418,
+          "error": "",
+          "url": "http://127.0.0.1:8000/api/admin/categories"
+        },
+        {
+          "ok": true,
+          "status_code": 200,
+          "elapsed_ms": 147.443,
+          "body_size_bytes": 418,
+          "error": "",
+          "url": "http://127.0.0.1:8000/api/admin/categories"
+        }
+      ]
+    },
+    {
+      "key": "GET /api/admin/admins",
+      "method": "GET",
+      "route_uri": "/api/admin/admins",
+      "resolved_path": "/api/admin/admins",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\AdminController@listAdmins",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 3,
+        "avg_ms": 154.963,
+        "min_ms": 142.156,
+        "max_ms": 161.839,
+        "p50_ms": 160.894,
+        "p95_ms": 161.744,
+        "status_histogram": {
+          "200": 3
+        },
+        "error_histogram": {}
+      },
+      "runs": [
+        {
+          "ok": true,
+          "status_code": 200,
+          "elapsed_ms": 160.894,
+          "body_size_bytes": 246,
+          "error": "",
+          "url": "http://127.0.0.1:8000/api/admin/admins"
+        },
+        {
+          "ok": true,
+          "status_code": 200,
+          "elapsed_ms": 161.839,
+          "body_size_bytes": 246,
+          "error": "",
+          "url": "http://127.0.0.1:8000/api/admin/admins"
+        },
+        {
+          "ok": true,
+          "status_code": 200,
+          "elapsed_ms": 142.156,
+          "body_size_bytes": 246,
+          "error": "",
+          "url": "http://127.0.0.1:8000/api/admin/admins"
+        }
+      ]
+    },
+    {
+      "key": "GET /api/ai/sessions/{session_id}/messages",
+      "method": "GET",
+      "route_uri": "/api/ai/sessions/{session_id}/messages",
+      "resolved_path": "/api/ai/sessions/00000000-0000-0000-0000-000000000001/messages",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\AiChatController@listMessages",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 154.881,
+        "min_ms": 129.549,
+        "max_ms": 175.691,
+        "p50_ms": 159.403,
+        "p95_ms": 174.062,
+        "status_histogram": {
+          "404": 3
+        },
+        "error_histogram": {
+          "HTTPError:404": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 404,
+          "elapsed_ms": 129.549,
+          "body_size_bytes": 36,
+          "error": "HTTPError:404",
+          "url": "http://127.0.0.1:8000/api/ai/sessions/00000000-0000-0000-0000-000000000001/messages"
+        },
+        {
+          "ok": false,
+          "status_code": 404,
+          "elapsed_ms": 175.691,
+          "body_size_bytes": 36,
+          "error": "HTTPError:404",
+          "url": "http://127.0.0.1:8000/api/ai/sessions/00000000-0000-0000-0000-000000000001/messages"
+        },
+        {
+          "ok": false,
+          "status_code": 404,
+          "elapsed_ms": 159.403,
+          "body_size_bytes": 36,
+          "error": "HTTPError:404",
+          "url": "http://127.0.0.1:8000/api/ai/sessions/00000000-0000-0000-0000-000000000001/messages"
+        }
+      ]
+    },
+    {
+      "key": "GET /api/wallets/{wallet_id}/status-history",
+      "method": "GET",
+      "route_uri": "/api/wallets/{wallet_id}/status-history",
+      "resolved_path": "/api/wallets/1/status-history",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\WalletController@statusHistory",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 154.413,
+        "min_ms": 141.699,
+        "max_ms": 167.889,
+        "p50_ms": 153.651,
+        "p95_ms": 166.465,
+        "status_histogram": {
+          "401": 3
+        },
+        "error_histogram": {
+          "HTTPError:401": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 153.651,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/wallets/1/status-history"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 141.699,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/wallets/1/status-history"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 167.889,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/wallets/1/status-history"
+        }
+      ]
+    },
+    {
+      "key": "POST /api/ai/sessions",
+      "method": "POST",
+      "route_uri": "/api/ai/sessions",
+      "resolved_path": "/api/ai/sessions",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\AiChatController@createSession",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 3,
+        "avg_ms": 152.465,
+        "min_ms": 124.018,
+        "max_ms": 179.931,
+        "p50_ms": 153.446,
+        "p95_ms": 177.282,
+        "status_histogram": {
+          "201": 3
+        },
+        "error_histogram": {}
+      },
+      "runs": [
+        {
+          "ok": true,
+          "status_code": 201,
+          "elapsed_ms": 124.018,
+          "body_size_bytes": 100,
+          "error": "",
+          "url": "http://127.0.0.1:8000/api/ai/sessions"
+        },
+        {
+          "ok": true,
+          "status_code": 201,
+          "elapsed_ms": 179.931,
+          "body_size_bytes": 100,
+          "error": "",
+          "url": "http://127.0.0.1:8000/api/ai/sessions"
+        },
+        {
+          "ok": true,
+          "status_code": 201,
+          "elapsed_ms": 153.446,
+          "body_size_bytes": 100,
+          "error": "",
+          "url": "http://127.0.0.1:8000/api/ai/sessions"
+        }
+      ]
+    },
+    {
+      "key": "GET /api/exchange-products/{id}",
+      "method": "GET",
+      "route_uri": "/api/exchange-products/{id}",
+      "resolved_path": "/api/exchange-products/1",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\ExchangeProductController@show",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 3,
+        "avg_ms": 149.738,
+        "min_ms": 145.485,
+        "max_ms": 154.896,
+        "p50_ms": 148.834,
+        "p95_ms": 154.29,
+        "status_histogram": {
+          "200": 3
+        },
+        "error_histogram": {}
+      },
+      "runs": [
+        {
+          "ok": true,
+          "status_code": 200,
+          "elapsed_ms": 145.485,
+          "body_size_bytes": 852,
+          "error": "",
+          "url": "http://127.0.0.1:8000/api/exchange-products/1"
+        },
+        {
+          "ok": true,
+          "status_code": 200,
+          "elapsed_ms": 154.896,
+          "body_size_bytes": 852,
+          "error": "",
+          "url": "http://127.0.0.1:8000/api/exchange-products/1"
+        },
+        {
+          "ok": true,
+          "status_code": 200,
+          "elapsed_ms": 148.834,
+          "body_size_bytes": 852,
+          "error": "",
+          "url": "http://127.0.0.1:8000/api/exchange-products/1"
+        }
+      ]
+    },
+    {
+      "key": "POST /api/user/exchange-products",
+      "method": "POST",
+      "route_uri": "/api/user/exchange-products",
+      "resolved_path": "/api/user/exchange-products",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\ExchangeProductController@store",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 149.639,
+        "min_ms": 127.905,
+        "max_ms": 180.928,
+        "p50_ms": 140.084,
+        "p95_ms": 176.844,
+        "status_histogram": {
+          "422": 3
+        },
+        "error_histogram": {
+          "HTTPError:422": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 422,
+          "elapsed_ms": 180.928,
+          "body_size_bytes": 483,
+          "error": "HTTPError:422",
+          "url": "http://127.0.0.1:8000/api/user/exchange-products"
+        },
+        {
+          "ok": false,
+          "status_code": 422,
+          "elapsed_ms": 140.084,
+          "body_size_bytes": 483,
+          "error": "HTTPError:422",
+          "url": "http://127.0.0.1:8000/api/user/exchange-products"
+        },
+        {
+          "ok": false,
+          "status_code": 422,
+          "elapsed_ms": 127.905,
+          "body_size_bytes": 483,
+          "error": "HTTPError:422",
+          "url": "http://127.0.0.1:8000/api/user/exchange-products"
+        }
+      ]
+    },
+    {
+      "key": "POST /api/admin/wallets/freeze-requests/{request_id}/approve",
+      "method": "POST",
+      "route_uri": "/api/admin/wallets/freeze-requests/{request_id}/approve",
+      "resolved_path": "/api/admin/wallets/freeze-requests/1/approve",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\AdminFinanceController@approveFreezeRequest",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 149.487,
+        "min_ms": 140.081,
+        "max_ms": 156.641,
+        "p50_ms": 151.74,
+        "p95_ms": 156.151,
+        "status_histogram": {
+          "401": 3
+        },
+        "error_histogram": {
+          "HTTPError:401": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 156.641,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/admin/wallets/freeze-requests/1/approve"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 151.74,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/admin/wallets/freeze-requests/1/approve"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 140.081,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/admin/wallets/freeze-requests/1/approve"
+        }
+      ]
+    },
+    {
+      "key": "GET /api/admin/dormitories/{id}",
+      "method": "GET",
+      "route_uri": "/api/admin/dormitories/{id}",
+      "resolved_path": "/api/admin/dormitories/1",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\AdminController@showDormitory",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 3,
+        "avg_ms": 149.43,
+        "min_ms": 138.402,
+        "max_ms": 161.938,
+        "p50_ms": 147.951,
+        "p95_ms": 160.539,
+        "status_histogram": {
+          "200": 3
+        },
+        "error_histogram": {}
+      },
+      "runs": [
+        {
+          "ok": true,
+          "status_code": 200,
+          "elapsed_ms": 138.402,
+          "body_size_bytes": 1070,
+          "error": "",
+          "url": "http://127.0.0.1:8000/api/admin/dormitories/1"
+        },
+        {
+          "ok": true,
+          "status_code": 200,
+          "elapsed_ms": 161.938,
+          "body_size_bytes": 1070,
+          "error": "",
+          "url": "http://127.0.0.1:8000/api/admin/dormitories/1"
+        },
+        {
+          "ok": true,
+          "status_code": 200,
+          "elapsed_ms": 147.951,
+          "body_size_bytes": 1070,
+          "error": "",
+          "url": "http://127.0.0.1:8000/api/admin/dormitories/1"
+        }
+      ]
+    },
+    {
+      "key": "GET /api/admin/universities",
+      "method": "GET",
+      "route_uri": "/api/admin/universities",
+      "resolved_path": "/api/admin/universities",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\AdminController@listUniversities",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 3,
+        "avg_ms": 148.296,
+        "min_ms": 136.127,
+        "max_ms": 159.745,
+        "p50_ms": 149.017,
+        "p95_ms": 158.672,
+        "status_histogram": {
+          "200": 3
+        },
+        "error_histogram": {}
+      },
+      "runs": [
+        {
+          "ok": true,
+          "status_code": 200,
+          "elapsed_ms": 149.017,
+          "body_size_bytes": 1179,
+          "error": "",
+          "url": "http://127.0.0.1:8000/api/admin/universities"
+        },
+        {
+          "ok": true,
+          "status_code": 200,
+          "elapsed_ms": 136.127,
+          "body_size_bytes": 1179,
+          "error": "",
+          "url": "http://127.0.0.1:8000/api/admin/universities"
+        },
+        {
+          "ok": true,
+          "status_code": 200,
+          "elapsed_ms": 159.745,
+          "body_size_bytes": 1179,
+          "error": "",
+          "url": "http://127.0.0.1:8000/api/admin/universities"
+        }
+      ]
+    },
+    {
+      "key": "GET /api/user/meta/tags",
+      "method": "GET",
+      "route_uri": "/api/user/meta/tags",
+      "resolved_path": "/api/user/meta/tags",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\ProductController@tags",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 148.29,
+        "min_ms": 134.441,
+        "max_ms": 166.219,
+        "p50_ms": 144.21,
+        "p95_ms": 164.018,
+        "status_histogram": {
+          "401": 3
+        },
+        "error_histogram": {
+          "HTTPError:401": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 134.441,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/meta/tags"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 166.219,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/meta/tags"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 144.21,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/meta/tags"
+        }
+      ]
+    },
+    {
+      "key": "GET /api/user/settings/university-options",
+      "method": "GET",
+      "route_uri": "/api/user/settings/university-options",
+      "resolved_path": "/api/user/settings/university-options",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\AuthController@settingsUniversityOptions",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 147.816,
+        "min_ms": 126.34,
+        "max_ms": 174.206,
+        "p50_ms": 142.902,
+        "p95_ms": 171.076,
+        "status_histogram": {
+          "401": 3
+        },
+        "error_histogram": {
+          "HTTPError:401": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 174.206,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/settings/university-options"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 142.902,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/settings/university-options"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 126.34,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/settings/university-options"
+        }
+      ]
+    },
+    {
+      "key": "GET /api/admin/ledgers/{ledger_id}",
+      "method": "GET",
+      "route_uri": "/api/admin/ledgers/{ledger_id}",
+      "resolved_path": "/api/admin/ledgers/1",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\LedgerController@show",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 146.048,
+        "min_ms": 127.707,
+        "max_ms": 158.165,
+        "p50_ms": 152.273,
+        "p95_ms": 157.576,
+        "status_histogram": {
+          "404": 3
+        },
+        "error_histogram": {
+          "HTTPError:404": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 404,
+          "elapsed_ms": 158.165,
+          "body_size_bytes": 41,
+          "error": "HTTPError:404",
+          "url": "http://127.0.0.1:8000/api/admin/ledgers/1"
+        },
+        {
+          "ok": false,
+          "status_code": 404,
+          "elapsed_ms": 152.273,
+          "body_size_bytes": 41,
+          "error": "HTTPError:404",
+          "url": "http://127.0.0.1:8000/api/admin/ledgers/1"
+        },
+        {
+          "ok": false,
+          "status_code": 404,
+          "elapsed_ms": 127.707,
+          "body_size_bytes": 41,
+          "error": "HTTPError:404",
+          "url": "http://127.0.0.1:8000/api/admin/ledgers/1"
+        }
+      ]
+    },
+    {
+      "key": "POST /api/user/signup",
+      "method": "POST",
+      "route_uri": "/api/user/signup",
+      "resolved_path": "/api/user/signup",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\AuthController@signup",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 145.774,
+        "min_ms": 100.979,
+        "max_ms": 177.179,
+        "p50_ms": 159.163,
+        "p95_ms": 175.377,
+        "status_histogram": {
+          "422": 3
+        },
+        "error_histogram": {
+          "HTTPError:422": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 422,
+          "elapsed_ms": 100.979,
+          "body_size_bytes": 143,
+          "error": "HTTPError:422",
+          "url": "http://127.0.0.1:8000/api/user/signup"
+        },
+        {
+          "ok": false,
+          "status_code": 422,
+          "elapsed_ms": 177.179,
+          "body_size_bytes": 143,
+          "error": "HTTPError:422",
+          "url": "http://127.0.0.1:8000/api/user/signup"
+        },
+        {
+          "ok": false,
+          "status_code": 422,
+          "elapsed_ms": 159.163,
+          "body_size_bytes": 143,
+          "error": "HTTPError:422",
+          "url": "http://127.0.0.1:8000/api/user/signup"
+        }
+      ]
+    },
+    {
+      "key": "PUT /api/exchange-transactions/{id}/status",
+      "method": "PUT",
+      "route_uri": "/api/exchange-transactions/{id}/status",
+      "resolved_path": "/api/exchange-transactions/1/status",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\ExchangeTransactionController@updateStatus",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 145.763,
+        "min_ms": 138.003,
+        "max_ms": 155.909,
+        "p50_ms": 143.376,
+        "p95_ms": 154.656,
+        "status_histogram": {
+          "422": 3
+        },
+        "error_histogram": {
+          "HTTPError:422": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 422,
+          "elapsed_ms": 138.003,
+          "body_size_bytes": 88,
+          "error": "HTTPError:422",
+          "url": "http://127.0.0.1:8000/api/exchange-transactions/1/status"
+        },
+        {
+          "ok": false,
+          "status_code": 422,
+          "elapsed_ms": 155.909,
+          "body_size_bytes": 88,
+          "error": "HTTPError:422",
+          "url": "http://127.0.0.1:8000/api/exchange-transactions/1/status"
+        },
+        {
+          "ok": false,
+          "status_code": 422,
+          "elapsed_ms": 143.376,
+          "body_size_bytes": 88,
+          "error": "HTTPError:422",
+          "url": "http://127.0.0.1:8000/api/exchange-transactions/1/status"
+        }
+      ]
+    },
+    {
+      "key": "DELETE /api/admin/dormitories/{id}",
+      "method": "DELETE",
+      "route_uri": "/api/admin/dormitories/{id}",
+      "resolved_path": "/api/admin/dormitories/1",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\AdminController@deleteDormitory",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 144.918,
+        "min_ms": 135.724,
+        "max_ms": 150.551,
+        "p50_ms": 148.479,
+        "p95_ms": 150.344,
+        "status_histogram": {
+          "409": 3
+        },
+        "error_histogram": {
+          "HTTPError:409": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 409,
+          "elapsed_ms": 135.724,
+          "body_size_bytes": 62,
+          "error": "HTTPError:409",
+          "url": "http://127.0.0.1:8000/api/admin/dormitories/1"
+        },
+        {
+          "ok": false,
+          "status_code": 409,
+          "elapsed_ms": 148.479,
+          "body_size_bytes": 62,
+          "error": "HTTPError:409",
+          "url": "http://127.0.0.1:8000/api/admin/dormitories/1"
+        },
+        {
+          "ok": false,
+          "status_code": 409,
+          "elapsed_ms": 150.551,
+          "body_size_bytes": 62,
+          "error": "HTTPError:409",
+          "url": "http://127.0.0.1:8000/api/admin/dormitories/1"
+        }
+      ]
+    },
+    {
+      "key": "POST /api/user/favorites",
+      "method": "POST",
+      "route_uri": "/api/user/favorites",
+      "resolved_path": "/api/user/favorites",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\ProductController@addProductToFavorites",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 144.467,
+        "min_ms": 142.664,
+        "max_ms": 147.109,
+        "p50_ms": 143.628,
+        "p95_ms": 146.761,
+        "status_histogram": {
+          "422": 3
+        },
+        "error_histogram": {
+          "HTTPError:422": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 422,
+          "elapsed_ms": 147.109,
+          "body_size_bytes": 96,
+          "error": "HTTPError:422",
+          "url": "http://127.0.0.1:8000/api/user/favorites"
+        },
+        {
+          "ok": false,
+          "status_code": 422,
+          "elapsed_ms": 142.664,
+          "body_size_bytes": 96,
+          "error": "HTTPError:422",
+          "url": "http://127.0.0.1:8000/api/user/favorites"
+        },
+        {
+          "ok": false,
+          "status_code": 422,
+          "elapsed_ms": 143.628,
+          "body_size_bytes": 96,
+          "error": "HTTPError:422",
+          "url": "http://127.0.0.1:8000/api/user/favorites"
+        }
+      ]
+    },
+    {
+      "key": "GET /api/admin/wallets/freeze-requests",
+      "method": "GET",
+      "route_uri": "/api/admin/wallets/freeze-requests",
+      "resolved_path": "/api/admin/wallets/freeze-requests",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\AdminFinanceController@listFreezeRequests",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 144.413,
+        "min_ms": 124.928,
+        "max_ms": 171.231,
+        "p50_ms": 137.081,
+        "p95_ms": 167.816,
+        "status_histogram": {
+          "401": 3
+        },
+        "error_histogram": {
+          "HTTPError:401": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 137.081,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/admin/wallets/freeze-requests"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 171.231,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/admin/wallets/freeze-requests"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 124.928,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/admin/wallets/freeze-requests"
+        }
+      ]
+    },
+    {
+      "key": "PATCH /api/admin/fraud/alerts/{alert_id}",
+      "method": "PATCH",
+      "route_uri": "/api/admin/fraud/alerts/{alert_id}",
+      "resolved_path": "/api/admin/fraud/alerts/1",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\AdminFinanceController@updateFraudAlert",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 144.187,
+        "min_ms": 126.054,
+        "max_ms": 163.005,
+        "p50_ms": 143.503,
+        "p95_ms": 161.055,
+        "status_histogram": {
+          "422": 3
+        },
+        "error_histogram": {
+          "HTTPError:422": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 422,
+          "elapsed_ms": 143.503,
+          "body_size_bytes": 88,
+          "error": "HTTPError:422",
+          "url": "http://127.0.0.1:8000/api/admin/fraud/alerts/1"
+        },
+        {
+          "ok": false,
+          "status_code": 422,
+          "elapsed_ms": 126.054,
+          "body_size_bytes": 88,
+          "error": "HTTPError:422",
+          "url": "http://127.0.0.1:8000/api/admin/fraud/alerts/1"
+        },
+        {
+          "ok": false,
+          "status_code": 422,
+          "elapsed_ms": 163.005,
+          "body_size_bytes": 88,
+          "error": "HTTPError:422",
+          "url": "http://127.0.0.1:8000/api/admin/fraud/alerts/1"
+        }
+      ]
+    },
+    {
+      "key": "GET /api/user/nearby",
+      "method": "GET",
+      "route_uri": "/api/user/nearby",
+      "resolved_path": "/api/user/nearby",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\ProductController@nearby",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 144.186,
+        "min_ms": 131.227,
+        "max_ms": 153.057,
+        "p50_ms": 148.274,
+        "p95_ms": 152.579,
+        "status_histogram": {
+          "401": 3
+        },
+        "error_histogram": {
+          "HTTPError:401": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 153.057,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/nearby"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 131.227,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/nearby"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 148.274,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/nearby"
+        }
+      ]
+    },
+    {
+      "key": "GET /api/admin/ledgers",
+      "method": "GET",
+      "route_uri": "/api/admin/ledgers",
+      "resolved_path": "/api/admin/ledgers",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\LedgerController@search",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 3,
+        "avg_ms": 144.176,
+        "min_ms": 138.525,
+        "max_ms": 149.382,
+        "p50_ms": 144.622,
+        "p95_ms": 148.906,
+        "status_histogram": {
+          "200": 3
+        },
+        "error_histogram": {}
+      },
+      "runs": [
+        {
+          "ok": true,
+          "status_code": 200,
+          "elapsed_ms": 144.622,
+          "body_size_bytes": 6185,
+          "error": "",
+          "url": "http://127.0.0.1:8000/api/admin/ledgers"
+        },
+        {
+          "ok": true,
+          "status_code": 200,
+          "elapsed_ms": 149.382,
+          "body_size_bytes": 6185,
+          "error": "",
+          "url": "http://127.0.0.1:8000/api/admin/ledgers"
+        },
+        {
+          "ok": true,
+          "status_code": 200,
+          "elapsed_ms": 138.525,
+          "body_size_bytes": 6185,
+          "error": "",
+          "url": "http://127.0.0.1:8000/api/admin/ledgers"
+        }
+      ]
+    },
+    {
+      "key": "GET /api/user/get_product/{product_id}",
+      "method": "GET",
+      "route_uri": "/api/user/get_product/{product_id}",
+      "resolved_path": "/api/user/get_product/1",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\ProductController@getProduct",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 3,
+        "avg_ms": 143.626,
+        "min_ms": 130.044,
+        "max_ms": 159.015,
+        "p50_ms": 141.82,
+        "p95_ms": 157.295,
+        "status_histogram": {
+          "200": 3
+        },
+        "error_histogram": {}
+      },
+      "runs": [
+        {
+          "ok": true,
+          "status_code": 200,
+          "elapsed_ms": 141.82,
+          "body_size_bytes": 1868,
+          "error": "",
+          "url": "http://127.0.0.1:8000/api/user/get_product/1"
+        },
+        {
+          "ok": true,
+          "status_code": 200,
+          "elapsed_ms": 159.015,
+          "body_size_bytes": 1868,
+          "error": "",
+          "url": "http://127.0.0.1:8000/api/user/get_product/1"
+        },
+        {
+          "ok": true,
+          "status_code": 200,
+          "elapsed_ms": 130.044,
+          "body_size_bytes": 1868,
+          "error": "",
+          "url": "http://127.0.0.1:8000/api/user/get_product/1"
+        }
+      ]
+    },
+    {
+      "key": "POST /api/admin/ledgers/{ledger_id}/reverse",
+      "method": "POST",
+      "route_uri": "/api/admin/ledgers/{ledger_id}/reverse",
+      "resolved_path": "/api/admin/ledgers/1/reverse",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\AdminFinanceController@reverseLedger",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 143.623,
+        "min_ms": 138.627,
+        "max_ms": 153.503,
+        "p50_ms": 138.738,
+        "p95_ms": 152.026,
+        "status_histogram": {
+          "404": 3
+        },
+        "error_histogram": {
+          "HTTPError:404": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 404,
+          "elapsed_ms": 153.503,
+          "body_size_bytes": 41,
+          "error": "HTTPError:404",
+          "url": "http://127.0.0.1:8000/api/admin/ledgers/1/reverse"
+        },
+        {
+          "ok": false,
+          "status_code": 404,
+          "elapsed_ms": 138.738,
+          "body_size_bytes": 41,
+          "error": "HTTPError:404",
+          "url": "http://127.0.0.1:8000/api/admin/ledgers/1/reverse"
+        },
+        {
+          "ok": false,
+          "status_code": 404,
+          "elapsed_ms": 138.627,
+          "body_size_bytes": 41,
+          "error": "HTTPError:404",
+          "url": "http://127.0.0.1:8000/api/admin/ledgers/1/reverse"
+        }
+      ]
+    },
+    {
+      "key": "DELETE /api/ai/history/{session_id}",
+      "method": "DELETE",
+      "route_uri": "/api/ai/history/{session_id}",
+      "resolved_path": "/api/ai/history/00000000-0000-0000-0000-000000000001",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\AiChatController@deleteHistory",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 142.761,
+        "min_ms": 131.059,
+        "max_ms": 166.139,
+        "p50_ms": 131.085,
+        "p95_ms": 162.634,
+        "status_histogram": {
+          "404": 3
+        },
+        "error_histogram": {
+          "HTTPError:404": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 404,
+          "elapsed_ms": 131.085,
+          "body_size_bytes": 36,
+          "error": "HTTPError:404",
+          "url": "http://127.0.0.1:8000/api/ai/history/00000000-0000-0000-0000-000000000001"
+        },
+        {
+          "ok": false,
+          "status_code": 404,
+          "elapsed_ms": 166.139,
+          "body_size_bytes": 36,
+          "error": "HTTPError:404",
+          "url": "http://127.0.0.1:8000/api/ai/history/00000000-0000-0000-0000-000000000001"
+        },
+        {
+          "ok": false,
+          "status_code": 404,
+          "elapsed_ms": 131.059,
+          "body_size_bytes": 36,
+          "error": "HTTPError:404",
+          "url": "http://127.0.0.1:8000/api/ai/history/00000000-0000-0000-0000-000000000001"
+        }
+      ]
+    },
+    {
+      "key": "GET /api/admin/fraud/alerts",
+      "method": "GET",
+      "route_uri": "/api/admin/fraud/alerts",
+      "resolved_path": "/api/admin/fraud/alerts",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\AdminFinanceController@listFraudAlerts",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 3,
+        "avg_ms": 142.508,
+        "min_ms": 134.049,
+        "max_ms": 156.538,
+        "p50_ms": 136.936,
+        "p95_ms": 154.578,
+        "status_histogram": {
+          "200": 3
+        },
+        "error_histogram": {}
+      },
+      "runs": [
+        {
+          "ok": true,
+          "status_code": 200,
+          "elapsed_ms": 134.049,
+          "body_size_bytes": 384,
+          "error": "",
+          "url": "http://127.0.0.1:8000/api/admin/fraud/alerts"
+        },
+        {
+          "ok": true,
+          "status_code": 200,
+          "elapsed_ms": 136.936,
+          "body_size_bytes": 384,
+          "error": "",
+          "url": "http://127.0.0.1:8000/api/admin/fraud/alerts"
+        },
+        {
+          "ok": true,
+          "status_code": 200,
+          "elapsed_ms": 156.538,
+          "body_size_bytes": 384,
+          "error": "",
+          "url": "http://127.0.0.1:8000/api/admin/fraud/alerts"
+        }
+      ]
+    },
+    {
+      "key": "POST /api/admin/categories",
+      "method": "POST",
+      "route_uri": "/api/admin/categories",
+      "resolved_path": "/api/admin/categories",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\AdminController@createCategory",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 142.105,
+        "min_ms": 134.605,
+        "max_ms": 154.731,
+        "p50_ms": 136.979,
+        "p95_ms": 152.956,
+        "status_histogram": {
+          "422": 3
+        },
+        "error_histogram": {
+          "HTTPError:422": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 422,
+          "elapsed_ms": 134.605,
+          "body_size_bytes": 84,
+          "error": "HTTPError:422",
+          "url": "http://127.0.0.1:8000/api/admin/categories"
+        },
+        {
+          "ok": false,
+          "status_code": 422,
+          "elapsed_ms": 136.979,
+          "body_size_bytes": 84,
+          "error": "HTTPError:422",
+          "url": "http://127.0.0.1:8000/api/admin/categories"
+        },
+        {
+          "ok": false,
+          "status_code": 422,
+          "elapsed_ms": 154.731,
+          "body_size_bytes": 84,
+          "error": "HTTPError:422",
+          "url": "http://127.0.0.1:8000/api/admin/categories"
+        }
+      ]
+    },
+    {
+      "key": "POST /api/admin/reversals/{reversal_id}/approve",
+      "method": "POST",
+      "route_uri": "/api/admin/reversals/{reversal_id}/approve",
+      "resolved_path": "/api/admin/reversals/1/approve",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\AdminFinanceController@approveReversal",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 141.888,
+        "min_ms": 127.964,
+        "max_ms": 163.212,
+        "p50_ms": 134.489,
+        "p95_ms": 160.34,
+        "status_histogram": {
+          "401": 3
+        },
+        "error_histogram": {
+          "HTTPError:401": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 163.212,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/admin/reversals/1/approve"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 134.489,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/admin/reversals/1/approve"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 127.964,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/admin/reversals/1/approve"
+        }
+      ]
+    },
+    {
+      "key": "GET /api/exchange-transactions/user/{userId}",
+      "method": "GET",
+      "route_uri": "/api/exchange-transactions/user/{userId}",
+      "resolved_path": "/api/exchange-transactions/user/1",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\ExchangeTransactionController@userHistory",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 141.134,
+        "min_ms": 122.265,
+        "max_ms": 159.51,
+        "p50_ms": 141.627,
+        "p95_ms": 157.722,
+        "status_histogram": {
+          "403": 3
+        },
+        "error_histogram": {
+          "HTTPError:403": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 403,
+          "elapsed_ms": 141.627,
+          "body_size_bytes": 76,
+          "error": "HTTPError:403",
+          "url": "http://127.0.0.1:8000/api/exchange-transactions/user/1"
+        },
+        {
+          "ok": false,
+          "status_code": 403,
+          "elapsed_ms": 122.265,
+          "body_size_bytes": 76,
+          "error": "HTTPError:403",
+          "url": "http://127.0.0.1:8000/api/exchange-transactions/user/1"
+        },
+        {
+          "ok": false,
+          "status_code": 403,
+          "elapsed_ms": 159.51,
+          "body_size_bytes": 76,
+          "error": "HTTPError:403",
+          "url": "http://127.0.0.1:8000/api/exchange-transactions/user/1"
+        }
+      ]
+    },
+    {
+      "key": "GET /api/exchange-transactions/{id}/messages",
+      "method": "GET",
+      "route_uri": "/api/exchange-transactions/{id}/messages",
+      "resolved_path": "/api/exchange-transactions/1/messages",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\ExchangeTransactionController@listMessages",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 140.626,
+        "min_ms": 104.233,
+        "max_ms": 170.766,
+        "p50_ms": 146.878,
+        "p95_ms": 168.377,
+        "status_histogram": {
+          "404": 3
+        },
+        "error_histogram": {
+          "HTTPError:404": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 404,
+          "elapsed_ms": 170.766,
+          "body_size_bytes": 49,
+          "error": "HTTPError:404",
+          "url": "http://127.0.0.1:8000/api/exchange-transactions/1/messages"
+        },
+        {
+          "ok": false,
+          "status_code": 404,
+          "elapsed_ms": 104.233,
+          "body_size_bytes": 49,
+          "error": "HTTPError:404",
+          "url": "http://127.0.0.1:8000/api/exchange-transactions/1/messages"
+        },
+        {
+          "ok": false,
+          "status_code": 404,
+          "elapsed_ms": 146.878,
+          "body_size_bytes": 49,
+          "error": "HTTPError:404",
+          "url": "http://127.0.0.1:8000/api/exchange-transactions/1/messages"
+        }
+      ]
+    },
+    {
+      "key": "POST /api/admin/atomic-transactions/{atomic_id}/rollback",
+      "method": "POST",
+      "route_uri": "/api/admin/atomic-transactions/{atomic_id}/rollback",
+      "resolved_path": "/api/admin/atomic-transactions/1/rollback",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\AtomicTransactionController@rollback",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 140.584,
+        "min_ms": 127.774,
+        "max_ms": 158.024,
+        "p50_ms": 135.955,
+        "p95_ms": 155.817,
+        "status_histogram": {
+          "409": 3
+        },
+        "error_histogram": {
+          "HTTPError:409": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 409,
+          "elapsed_ms": 127.774,
+          "body_size_bytes": 72,
+          "error": "HTTPError:409",
+          "url": "http://127.0.0.1:8000/api/admin/atomic-transactions/1/rollback"
+        },
+        {
+          "ok": false,
+          "status_code": 409,
+          "elapsed_ms": 158.024,
+          "body_size_bytes": 72,
+          "error": "HTTPError:409",
+          "url": "http://127.0.0.1:8000/api/admin/atomic-transactions/1/rollback"
+        },
+        {
+          "ok": false,
+          "status_code": 409,
+          "elapsed_ms": 135.955,
+          "body_size_bytes": 72,
+          "error": "HTTPError:409",
+          "url": "http://127.0.0.1:8000/api/admin/atomic-transactions/1/rollback"
+        }
+      ]
+    },
+    {
+      "key": "POST /api/exchange-products",
+      "method": "POST",
+      "route_uri": "/api/exchange-products",
+      "resolved_path": "/api/exchange-products",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\ExchangeProductController@store",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 140.36,
+        "min_ms": 110.102,
+        "max_ms": 165.831,
+        "p50_ms": 145.147,
+        "p95_ms": 163.763,
+        "status_histogram": {
+          "422": 3
+        },
+        "error_histogram": {
+          "HTTPError:422": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 422,
+          "elapsed_ms": 165.831,
+          "body_size_bytes": 483,
+          "error": "HTTPError:422",
+          "url": "http://127.0.0.1:8000/api/exchange-products"
+        },
+        {
+          "ok": false,
+          "status_code": 422,
+          "elapsed_ms": 145.147,
+          "body_size_bytes": 483,
+          "error": "HTTPError:422",
+          "url": "http://127.0.0.1:8000/api/exchange-products"
+        },
+        {
+          "ok": false,
+          "status_code": 422,
+          "elapsed_ms": 110.102,
+          "body_size_bytes": 483,
+          "error": "HTTPError:422",
+          "url": "http://127.0.0.1:8000/api/exchange-products"
+        }
+      ]
+    },
+    {
+      "key": "POST /api/wallets/{wallet_id}/close",
+      "method": "POST",
+      "route_uri": "/api/wallets/{wallet_id}/close",
+      "resolved_path": "/api/wallets/1/close",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\WalletController@closeWallet",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 140.152,
+        "min_ms": 133.694,
+        "max_ms": 145.149,
+        "p50_ms": 141.613,
+        "p95_ms": 144.795,
+        "status_histogram": {
+          "401": 3
+        },
+        "error_histogram": {
+          "HTTPError:401": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 145.149,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/wallets/1/close"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 133.694,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/wallets/1/close"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 141.613,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/wallets/1/close"
+        }
+      ]
+    },
+    {
+      "key": "GET /api/admin/dormitories",
+      "method": "GET",
+      "route_uri": "/api/admin/dormitories",
+      "resolved_path": "/api/admin/dormitories",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\AdminController@listAllDormitories",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 3,
+        "avg_ms": 139.916,
+        "min_ms": 126.774,
+        "max_ms": 149.284,
+        "p50_ms": 143.689,
+        "p95_ms": 148.724,
+        "status_histogram": {
+          "200": 3
+        },
+        "error_histogram": {}
+      },
+      "runs": [
+        {
+          "ok": true,
+          "status_code": 200,
+          "elapsed_ms": 126.774,
+          "body_size_bytes": 692,
+          "error": "",
+          "url": "http://127.0.0.1:8000/api/admin/dormitories"
+        },
+        {
+          "ok": true,
+          "status_code": 200,
+          "elapsed_ms": 143.689,
+          "body_size_bytes": 692,
+          "error": "",
+          "url": "http://127.0.0.1:8000/api/admin/dormitories"
+        },
+        {
+          "ok": true,
+          "status_code": 200,
+          "elapsed_ms": 149.284,
+          "body_size_bytes": 692,
+          "error": "",
+          "url": "http://127.0.0.1:8000/api/admin/dormitories"
+        }
+      ]
+    },
+    {
+      "key": "POST /api/admin/ledgers",
+      "method": "POST",
+      "route_uri": "/api/admin/ledgers",
+      "resolved_path": "/api/admin/ledgers",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\LedgerController@create",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 138.861,
+        "min_ms": 123.236,
+        "max_ms": 153.234,
+        "p50_ms": 140.112,
+        "p95_ms": 151.922,
+        "status_histogram": {
+          "422": 3
+        },
+        "error_histogram": {
+          "HTTPError:422": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 422,
+          "elapsed_ms": 153.234,
+          "body_size_bytes": 233,
+          "error": "HTTPError:422",
+          "url": "http://127.0.0.1:8000/api/admin/ledgers"
+        },
+        {
+          "ok": false,
+          "status_code": 422,
+          "elapsed_ms": 140.112,
+          "body_size_bytes": 233,
+          "error": "HTTPError:422",
+          "url": "http://127.0.0.1:8000/api/admin/ledgers"
+        },
+        {
+          "ok": false,
+          "status_code": 422,
+          "elapsed_ms": 123.236,
+          "body_size_bytes": 233,
+          "error": "HTTPError:422",
+          "url": "http://127.0.0.1:8000/api/admin/ledgers"
+        }
+      ]
+    },
+    {
+      "key": "GET /api/user/exchange-products",
+      "method": "GET",
+      "route_uri": "/api/user/exchange-products",
+      "resolved_path": "/api/user/exchange-products",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\ExchangeProductController@index",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 3,
+        "avg_ms": 138.519,
+        "min_ms": 129.498,
+        "max_ms": 153.028,
+        "p50_ms": 133.032,
+        "p95_ms": 151.028,
+        "status_histogram": {
+          "200": 3
+        },
+        "error_histogram": {}
+      },
+      "runs": [
+        {
+          "ok": true,
+          "status_code": 200,
+          "elapsed_ms": 133.032,
+          "body_size_bytes": 4839,
+          "error": "",
+          "url": "http://127.0.0.1:8000/api/user/exchange-products"
+        },
+        {
+          "ok": true,
+          "status_code": 200,
+          "elapsed_ms": 129.498,
+          "body_size_bytes": 4839,
+          "error": "",
+          "url": "http://127.0.0.1:8000/api/user/exchange-products"
+        },
+        {
+          "ok": true,
+          "status_code": 200,
+          "elapsed_ms": 153.028,
+          "body_size_bytes": 4839,
+          "error": "",
+          "url": "http://127.0.0.1:8000/api/user/exchange-products"
+        }
+      ]
+    },
+    {
+      "key": "DELETE /api/admin/universities/{id}",
+      "method": "DELETE",
+      "route_uri": "/api/admin/universities/{id}",
+      "resolved_path": "/api/admin/universities/1",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\AdminController@deleteUniversity",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 138.282,
+        "min_ms": 136.043,
+        "max_ms": 140.149,
+        "p50_ms": 138.655,
+        "p95_ms": 140.0,
+        "status_histogram": {
+          "401": 3
+        },
+        "error_histogram": {
+          "HTTPError:401": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 136.043,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/admin/universities/1"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 140.149,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/admin/universities/1"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 138.655,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/admin/universities/1"
+        }
+      ]
+    },
+    {
+      "key": "GET /api/wallets/{wallet_id}/transactions",
+      "method": "GET",
+      "route_uri": "/api/wallets/{wallet_id}/transactions",
+      "resolved_path": "/api/wallets/1/transactions",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\WalletController@transactionHistory",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 138.25,
+        "min_ms": 116.549,
+        "max_ms": 159.662,
+        "p50_ms": 138.539,
+        "p95_ms": 157.55,
+        "status_histogram": {
+          "401": 3
+        },
+        "error_histogram": {
+          "HTTPError:401": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 116.549,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/wallets/1/transactions"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 159.662,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/wallets/1/transactions"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 138.539,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/wallets/1/transactions"
+        }
+      ]
+    },
+    {
+      "key": "GET /api/user/sellers/{seller_id}",
+      "method": "GET",
+      "route_uri": "/api/user/sellers/{seller_id}",
+      "resolved_path": "/api/user/sellers/1",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\ProductController@sellerProfile",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 138.22,
+        "min_ms": 120.966,
+        "max_ms": 155.404,
+        "p50_ms": 138.29,
+        "p95_ms": 153.693,
+        "status_histogram": {
+          "401": 3
+        },
+        "error_histogram": {
+          "HTTPError:401": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 155.404,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/sellers/1"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 138.29,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/sellers/1"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 120.966,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/sellers/1"
+        }
+      ]
+    },
+    {
+      "key": "GET /api/wallets",
+      "method": "GET",
+      "route_uri": "/api/wallets",
+      "resolved_path": "/api/wallets",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\WalletController@listWallets",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 138.158,
+        "min_ms": 130.712,
+        "max_ms": 146.007,
+        "p50_ms": 137.754,
+        "p95_ms": 145.182,
+        "status_histogram": {
+          "401": 3
+        },
+        "error_histogram": {
+          "HTTPError:401": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 130.712,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/wallets"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 146.007,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/wallets"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 137.754,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/wallets"
+        }
+      ]
+    },
+    {
+      "key": "POST /api/ai/sessions/{session_id}/messages",
+      "method": "POST",
+      "route_uri": "/api/ai/sessions/{session_id}/messages",
+      "resolved_path": "/api/ai/sessions/00000000-0000-0000-0000-000000000001/messages",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\AiChatController@sendMessage",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 138.035,
+        "min_ms": 135.405,
+        "max_ms": 143.19,
+        "p50_ms": 135.51,
+        "p95_ms": 142.422,
+        "status_histogram": {
+          "422": 3
+        },
+        "error_histogram": {
+          "HTTPError:422": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 422,
+          "elapsed_ms": 135.51,
+          "body_size_bytes": 90,
+          "error": "HTTPError:422",
+          "url": "http://127.0.0.1:8000/api/ai/sessions/00000000-0000-0000-0000-000000000001/messages"
+        },
+        {
+          "ok": false,
+          "status_code": 422,
+          "elapsed_ms": 135.405,
+          "body_size_bytes": 90,
+          "error": "HTTPError:422",
+          "url": "http://127.0.0.1:8000/api/ai/sessions/00000000-0000-0000-0000-000000000001/messages"
+        },
+        {
+          "ok": false,
+          "status_code": 422,
+          "elapsed_ms": 143.19,
+          "body_size_bytes": 90,
+          "error": "HTTPError:422",
+          "url": "http://127.0.0.1:8000/api/ai/sessions/00000000-0000-0000-0000-000000000001/messages"
+        }
+      ]
+    },
+    {
+      "key": "GET /api/admin/get_all_users",
+      "method": "GET",
+      "route_uri": "/api/admin/get_all_users",
+      "resolved_path": "/api/admin/get_all_users",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\AdminController@listUsers",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 3,
+        "avg_ms": 137.419,
+        "min_ms": 117.85,
+        "max_ms": 159.207,
+        "p50_ms": 135.201,
+        "p95_ms": 156.806,
+        "status_histogram": {
+          "200": 3
+        },
+        "error_histogram": {}
+      },
+      "runs": [
+        {
+          "ok": true,
+          "status_code": 200,
+          "elapsed_ms": 135.201,
+          "body_size_bytes": 2007,
+          "error": "",
+          "url": "http://127.0.0.1:8000/api/admin/get_all_users"
+        },
+        {
+          "ok": true,
+          "status_code": 200,
+          "elapsed_ms": 117.85,
+          "body_size_bytes": 2007,
+          "error": "",
+          "url": "http://127.0.0.1:8000/api/admin/get_all_users"
+        },
+        {
+          "ok": true,
+          "status_code": 200,
+          "elapsed_ms": 159.207,
+          "body_size_bytes": 2007,
+          "error": "",
+          "url": "http://127.0.0.1:8000/api/admin/get_all_users"
+        }
+      ]
+    },
+    {
+      "key": "GET /api/user/meta/condition-levels",
+      "method": "GET",
+      "route_uri": "/api/user/meta/condition-levels",
+      "resolved_path": "/api/user/meta/condition-levels",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\ProductController@conditionLevels",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 136.676,
+        "min_ms": 122.658,
+        "max_ms": 163.124,
+        "p50_ms": 124.246,
+        "p95_ms": 159.236,
+        "status_histogram": {
+          "401": 3
+        },
+        "error_histogram": {
+          "HTTPError:401": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 163.124,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/meta/condition-levels"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 124.246,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/meta/condition-levels"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 122.658,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/meta/condition-levels"
+        }
+      ]
+    },
+    {
+      "key": "PATCH /api/admin/users/{id}/activate",
+      "method": "PATCH",
+      "route_uri": "/api/admin/users/{id}/activate",
+      "resolved_path": "/api/admin/users/1/activate",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\AdminController@activateUser",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 135.939,
+        "min_ms": 124.56,
+        "max_ms": 155.14,
+        "p50_ms": 128.117,
+        "p95_ms": 152.438,
+        "status_histogram": {
+          "401": 3
+        },
+        "error_histogram": {
+          "HTTPError:401": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 128.117,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/admin/users/1/activate"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 155.14,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/admin/users/1/activate"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 124.56,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/admin/users/1/activate"
+        }
+      ]
+    },
+    {
+      "key": "POST /api/user/behavioral_events",
+      "method": "POST",
+      "route_uri": "/api/user/behavioral_events",
+      "resolved_path": "/api/user/behavioral_events",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\BehavioralEventController@store",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 135.909,
+        "min_ms": 123.182,
+        "max_ms": 143.495,
+        "p50_ms": 141.05,
+        "p95_ms": 143.251,
+        "status_histogram": {
+          "422": 3
+        },
+        "error_histogram": {
+          "HTTPError:422": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 422,
+          "elapsed_ms": 123.182,
+          "body_size_bytes": 96,
+          "error": "HTTPError:422",
+          "url": "http://127.0.0.1:8000/api/user/behavioral_events"
+        },
+        {
+          "ok": false,
+          "status_code": 422,
+          "elapsed_ms": 141.05,
+          "body_size_bytes": 96,
+          "error": "HTTPError:422",
+          "url": "http://127.0.0.1:8000/api/user/behavioral_events"
+        },
+        {
+          "ok": false,
+          "status_code": 422,
+          "elapsed_ms": 143.495,
+          "body_size_bytes": 96,
+          "error": "HTTPError:422",
+          "url": "http://127.0.0.1:8000/api/user/behavioral_events"
+        }
+      ]
+    },
+    {
+      "key": "GET /api/ai/history",
+      "method": "GET",
+      "route_uri": "/api/ai/history",
+      "resolved_path": "/api/ai/history",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\AiChatController@listHistory",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 3,
+        "avg_ms": 135.893,
+        "min_ms": 125.159,
+        "max_ms": 144.267,
+        "p50_ms": 138.252,
+        "p95_ms": 143.666,
+        "status_histogram": {
+          "200": 3
+        },
+        "error_histogram": {}
+      },
+      "runs": [
+        {
+          "ok": true,
+          "status_code": 200,
+          "elapsed_ms": 125.159,
+          "body_size_bytes": 116,
+          "error": "",
+          "url": "http://127.0.0.1:8000/api/ai/history"
+        },
+        {
+          "ok": true,
+          "status_code": 200,
+          "elapsed_ms": 144.267,
+          "body_size_bytes": 116,
+          "error": "",
+          "url": "http://127.0.0.1:8000/api/ai/history"
+        },
+        {
+          "ok": true,
+          "status_code": 200,
+          "elapsed_ms": 138.252,
+          "body_size_bytes": 116,
+          "error": "",
+          "url": "http://127.0.0.1:8000/api/ai/history"
+        }
+      ]
+    },
+    {
+      "key": "PATCH /api/user/settings/university",
+      "method": "PATCH",
+      "route_uri": "/api/user/settings/university",
+      "resolved_path": "/api/user/settings/university",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\AuthController@updateUniversitySettings",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 135.026,
+        "min_ms": 124.431,
+        "max_ms": 142.827,
+        "p50_ms": 137.82,
+        "p95_ms": 142.326,
+        "status_histogram": {
+          "401": 3
+        },
+        "error_histogram": {
+          "HTTPError:401": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 137.82,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/settings/university"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 142.827,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/settings/university"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 124.431,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/settings/university"
+        }
+      ]
+    },
+    {
+      "key": "PATCH /api/ai/history/{session_id}/rename",
+      "method": "PATCH",
+      "route_uri": "/api/ai/history/{session_id}/rename",
+      "resolved_path": "/api/ai/history/00000000-0000-0000-0000-000000000001/rename",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\AiChatController@renameHistory",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 134.464,
+        "min_ms": 123.552,
+        "max_ms": 147.867,
+        "p50_ms": 131.973,
+        "p95_ms": 146.278,
+        "status_histogram": {
+          "422": 3
+        },
+        "error_histogram": {
+          "HTTPError:422": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 422,
+          "elapsed_ms": 147.867,
+          "body_size_bytes": 86,
+          "error": "HTTPError:422",
+          "url": "http://127.0.0.1:8000/api/ai/history/00000000-0000-0000-0000-000000000001/rename"
+        },
+        {
+          "ok": false,
+          "status_code": 422,
+          "elapsed_ms": 131.973,
+          "body_size_bytes": 86,
+          "error": "HTTPError:422",
+          "url": "http://127.0.0.1:8000/api/ai/history/00000000-0000-0000-0000-000000000001/rename"
+        },
+        {
+          "ok": false,
+          "status_code": 422,
+          "elapsed_ms": 123.552,
+          "body_size_bytes": 86,
+          "error": "HTTPError:422",
+          "url": "http://127.0.0.1:8000/api/ai/history/00000000-0000-0000-0000-000000000001/rename"
+        }
+      ]
+    },
+    {
+      "key": "GET /api/user/products/by-category/{category_name}",
+      "method": "GET",
+      "route_uri": "/api/user/products/by-category/{category_name}",
+      "resolved_path": "/api/user/products/by-category/1",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\ProductController@listProductsByCategoryName",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 134.338,
+        "min_ms": 123.519,
+        "max_ms": 140.135,
+        "p50_ms": 139.361,
+        "p95_ms": 140.058,
+        "status_histogram": {
+          "401": 3
+        },
+        "error_histogram": {
+          "HTTPError:401": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 123.519,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/products/by-category/1"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 139.361,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/products/by-category/1"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 140.135,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/products/by-category/1"
+        }
+      ]
+    },
+    {
+      "key": "GET /api/admin/universities/options",
+      "method": "GET",
+      "route_uri": "/api/admin/universities/options",
+      "resolved_path": "/api/admin/universities/options",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\AdminController@listUniversityOptions",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 134.164,
+        "min_ms": 102.724,
+        "max_ms": 168.38,
+        "p50_ms": 131.388,
+        "p95_ms": 164.681,
+        "status_histogram": {
+          "401": 3
+        },
+        "error_histogram": {
+          "HTTPError:401": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 168.38,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/admin/universities/options"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 131.388,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/admin/universities/options"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 102.724,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/admin/universities/options"
+        }
+      ]
+    },
+    {
+      "key": "POST /api/admin/wallets/{wallet_id}/unfreeze",
+      "method": "POST",
+      "route_uri": "/api/admin/wallets/{wallet_id}/unfreeze",
+      "resolved_path": "/api/admin/wallets/1/unfreeze",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\AdminFinanceController@unfreezeWallet",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 133.768,
+        "min_ms": 122.847,
+        "max_ms": 140.231,
+        "p50_ms": 138.225,
+        "p95_ms": 140.03,
+        "status_histogram": {
+          "401": 3
+        },
+        "error_histogram": {
+          "HTTPError:401": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 138.225,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/admin/wallets/1/unfreeze"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 140.231,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/admin/wallets/1/unfreeze"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 122.847,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/admin/wallets/1/unfreeze"
+        }
+      ]
+    },
+    {
+      "key": "GET /api/user/products/by-tag/{tag_name}",
+      "method": "GET",
+      "route_uri": "/api/user/products/by-tag/{tag_name}",
+      "resolved_path": "/api/user/products/by-tag/1",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\ProductController@listProductsByTagName",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 133.584,
+        "min_ms": 121.391,
+        "max_ms": 155.331,
+        "p50_ms": 124.029,
+        "p95_ms": 152.201,
+        "status_histogram": {
+          "401": 3
+        },
+        "error_histogram": {
+          "HTTPError:401": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 155.331,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/products/by-tag/1"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 124.029,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/products/by-tag/1"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 121.391,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/products/by-tag/1"
+        }
+      ]
+    },
+    {
+      "key": "POST /api/user/search/visual",
+      "method": "POST",
+      "route_uri": "/api/user/search/visual",
+      "resolved_path": "/api/user/search/visual",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\ProductController@visualSearch",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 133.29,
+        "min_ms": 120.595,
+        "max_ms": 139.854,
+        "p50_ms": 139.42,
+        "p95_ms": 139.811,
+        "status_histogram": {
+          "401": 3
+        },
+        "error_histogram": {
+          "HTTPError:401": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 120.595,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/search/visual"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 139.42,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/search/visual"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 139.854,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/search/visual"
+        }
+      ]
+    },
+    {
+      "key": "PATCH /api/admin/universities/{id}",
+      "method": "PATCH",
+      "route_uri": "/api/admin/universities/{id}",
+      "resolved_path": "/api/admin/universities/1",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\AdminController@updateUniversity",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 133.013,
+        "min_ms": 124.001,
+        "max_ms": 138.042,
+        "p50_ms": 136.997,
+        "p95_ms": 137.938,
+        "status_histogram": {
+          "401": 3
+        },
+        "error_histogram": {
+          "HTTPError:401": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 124.001,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/admin/universities/1"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 136.997,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/admin/universities/1"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 138.042,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/admin/universities/1"
+        }
+      ]
+    },
+    {
+      "key": "GET /api/admin/products",
+      "method": "GET",
+      "route_uri": "/api/admin/products",
+      "resolved_path": "/api/admin/products",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\AdminController@listProducts",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 132.631,
+        "min_ms": 106.565,
+        "max_ms": 152.303,
+        "p50_ms": 139.024,
+        "p95_ms": 150.975,
+        "status_histogram": {
+          "401": 3
+        },
+        "error_histogram": {
+          "HTTPError:401": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 152.303,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/admin/products"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 106.565,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/admin/products"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 139.024,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/admin/products"
+        }
+      ]
+    },
+    {
+      "key": "GET /api/admin/universities/{university_name}/dormitories",
+      "method": "GET",
+      "route_uri": "/api/admin/universities/{university_name}/dormitories",
+      "resolved_path": "/api/admin/universities/1/dormitories",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\AdminController@listDormitoriesByUniversity",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 132.559,
+        "min_ms": 131.338,
+        "max_ms": 133.825,
+        "p50_ms": 132.515,
+        "p95_ms": 133.694,
+        "status_histogram": {
+          "404": 3
+        },
+        "error_histogram": {
+          "HTTPError:404": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 404,
+          "elapsed_ms": 131.338,
+          "body_size_bytes": 39,
+          "error": "HTTPError:404",
+          "url": "http://127.0.0.1:8000/api/admin/universities/1/dormitories"
+        },
+        {
+          "ok": false,
+          "status_code": 404,
+          "elapsed_ms": 133.825,
+          "body_size_bytes": 39,
+          "error": "HTTPError:404",
+          "url": "http://127.0.0.1:8000/api/admin/universities/1/dormitories"
+        },
+        {
+          "ok": false,
+          "status_code": 404,
+          "elapsed_ms": 132.515,
+          "body_size_bytes": 39,
+          "error": "HTTPError:404",
+          "url": "http://127.0.0.1:8000/api/admin/universities/1/dormitories"
+        }
+      ]
+    },
+    {
+      "key": "POST /api/exchange-transactions",
+      "method": "POST",
+      "route_uri": "/api/exchange-transactions",
+      "resolved_path": "/api/exchange-transactions",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\ExchangeTransactionController@store",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 131.937,
+        "min_ms": 123.244,
+        "max_ms": 140.842,
+        "p50_ms": 131.726,
+        "p95_ms": 139.93,
+        "status_histogram": {
+          "422": 3
+        },
+        "error_histogram": {
+          "HTTPError:422": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 422,
+          "elapsed_ms": 123.244,
+          "body_size_bytes": 183,
+          "error": "HTTPError:422",
+          "url": "http://127.0.0.1:8000/api/exchange-transactions"
+        },
+        {
+          "ok": false,
+          "status_code": 422,
+          "elapsed_ms": 140.842,
+          "body_size_bytes": 183,
+          "error": "HTTPError:422",
+          "url": "http://127.0.0.1:8000/api/exchange-transactions"
+        },
+        {
+          "ok": false,
+          "status_code": 422,
+          "elapsed_ms": 131.726,
+          "body_size_bytes": 183,
+          "error": "HTTPError:422",
+          "url": "http://127.0.0.1:8000/api/exchange-transactions"
+        }
+      ]
+    },
+    {
+      "key": "GET /api/user/meta/dormitories",
+      "method": "GET",
+      "route_uri": "/api/user/meta/dormitories",
+      "resolved_path": "/api/user/meta/dormitories",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\ProductController@dormitories",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 131.674,
+        "min_ms": 116.83,
+        "max_ms": 147.412,
+        "p50_ms": 130.78,
+        "p95_ms": 145.749,
+        "status_histogram": {
+          "401": 3
+        },
+        "error_histogram": {
+          "HTTPError:401": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 130.78,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/meta/dormitories"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 147.412,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/meta/dormitories"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 116.83,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/meta/dormitories"
+        }
+      ]
+    },
+    {
+      "key": "GET /api/user/exchange-products/{id}",
+      "method": "GET",
+      "route_uri": "/api/user/exchange-products/{id}",
+      "resolved_path": "/api/user/exchange-products/1",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\ExchangeProductController@show",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 3,
+        "avg_ms": 131.559,
+        "min_ms": 119.772,
+        "max_ms": 139.374,
+        "p50_ms": 135.532,
+        "p95_ms": 138.99,
+        "status_histogram": {
+          "200": 3
+        },
+        "error_histogram": {}
+      },
+      "runs": [
+        {
+          "ok": true,
+          "status_code": 200,
+          "elapsed_ms": 139.374,
+          "body_size_bytes": 852,
+          "error": "",
+          "url": "http://127.0.0.1:8000/api/user/exchange-products/1"
+        },
+        {
+          "ok": true,
+          "status_code": 200,
+          "elapsed_ms": 119.772,
+          "body_size_bytes": 852,
+          "error": "",
+          "url": "http://127.0.0.1:8000/api/user/exchange-products/1"
+        },
+        {
+          "ok": true,
+          "status_code": 200,
+          "elapsed_ms": 135.532,
+          "body_size_bytes": 852,
+          "error": "",
+          "url": "http://127.0.0.1:8000/api/user/exchange-products/1"
+        }
+      ]
+    },
+    {
+      "key": "POST /api/admin/logout",
+      "method": "POST",
+      "route_uri": "/api/admin/logout",
+      "resolved_path": "/api/admin/logout",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\AdminController@logout",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 131.222,
+        "min_ms": 123.513,
+        "max_ms": 141.74,
+        "p50_ms": 128.414,
+        "p95_ms": 140.407,
+        "status_histogram": {
+          "401": 3
+        },
+        "error_histogram": {
+          "HTTPError:401": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 123.513,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/admin/logout"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 128.414,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/admin/logout"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 141.74,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/admin/logout"
+        }
+      ]
+    },
+    {
+      "key": "GET /api/user/settings/language",
+      "method": "GET",
+      "route_uri": "/api/user/settings/language",
+      "resolved_path": "/api/user/settings/language",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\AuthController@language",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 130.974,
+        "min_ms": 97.725,
+        "max_ms": 167.623,
+        "p50_ms": 127.574,
+        "p95_ms": 163.618,
+        "status_histogram": {
+          "401": 3
+        },
+        "error_histogram": {
+          "HTTPError:401": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 167.623,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/settings/language"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 127.574,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/settings/language"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 97.725,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/settings/language"
+        }
+      ]
+    },
+    {
+      "key": "POST /api/wallets",
+      "method": "POST",
+      "route_uri": "/api/wallets",
+      "resolved_path": "/api/wallets",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\WalletController@createWallet",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 130.888,
+        "min_ms": 122.658,
+        "max_ms": 137.088,
+        "p50_ms": 132.917,
+        "p95_ms": 136.671,
+        "status_histogram": {
+          "401": 3
+        },
+        "error_histogram": {
+          "HTTPError:401": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 137.088,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/wallets"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 122.658,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/wallets"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 132.917,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/wallets"
+        }
+      ]
+    },
+    {
+      "key": "GET /api/user/search/products/suggestions",
+      "method": "GET",
+      "route_uri": "/api/user/search/products/suggestions",
+      "resolved_path": "/api/user/search/products/suggestions",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\ProductController@searchSuggestions",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 130.7,
+        "min_ms": 119.687,
+        "max_ms": 136.545,
+        "p50_ms": 135.869,
+        "p95_ms": 136.477,
+        "status_histogram": {
+          "401": 3
+        },
+        "error_histogram": {
+          "HTTPError:401": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 135.869,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/search/products/suggestions"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 136.545,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/search/products/suggestions"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 119.687,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/search/products/suggestions"
+        }
+      ]
+    },
+    {
+      "key": "GET /api/atomic-transactions/{atomic_id}",
+      "method": "GET",
+      "route_uri": "/api/atomic-transactions/{atomic_id}",
+      "resolved_path": "/api/atomic-transactions/1",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\AtomicTransactionController@show",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 3,
+        "avg_ms": 130.575,
+        "min_ms": 117.603,
+        "max_ms": 147.264,
+        "p50_ms": 126.858,
+        "p95_ms": 145.223,
+        "status_histogram": {
+          "200": 3
+        },
+        "error_histogram": {}
+      },
+      "runs": [
+        {
+          "ok": true,
+          "status_code": 200,
+          "elapsed_ms": 126.858,
+          "body_size_bytes": 950,
+          "error": "",
+          "url": "http://127.0.0.1:8000/api/atomic-transactions/1"
+        },
+        {
+          "ok": true,
+          "status_code": 200,
+          "elapsed_ms": 117.603,
+          "body_size_bytes": 950,
+          "error": "",
+          "url": "http://127.0.0.1:8000/api/atomic-transactions/1"
+        },
+        {
+          "ok": true,
+          "status_code": 200,
+          "elapsed_ms": 147.264,
+          "body_size_bytes": 950,
+          "error": "",
+          "url": "http://127.0.0.1:8000/api/atomic-transactions/1"
+        }
+      ]
+    },
+    {
+      "key": "GET /api/admin/products/{product_id}",
+      "method": "GET",
+      "route_uri": "/api/admin/products/{product_id}",
+      "resolved_path": "/api/admin/products/1",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\AdminController@showProduct",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 130.058,
+        "min_ms": 116.405,
+        "max_ms": 140.455,
+        "p50_ms": 133.315,
+        "p95_ms": 139.741,
+        "status_histogram": {
+          "401": 3
+        },
+        "error_histogram": {
+          "HTTPError:401": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 133.315,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/admin/products/1"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 140.455,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/admin/products/1"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 116.405,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/admin/products/1"
+        }
+      ]
+    },
+    {
+      "key": "POST /api/user/login",
+      "method": "POST",
+      "route_uri": "/api/user/login",
+      "resolved_path": "/api/user/login",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\AuthController@login",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 130.053,
+        "min_ms": 123.703,
+        "max_ms": 138.911,
+        "p50_ms": 127.544,
+        "p95_ms": 137.774,
+        "status_histogram": {
+          "401": 3
+        },
+        "error_histogram": {
+          "HTTPError:401": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 127.544,
+          "body_size_bytes": 39,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/login"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 138.911,
+          "body_size_bytes": 39,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/login"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 123.703,
+          "body_size_bytes": 39,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/login"
+        }
+      ]
+    },
+    {
+      "key": "POST /api/admin/messages",
+      "method": "POST",
+      "route_uri": "/api/admin/messages",
+      "resolved_path": "/api/admin/messages",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\AdminController@sendMessage",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 129.891,
+        "min_ms": 104.473,
+        "max_ms": 154.706,
+        "p50_ms": 130.494,
+        "p95_ms": 152.285,
+        "status_histogram": {
+          "401": 3
+        },
+        "error_histogram": {
+          "HTTPError:401": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 104.473,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/admin/messages"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 130.494,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/admin/messages"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 154.706,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/admin/messages"
+        }
+      ]
+    },
+    {
+      "key": "POST /api/wallets/{wallet_id}/open",
+      "method": "POST",
+      "route_uri": "/api/wallets/{wallet_id}/open",
+      "resolved_path": "/api/wallets/1/open",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\WalletController@openWallet",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 129.782,
+        "min_ms": 109.724,
+        "max_ms": 146.157,
+        "p50_ms": 133.465,
+        "p95_ms": 144.888,
+        "status_histogram": {
+          "401": 3
+        },
+        "error_histogram": {
+          "HTTPError:401": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 146.157,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/wallets/1/open"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 133.465,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/wallets/1/open"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 109.724,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/wallets/1/open"
+        }
+      ]
+    },
+    {
+      "key": "POST /api/admin/wallets/{wallet_id}/freeze",
+      "method": "POST",
+      "route_uri": "/api/admin/wallets/{wallet_id}/freeze",
+      "resolved_path": "/api/admin/wallets/1/freeze",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\AdminFinanceController@freezeWallet",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 129.768,
+        "min_ms": 124.738,
+        "max_ms": 135.709,
+        "p50_ms": 128.856,
+        "p95_ms": 135.024,
+        "status_histogram": {
+          "401": 3
+        },
+        "error_histogram": {
+          "HTTPError:401": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 135.709,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/admin/wallets/1/freeze"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 128.856,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/admin/wallets/1/freeze"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 124.738,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/admin/wallets/1/freeze"
+        }
+      ]
+    },
+    {
+      "key": "PATCH /api/user/products/{product_id}/mark-sold",
+      "method": "PATCH",
+      "route_uri": "/api/user/products/{product_id}/mark-sold",
+      "resolved_path": "/api/user/products/1/mark-sold",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\ProductController@markMyProductAsSold",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 129.734,
+        "min_ms": 120.622,
+        "max_ms": 136.465,
+        "p50_ms": 132.116,
+        "p95_ms": 136.03,
+        "status_histogram": {
+          "401": 3
+        },
+        "error_histogram": {
+          "HTTPError:401": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 132.116,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/products/1/mark-sold"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 120.622,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/products/1/mark-sold"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 136.465,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/products/1/mark-sold"
+        }
+      ]
+    },
+    {
+      "key": "POST /api/atomic-transactions",
+      "method": "POST",
+      "route_uri": "/api/atomic-transactions",
+      "resolved_path": "/api/atomic-transactions",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\AtomicTransactionController@create",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 129.728,
+        "min_ms": 111.012,
+        "max_ms": 148.021,
+        "p50_ms": 130.15,
+        "p95_ms": 146.234,
+        "status_histogram": {
+          "422": 3
+        },
+        "error_histogram": {
+          "HTTPError:422": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 422,
+          "elapsed_ms": 111.012,
+          "body_size_bytes": 86,
+          "error": "HTTPError:422",
+          "url": "http://127.0.0.1:8000/api/atomic-transactions"
+        },
+        {
+          "ok": false,
+          "status_code": 422,
+          "elapsed_ms": 148.021,
+          "body_size_bytes": 86,
+          "error": "HTTPError:422",
+          "url": "http://127.0.0.1:8000/api/atomic-transactions"
+        },
+        {
+          "ok": false,
+          "status_code": 422,
+          "elapsed_ms": 130.15,
+          "body_size_bytes": 86,
+          "error": "HTTPError:422",
+          "url": "http://127.0.0.1:8000/api/atomic-transactions"
+        }
+      ]
+    },
+    {
+      "key": "PATCH /api/admin/users/{id}",
+      "method": "PATCH",
+      "route_uri": "/api/admin/users/{id}",
+      "resolved_path": "/api/admin/users/1",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\AdminController@updateUser",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 129.448,
+        "min_ms": 116.972,
+        "max_ms": 137.399,
+        "p50_ms": 133.973,
+        "p95_ms": 137.056,
+        "status_histogram": {
+          "401": 3
+        },
+        "error_histogram": {
+          "HTTPError:401": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 133.973,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/admin/users/1"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 116.972,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/admin/users/1"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 137.399,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/admin/users/1"
+        }
+      ]
+    },
+    {
+      "key": "GET /api/user/me",
+      "method": "GET",
+      "route_uri": "/api/user/me",
+      "resolved_path": "/api/user/me",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\AuthController@me",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 129.12,
+        "min_ms": 117.947,
+        "max_ms": 142.78,
+        "p50_ms": 126.632,
+        "p95_ms": 141.165,
+        "status_histogram": {
+          "401": 3
+        },
+        "error_histogram": {
+          "HTTPError:401": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 117.947,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/me"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 142.78,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/me"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 126.632,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/me"
+        }
+      ]
+    },
+    {
+      "key": "GET /api/admin/dormitories_and_university_/names",
+      "method": "GET",
+      "route_uri": "/api/admin/dormitories_and_university_/names",
+      "resolved_path": "/api/admin/dormitories_and_university_/names",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\AdminController@listDormitoryUniversityNames",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 3,
+        "avg_ms": 128.918,
+        "min_ms": 119.929,
+        "max_ms": 143.038,
+        "p50_ms": 123.786,
+        "p95_ms": 141.113,
+        "status_histogram": {
+          "200": 3
+        },
+        "error_histogram": {}
+      },
+      "runs": [
+        {
+          "ok": true,
+          "status_code": 200,
+          "elapsed_ms": 123.786,
+          "body_size_bytes": 207,
+          "error": "",
+          "url": "http://127.0.0.1:8000/api/admin/dormitories_and_university_/names"
+        },
+        {
+          "ok": true,
+          "status_code": 200,
+          "elapsed_ms": 119.929,
+          "body_size_bytes": 207,
+          "error": "",
+          "url": "http://127.0.0.1:8000/api/admin/dormitories_and_university_/names"
+        },
+        {
+          "ok": true,
+          "status_code": 200,
+          "elapsed_ms": 143.038,
+          "body_size_bytes": 207,
+          "error": "",
+          "url": "http://127.0.0.1:8000/api/admin/dormitories_and_university_/names"
+        }
+      ]
+    },
+    {
+      "key": "GET /api/admin/users/{id}",
+      "method": "GET",
+      "route_uri": "/api/admin/users/{id}",
+      "resolved_path": "/api/admin/users/1",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\AdminController@showUser",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 128.671,
+        "min_ms": 119.505,
+        "max_ms": 135.952,
+        "p50_ms": 130.557,
+        "p95_ms": 135.412,
+        "status_histogram": {
+          "401": 3
+        },
+        "error_histogram": {
+          "HTTPError:401": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 119.505,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/admin/users/1"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 130.557,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/admin/users/1"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 135.952,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/admin/users/1"
+        }
+      ]
+    },
+    {
+      "key": "GET /api/user/products/cards",
+      "method": "GET",
+      "route_uri": "/api/user/products/cards",
+      "resolved_path": "/api/user/products/cards",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\ProductController@myProductCards",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 128.487,
+        "min_ms": 121.563,
+        "max_ms": 136.689,
+        "p50_ms": 127.208,
+        "p95_ms": 135.741,
+        "status_histogram": {
+          "401": 3
+        },
+        "error_histogram": {
+          "HTTPError:401": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 121.563,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/products/cards"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 127.208,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/products/cards"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 136.689,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/products/cards"
+        }
+      ]
+    },
+    {
+      "key": "GET /api/atomic-transactions/{atomic_id}/verify",
+      "method": "GET",
+      "route_uri": "/api/atomic-transactions/{atomic_id}/verify",
+      "resolved_path": "/api/atomic-transactions/1/verify",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\AtomicTransactionController@verify",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 3,
+        "avg_ms": 128.436,
+        "min_ms": 122.458,
+        "max_ms": 131.869,
+        "p50_ms": 130.981,
+        "p95_ms": 131.78,
+        "status_histogram": {
+          "200": 3
+        },
+        "error_histogram": {}
+      },
+      "runs": [
+        {
+          "ok": true,
+          "status_code": 200,
+          "elapsed_ms": 122.458,
+          "body_size_bytes": 134,
+          "error": "",
+          "url": "http://127.0.0.1:8000/api/atomic-transactions/1/verify"
+        },
+        {
+          "ok": true,
+          "status_code": 200,
+          "elapsed_ms": 130.981,
+          "body_size_bytes": 134,
+          "error": "",
+          "url": "http://127.0.0.1:8000/api/atomic-transactions/1/verify"
+        },
+        {
+          "ok": true,
+          "status_code": 200,
+          "elapsed_ms": 131.869,
+          "body_size_bytes": 134,
+          "error": "",
+          "url": "http://127.0.0.1:8000/api/atomic-transactions/1/verify"
+        }
+      ]
+    },
+    {
+      "key": "POST /api/admin/set_dormitory",
+      "method": "POST",
+      "route_uri": "/api/admin/set_dormitory",
+      "resolved_path": "/api/admin/set_dormitory",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\AdminController@set_dormitory",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 128.39,
+        "min_ms": 123.934,
+        "max_ms": 135.558,
+        "p50_ms": 125.677,
+        "p95_ms": 134.57,
+        "status_histogram": {
+          "401": 3
+        },
+        "error_histogram": {
+          "HTTPError:401": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 123.934,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/admin/set_dormitory"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 135.558,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/admin/set_dormitory"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 125.677,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/admin/set_dormitory"
+        }
+      ]
+    },
+    {
+      "key": "PATCH /api/admin/users/{id}/deactivate",
+      "method": "PATCH",
+      "route_uri": "/api/admin/users/{id}/deactivate",
+      "resolved_path": "/api/admin/users/1/deactivate",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\AdminController@deactivateUser",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 128.368,
+        "min_ms": 125.195,
+        "max_ms": 131.62,
+        "p50_ms": 128.288,
+        "p95_ms": 131.287,
+        "status_histogram": {
+          "401": 3
+        },
+        "error_histogram": {
+          "HTTPError:401": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 125.195,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/admin/users/1/deactivate"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 128.288,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/admin/users/1/deactivate"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 131.62,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/admin/users/1/deactivate"
+        }
+      ]
+    },
+    {
+      "key": "POST /api/user/messages",
+      "method": "POST",
+      "route_uri": "/api/user/messages",
+      "resolved_path": "/api/user/messages",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\AuthController@sendMessage",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 128.333,
+        "min_ms": 118.687,
+        "max_ms": 136.908,
+        "p50_ms": 129.403,
+        "p95_ms": 136.157,
+        "status_histogram": {
+          "401": 3
+        },
+        "error_histogram": {
+          "HTTPError:401": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 129.403,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/messages"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 136.908,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/messages"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 118.687,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/messages"
+        }
+      ]
+    },
+    {
+      "key": "POST /api/wallets/transfer",
+      "method": "POST",
+      "route_uri": "/api/wallets/transfer",
+      "resolved_path": "/api/wallets/transfer",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\WalletController@transfer",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 128.226,
+        "min_ms": 119.147,
+        "max_ms": 136.858,
+        "p50_ms": 128.673,
+        "p95_ms": 136.04,
+        "status_histogram": {
+          "401": 3
+        },
+        "error_histogram": {
+          "HTTPError:401": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 119.147,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/wallets/transfer"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 136.858,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/wallets/transfer"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 128.673,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/wallets/transfer"
+        }
+      ]
+    },
+    {
+      "key": "POST /api/admin/condition-levels",
+      "method": "POST",
+      "route_uri": "/api/admin/condition-levels",
+      "resolved_path": "/api/admin/condition-levels",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\AdminController@createConditionLevel",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 128.19,
+        "min_ms": 113.451,
+        "max_ms": 139.815,
+        "p50_ms": 131.304,
+        "p95_ms": 138.964,
+        "status_histogram": {
+          "422": 3
+        },
+        "error_histogram": {
+          "HTTPError:422": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 422,
+          "elapsed_ms": 113.451,
+          "body_size_bytes": 84,
+          "error": "HTTPError:422",
+          "url": "http://127.0.0.1:8000/api/admin/condition-levels"
+        },
+        {
+          "ok": false,
+          "status_code": 422,
+          "elapsed_ms": 139.815,
+          "body_size_bytes": 84,
+          "error": "HTTPError:422",
+          "url": "http://127.0.0.1:8000/api/admin/condition-levels"
+        },
+        {
+          "ok": false,
+          "status_code": 422,
+          "elapsed_ms": 131.304,
+          "body_size_bytes": 84,
+          "error": "HTTPError:422",
+          "url": "http://127.0.0.1:8000/api/admin/condition-levels"
+        }
+      ]
+    },
+    {
+      "key": "PATCH /api/user/settings",
+      "method": "PATCH",
+      "route_uri": "/api/user/settings",
+      "resolved_path": "/api/user/settings",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\AuthController@updateProfile",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 127.709,
+        "min_ms": 115.578,
+        "max_ms": 148.881,
+        "p50_ms": 118.667,
+        "p95_ms": 145.86,
+        "status_histogram": {
+          "401": 3
+        },
+        "error_histogram": {
+          "HTTPError:401": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 118.667,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/settings"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 148.881,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/settings"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 115.578,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/settings"
+        }
+      ]
+    },
+    {
+      "key": "GET /api/user/meta/categories",
+      "method": "GET",
+      "route_uri": "/api/user/meta/categories",
+      "resolved_path": "/api/user/meta/categories",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\ProductController@categories",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 127.618,
+        "min_ms": 121.226,
+        "max_ms": 138.717,
+        "p50_ms": 122.91,
+        "p95_ms": 137.136,
+        "status_histogram": {
+          "401": 3
+        },
+        "error_histogram": {
+          "HTTPError:401": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 121.226,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/meta/categories"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 122.91,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/meta/categories"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 138.717,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/meta/categories"
+        }
+      ]
+    },
+    {
+      "key": "GET /api/admin/messages",
+      "method": "GET",
+      "route_uri": "/api/admin/messages",
+      "resolved_path": "/api/admin/messages",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\AdminController@listMessages",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 127.529,
+        "min_ms": 120.904,
+        "max_ms": 133.991,
+        "p50_ms": 127.693,
+        "p95_ms": 133.361,
+        "status_histogram": {
+          "401": 3
+        },
+        "error_histogram": {
+          "HTTPError:401": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 133.991,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/admin/messages"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 127.693,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/admin/messages"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 120.904,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/admin/messages"
+        }
+      ]
+    },
+    {
+      "key": "GET /api/user/products/{product_id}/edit",
+      "method": "GET",
+      "route_uri": "/api/user/products/{product_id}/edit",
+      "resolved_path": "/api/user/products/1/edit",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\ProductController@getMyProductForEdit",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 126.921,
+        "min_ms": 112.509,
+        "max_ms": 144.083,
+        "p50_ms": 124.172,
+        "p95_ms": 142.092,
+        "status_histogram": {
+          "401": 3
+        },
+        "error_histogram": {
+          "HTTPError:401": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 144.083,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/products/1/edit"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 124.172,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/products/1/edit"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 112.509,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/products/1/edit"
+        }
+      ]
+    },
+    {
+      "key": "POST /api/wallets/{wallet_id}/top-up",
+      "method": "POST",
+      "route_uri": "/api/wallets/{wallet_id}/top-up",
+      "resolved_path": "/api/wallets/1/top-up",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\WalletController@topUp",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 126.709,
+        "min_ms": 110.149,
+        "max_ms": 142.696,
+        "p50_ms": 127.282,
+        "p95_ms": 141.155,
+        "status_histogram": {
+          "401": 3
+        },
+        "error_histogram": {
+          "HTTPError:401": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 127.282,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/wallets/1/top-up"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 142.696,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/wallets/1/top-up"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 110.149,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/wallets/1/top-up"
+        }
+      ]
+    },
+    {
+      "key": "POST /api/user/products/{product_id}/images",
+      "method": "POST",
+      "route_uri": "/api/user/products/{product_id}/images",
+      "resolved_path": "/api/user/products/1/images",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\ProductController@uploadImages",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 126.651,
+        "min_ms": 115.673,
+        "max_ms": 139.199,
+        "p50_ms": 125.082,
+        "p95_ms": 137.787,
+        "status_histogram": {
+          "401": 3
+        },
+        "error_histogram": {
+          "HTTPError:401": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 125.082,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/products/1/images"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 139.199,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/products/1/images"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 115.673,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/products/1/images"
+        }
+      ]
+    },
+    {
+      "key": "PATCH /api/user/products/{product_id}",
+      "method": "PATCH",
+      "route_uri": "/api/user/products/{product_id}",
+      "resolved_path": "/api/user/products/1",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\ProductController@updateMyProduct",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 126.497,
+        "min_ms": 116.869,
+        "max_ms": 137.068,
+        "p50_ms": 125.555,
+        "p95_ms": 135.917,
+        "status_histogram": {
+          "401": 3
+        },
+        "error_histogram": {
+          "HTTPError:401": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 116.869,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/products/1"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 137.068,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/products/1"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 125.555,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/products/1"
+        }
+      ]
+    },
+    {
+      "key": "GET /api/admin/condition-levels",
+      "method": "GET",
+      "route_uri": "/api/admin/condition-levels",
+      "resolved_path": "/api/admin/condition-levels",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\AdminController@listConditionLevels",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 3,
+        "avg_ms": 126.404,
+        "min_ms": 113.283,
+        "max_ms": 138.507,
+        "p50_ms": 127.423,
+        "p95_ms": 137.399,
+        "status_histogram": {
+          "200": 3
+        },
+        "error_histogram": {}
+      },
+      "runs": [
+        {
+          "ok": true,
+          "status_code": 200,
+          "elapsed_ms": 127.423,
+          "body_size_bytes": 292,
+          "error": "",
+          "url": "http://127.0.0.1:8000/api/admin/condition-levels"
+        },
+        {
+          "ok": true,
+          "status_code": 200,
+          "elapsed_ms": 113.283,
+          "body_size_bytes": 292,
+          "error": "",
+          "url": "http://127.0.0.1:8000/api/admin/condition-levels"
+        },
+        {
+          "ok": true,
+          "status_code": 200,
+          "elapsed_ms": 138.507,
+          "body_size_bytes": 292,
+          "error": "",
+          "url": "http://127.0.0.1:8000/api/admin/condition-levels"
+        }
+      ]
+    },
+    {
+      "key": "POST /api/user/tags",
+      "method": "POST",
+      "route_uri": "/api/user/tags",
+      "resolved_path": "/api/user/tags",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\ProductController@createTag",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 125.018,
+        "min_ms": 113.262,
+        "max_ms": 140.506,
+        "p50_ms": 121.286,
+        "p95_ms": 138.584,
+        "status_histogram": {
+          "401": 3
+        },
+        "error_histogram": {
+          "HTTPError:401": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 140.506,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/tags"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 113.262,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/tags"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 121.286,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/tags"
+        }
+      ]
+    },
+    {
+      "key": "GET /api/user/get_favorites",
+      "method": "GET",
+      "route_uri": "/api/user/get_favorites",
+      "resolved_path": "/api/user/get_favorites",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\ProductController@myFavorites",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 3,
+        "avg_ms": 124.99,
+        "min_ms": 100.174,
+        "max_ms": 138.941,
+        "p50_ms": 135.856,
+        "p95_ms": 138.632,
+        "status_histogram": {
+          "200": 3
+        },
+        "error_histogram": {}
+      },
+      "runs": [
+        {
+          "ok": true,
+          "status_code": 200,
+          "elapsed_ms": 135.856,
+          "body_size_bytes": 72,
+          "error": "",
+          "url": "http://127.0.0.1:8000/api/user/get_favorites"
+        },
+        {
+          "ok": true,
+          "status_code": 200,
+          "elapsed_ms": 138.941,
+          "body_size_bytes": 72,
+          "error": "",
+          "url": "http://127.0.0.1:8000/api/user/get_favorites"
+        },
+        {
+          "ok": true,
+          "status_code": 200,
+          "elapsed_ms": 100.174,
+          "body_size_bytes": 72,
+          "error": "",
+          "url": "http://127.0.0.1:8000/api/user/get_favorites"
+        }
+      ]
+    },
+    {
+      "key": "POST /api/admin/login",
+      "method": "POST",
+      "route_uri": "/api/admin/login",
+      "resolved_path": "/api/admin/login",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\AdminController@login",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 124.896,
+        "min_ms": 120.868,
+        "max_ms": 127.996,
+        "p50_ms": 125.823,
+        "p95_ms": 127.779,
+        "status_histogram": {
+          "422": 3
+        },
+        "error_histogram": {
+          "HTTPError:422": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 422,
+          "elapsed_ms": 125.823,
+          "body_size_bytes": 133,
+          "error": "HTTPError:422",
+          "url": "http://127.0.0.1:8000/api/admin/login"
+        },
+        {
+          "ok": false,
+          "status_code": 422,
+          "elapsed_ms": 127.996,
+          "body_size_bytes": 133,
+          "error": "HTTPError:422",
+          "url": "http://127.0.0.1:8000/api/admin/login"
+        },
+        {
+          "ok": false,
+          "status_code": 422,
+          "elapsed_ms": 120.868,
+          "body_size_bytes": 133,
+          "error": "HTTPError:422",
+          "url": "http://127.0.0.1:8000/api/admin/login"
+        }
+      ]
+    },
+    {
+      "key": "GET /api/user/messages",
+      "method": "GET",
+      "route_uri": "/api/user/messages",
+      "resolved_path": "/api/user/messages",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\AuthController@myMessages",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 124.301,
+        "min_ms": 121.731,
+        "max_ms": 128.345,
+        "p50_ms": 122.828,
+        "p95_ms": 127.793,
+        "status_histogram": {
+          "401": 3
+        },
+        "error_histogram": {
+          "HTTPError:401": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 128.345,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/messages"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 122.828,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/messages"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 121.731,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/messages"
+        }
+      ]
+    },
+    {
+      "key": "POST /api/wallets/{wallet_id}/withdraw",
+      "method": "POST",
+      "route_uri": "/api/wallets/{wallet_id}/withdraw",
+      "resolved_path": "/api/wallets/1/withdraw",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\WalletController@withdraw",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 124.176,
+        "min_ms": 96.935,
+        "max_ms": 143.85,
+        "p50_ms": 131.742,
+        "p95_ms": 142.639,
+        "status_histogram": {
+          "401": 3
+        },
+        "error_histogram": {
+          "HTTPError:401": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 96.935,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/wallets/1/withdraw"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 131.742,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/wallets/1/withdraw"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 143.85,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/wallets/1/withdraw"
+        }
+      ]
+    },
+    {
+      "key": "GET /api/user/settings/profile-picture",
+      "method": "GET",
+      "route_uri": "/api/user/settings/profile-picture",
+      "resolved_path": "/api/user/settings/profile-picture",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\AuthController@profilePicture",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 124.155,
+        "min_ms": 109.714,
+        "max_ms": 136.463,
+        "p50_ms": 126.287,
+        "p95_ms": 135.445,
+        "status_histogram": {
+          "401": 3
+        },
+        "error_histogram": {
+          "HTTPError:401": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 126.287,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/settings/profile-picture"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 136.463,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/settings/profile-picture"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 109.714,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/settings/profile-picture"
+        }
+      ]
+    },
+    {
+      "key": "GET /api/wallets/{wallet_id}",
+      "method": "GET",
+      "route_uri": "/api/wallets/{wallet_id}",
+      "resolved_path": "/api/wallets/1",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\WalletController@showWallet",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 123.941,
+        "min_ms": 109.813,
+        "max_ms": 138.567,
+        "p50_ms": 123.444,
+        "p95_ms": 137.055,
+        "status_histogram": {
+          "401": 3
+        },
+        "error_histogram": {
+          "HTTPError:401": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 138.567,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/wallets/1"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 109.813,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/wallets/1"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 123.444,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/wallets/1"
+        }
+      ]
+    },
+    {
+      "key": "GET /api/user/meta/options",
+      "method": "GET",
+      "route_uri": "/api/user/meta/options",
+      "resolved_path": "/api/user/meta/options",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\ProductController@metadataOptions",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 123.514,
+        "min_ms": 99.778,
+        "max_ms": 141.088,
+        "p50_ms": 129.675,
+        "p95_ms": 139.947,
+        "status_histogram": {
+          "401": 3
+        },
+        "error_histogram": {
+          "HTTPError:401": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 99.778,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/meta/options"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 129.675,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/meta/options"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 141.088,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/meta/options"
+        }
+      ]
+    },
+    {
+      "key": "POST /api/exchange-transactions/{id}/messages",
+      "method": "POST",
+      "route_uri": "/api/exchange-transactions/{id}/messages",
+      "resolved_path": "/api/exchange-transactions/1/messages",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\ExchangeTransactionController@sendMessage",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 123.405,
+        "min_ms": 106.691,
+        "max_ms": 137.22,
+        "p50_ms": 126.304,
+        "p95_ms": 136.128,
+        "status_histogram": {
+          "404": 3
+        },
+        "error_histogram": {
+          "HTTPError:404": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 404,
+          "elapsed_ms": 137.22,
+          "body_size_bytes": 49,
+          "error": "HTTPError:404",
+          "url": "http://127.0.0.1:8000/api/exchange-transactions/1/messages"
+        },
+        {
+          "ok": false,
+          "status_code": 404,
+          "elapsed_ms": 126.304,
+          "body_size_bytes": 49,
+          "error": "HTTPError:404",
+          "url": "http://127.0.0.1:8000/api/exchange-transactions/1/messages"
+        },
+        {
+          "ok": false,
+          "status_code": 404,
+          "elapsed_ms": 106.691,
+          "body_size_bytes": 49,
+          "error": "HTTPError:404",
+          "url": "http://127.0.0.1:8000/api/exchange-transactions/1/messages"
+        }
+      ]
+    },
+    {
+      "key": "GET /api/admin/universities/{id}",
+      "method": "GET",
+      "route_uri": "/api/admin/universities/{id}",
+      "resolved_path": "/api/admin/universities/1",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\AdminController@showUniversity",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 123.062,
+        "min_ms": 110.735,
+        "max_ms": 134.498,
+        "p50_ms": 123.952,
+        "p95_ms": 133.443,
+        "status_histogram": {
+          "401": 3
+        },
+        "error_histogram": {
+          "HTTPError:401": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 123.952,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/admin/universities/1"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 110.735,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/admin/universities/1"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 134.498,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/admin/universities/1"
+        }
+      ]
+    },
+    {
+      "key": "PATCH /api/wallets/{wallet_id}",
+      "method": "PATCH",
+      "route_uri": "/api/wallets/{wallet_id}",
+      "resolved_path": "/api/wallets/1",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\WalletController@updateWallet",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 122.86,
+        "min_ms": 117.91,
+        "max_ms": 126.937,
+        "p50_ms": 123.732,
+        "p95_ms": 126.617,
+        "status_histogram": {
+          "401": 3
+        },
+        "error_histogram": {
+          "HTTPError:401": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 126.937,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/wallets/1"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 123.732,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/wallets/1"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 117.91,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/wallets/1"
+        }
+      ]
+    },
+    {
+      "key": "PATCH /api/admin/products/{product_id}/block",
+      "method": "PATCH",
+      "route_uri": "/api/admin/products/{product_id}/block",
+      "resolved_path": "/api/admin/products/1/block",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\AdminController@blockProduct",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 122.357,
+        "min_ms": 103.126,
+        "max_ms": 141.212,
+        "p50_ms": 122.732,
+        "p95_ms": 139.364,
+        "status_histogram": {
+          "401": 3
+        },
+        "error_histogram": {
+          "HTTPError:401": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 122.732,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/admin/products/1/block"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 103.126,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/admin/products/1/block"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 141.212,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/admin/products/1/block"
+        }
+      ]
+    },
+    {
+      "key": "GET /api/exchange-products",
+      "method": "GET",
+      "route_uri": "/api/exchange-products",
+      "resolved_path": "/api/exchange-products",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\ExchangeProductController@index",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 3,
+        "avg_ms": 122.338,
+        "min_ms": 111.91,
+        "max_ms": 137.121,
+        "p50_ms": 117.983,
+        "p95_ms": 135.207,
+        "status_histogram": {
+          "200": 3
+        },
+        "error_histogram": {}
+      },
+      "runs": [
+        {
+          "ok": true,
+          "status_code": 200,
+          "elapsed_ms": 137.121,
+          "body_size_bytes": 4839,
+          "error": "",
+          "url": "http://127.0.0.1:8000/api/exchange-products"
+        },
+        {
+          "ok": true,
+          "status_code": 200,
+          "elapsed_ms": 117.983,
+          "body_size_bytes": 4839,
+          "error": "",
+          "url": "http://127.0.0.1:8000/api/exchange-products"
+        },
+        {
+          "ok": true,
+          "status_code": 200,
+          "elapsed_ms": 111.91,
+          "body_size_bytes": 4839,
+          "error": "",
+          "url": "http://127.0.0.1:8000/api/exchange-products"
+        }
+      ]
+    },
+    {
+      "key": "GET /api/user/search/products",
+      "method": "GET",
+      "route_uri": "/api/user/search/products",
+      "resolved_path": "/api/user/search/products",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\ProductController@search",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 122.298,
+        "min_ms": 100.933,
+        "max_ms": 135.571,
+        "p50_ms": 130.391,
+        "p95_ms": 135.053,
+        "status_histogram": {
+          "401": 3
+        },
+        "error_histogram": {
+          "HTTPError:401": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 135.571,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/search/products"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 100.933,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/search/products"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 130.391,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/search/products"
+        }
+      ]
+    },
+    {
+      "key": "GET /api/user/meta/dormitories/by-university",
+      "method": "GET",
+      "route_uri": "/api/user/meta/dormitories/by-university",
+      "resolved_path": "/api/user/meta/dormitories/by-university",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\ProductController@dormitoriesByUserUniversity",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 122.251,
+        "min_ms": 107.624,
+        "max_ms": 140.31,
+        "p50_ms": 118.819,
+        "p95_ms": 138.161,
+        "status_histogram": {
+          "401": 3
+        },
+        "error_histogram": {
+          "HTTPError:401": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 140.31,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/meta/dormitories/by-university"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 118.819,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/meta/dormitories/by-university"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 107.624,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/meta/dormitories/by-university"
+        }
+      ]
+    },
+    {
+      "key": "POST /api/wallets/{wallet_id}/status-requests",
+      "method": "POST",
+      "route_uri": "/api/wallets/{wallet_id}/status-requests",
+      "resolved_path": "/api/wallets/1/status-requests",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\WalletController@createStatusRequest",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 121.798,
+        "min_ms": 120.012,
+        "max_ms": 123.392,
+        "p50_ms": 121.991,
+        "p95_ms": 123.252,
+        "status_histogram": {
+          "401": 3
+        },
+        "error_histogram": {
+          "HTTPError:401": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 121.991,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/wallets/1/status-requests"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 120.012,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/wallets/1/status-requests"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 123.392,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/wallets/1/status-requests"
+        }
+      ]
+    },
+    {
+      "key": "GET /api/user/products/{product_id}/engagement",
+      "method": "GET",
+      "route_uri": "/api/user/products/{product_id}/engagement",
+      "resolved_path": "/api/user/products/1/engagement",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\ProductController@productEngagement",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 118.274,
+        "min_ms": 105.508,
+        "max_ms": 135.057,
+        "p50_ms": 114.256,
+        "p95_ms": 132.977,
+        "status_histogram": {
+          "401": 3
+        },
+        "error_histogram": {
+          "HTTPError:401": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 114.256,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/products/1/engagement"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 105.508,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/products/1/engagement"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 135.057,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/products/1/engagement"
+        }
+      ]
+    },
+    {
+      "key": "GET /api/user/messages/notification",
+      "method": "GET",
+      "route_uri": "/api/user/messages/notification",
+      "resolved_path": "/api/user/messages/notification",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\AuthController@unreadMessages",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 115.966,
+        "min_ms": 112.195,
+        "max_ms": 120.358,
+        "p50_ms": 115.346,
+        "p95_ms": 119.857,
+        "status_histogram": {
+          "401": 3
+        },
+        "error_histogram": {
+          "HTTPError:401": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 115.346,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/messages/notification"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 112.195,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/messages/notification"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 120.358,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/messages/notification"
+        }
+      ]
+    },
+    {
+      "key": "GET /api/user/messages/contacts",
+      "method": "GET",
+      "route_uri": "/api/user/messages/contacts",
+      "resolved_path": "/api/user/messages/contacts",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\AuthController@messageContacts",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 115.827,
+        "min_ms": 99.78,
+        "max_ms": 125.443,
+        "p50_ms": 122.258,
+        "p95_ms": 125.124,
+        "status_histogram": {
+          "401": 3
+        },
+        "error_histogram": {
+          "HTTPError:401": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 99.78,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/messages/contacts"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 125.443,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/messages/contacts"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 122.258,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/messages/contacts"
+        }
+      ]
+    },
+    {
+      "key": "POST /api/user/products",
+      "method": "POST",
+      "route_uri": "/api/user/products",
+      "resolved_path": "/api/user/products",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\ProductController@store",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 115.799,
+        "min_ms": 100.809,
+        "max_ms": 136.478,
+        "p50_ms": 110.109,
+        "p95_ms": 133.841,
+        "status_histogram": {
+          "401": 3
+        },
+        "error_histogram": {
+          "HTTPError:401": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 100.809,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/products"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 110.109,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/products"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 136.478,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/products"
+        }
+      ]
+    },
+    {
+      "key": "POST /api/admin/set_university",
+      "method": "POST",
+      "route_uri": "/api/admin/set_university",
+      "resolved_path": "/api/admin/set_university",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\AdminController@set_university",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 115.507,
+        "min_ms": 97.627,
+        "max_ms": 124.677,
+        "p50_ms": 124.216,
+        "p95_ms": 124.631,
+        "status_histogram": {
+          "422": 3
+        },
+        "error_histogram": {
+          "HTTPError:422": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 422,
+          "elapsed_ms": 124.677,
+          "body_size_bytes": 127,
+          "error": "HTTPError:422",
+          "url": "http://127.0.0.1:8000/api/admin/set_university"
+        },
+        {
+          "ok": false,
+          "status_code": 422,
+          "elapsed_ms": 124.216,
+          "body_size_bytes": 127,
+          "error": "HTTPError:422",
+          "url": "http://127.0.0.1:8000/api/admin/set_university"
+        },
+        {
+          "ok": false,
+          "status_code": 422,
+          "elapsed_ms": 97.627,
+          "body_size_bytes": 127,
+          "error": "HTTPError:422",
+          "url": "http://127.0.0.1:8000/api/admin/set_university"
+        }
+      ]
+    },
+    {
+      "key": "POST /api/admin/ledgers/reconcile",
+      "method": "POST",
+      "route_uri": "/api/admin/ledgers/reconcile",
+      "resolved_path": "/api/admin/ledgers/reconcile",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\LedgerController@reconcile",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 115.295,
+        "min_ms": 108.633,
+        "max_ms": 122.704,
+        "p50_ms": 114.547,
+        "p95_ms": 121.888,
+        "status_histogram": {
+          "422": 3
+        },
+        "error_histogram": {
+          "HTTPError:422": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 422,
+          "elapsed_ms": 122.704,
+          "body_size_bytes": 94,
+          "error": "HTTPError:422",
+          "url": "http://127.0.0.1:8000/api/admin/ledgers/reconcile"
+        },
+        {
+          "ok": false,
+          "status_code": 422,
+          "elapsed_ms": 114.547,
+          "body_size_bytes": 94,
+          "error": "HTTPError:422",
+          "url": "http://127.0.0.1:8000/api/admin/ledgers/reconcile"
+        },
+        {
+          "ok": false,
+          "status_code": 422,
+          "elapsed_ms": 108.633,
+          "body_size_bytes": 94,
+          "error": "HTTPError:422",
+          "url": "http://127.0.0.1:8000/api/admin/ledgers/reconcile"
+        }
+      ]
+    },
+    {
+      "key": "POST /api/admin/test",
+      "method": "POST",
+      "route_uri": "/api/admin/test",
+      "resolved_path": "/api/admin/test",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\AdminController@index",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 3,
+        "avg_ms": 113.764,
+        "min_ms": 110.084,
+        "max_ms": 120.297,
+        "p50_ms": 110.91,
+        "p95_ms": 119.358,
+        "status_histogram": {
+          "200": 3
+        },
+        "error_histogram": {}
+      },
+      "runs": [
+        {
+          "ok": true,
+          "status_code": 200,
+          "elapsed_ms": 120.297,
+          "body_size_bytes": 41,
+          "error": "",
+          "url": "http://127.0.0.1:8000/api/admin/test"
+        },
+        {
+          "ok": true,
+          "status_code": 200,
+          "elapsed_ms": 110.084,
+          "body_size_bytes": 41,
+          "error": "",
+          "url": "http://127.0.0.1:8000/api/admin/test"
+        },
+        {
+          "ok": true,
+          "status_code": 200,
+          "elapsed_ms": 110.91,
+          "body_size_bytes": 41,
+          "error": "",
+          "url": "http://127.0.0.1:8000/api/admin/test"
+        }
+      ]
+    },
+    {
+      "key": "POST /api/user/logout",
+      "method": "POST",
+      "route_uri": "/api/user/logout",
+      "resolved_path": "/api/user/logout",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\AuthController@logout",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 113.358,
+        "min_ms": 107.704,
+        "max_ms": 123.531,
+        "p50_ms": 108.839,
+        "p95_ms": 122.062,
+        "status_histogram": {
+          "401": 3
+        },
+        "error_histogram": {
+          "HTTPError:401": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 107.704,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/logout"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 123.531,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/logout"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 108.839,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/logout"
+        }
+      ]
+    },
+    {
+      "key": "GET /storage/{path}",
+      "method": "GET",
+      "route_uri": "/storage/{path}",
+      "resolved_path": "/storage/1",
+      "name": "storage.local",
+      "action": "Closure",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 110.19,
+        "min_ms": 104.603,
+        "max_ms": 113.736,
+        "p50_ms": 112.23,
+        "p95_ms": 113.585,
+        "status_histogram": {
+          "403": 3
+        },
+        "error_histogram": {
+          "HTTPError:403": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 403,
+          "elapsed_ms": 112.23,
+          "body_size_bytes": 12659,
+          "error": "HTTPError:403",
+          "url": "http://127.0.0.1:8000/storage/1"
+        },
+        {
+          "ok": false,
+          "status_code": 403,
+          "elapsed_ms": 113.736,
+          "body_size_bytes": 12659,
+          "error": "HTTPError:403",
+          "url": "http://127.0.0.1:8000/storage/1"
+        },
+        {
+          "ok": false,
+          "status_code": 403,
+          "elapsed_ms": 104.603,
+          "body_size_bytes": 12659,
+          "error": "HTTPError:403",
+          "url": "http://127.0.0.1:8000/storage/1"
+        }
+      ]
+    },
+    {
+      "key": "GET /api/user/products",
+      "method": "GET",
+      "route_uri": "/api/user/products",
+      "resolved_path": "/api/user/products",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\ProductController@myProducts",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 0,
+        "avg_ms": 106.617,
+        "min_ms": 101.797,
+        "max_ms": 115.587,
+        "p50_ms": 102.468,
+        "p95_ms": 114.275,
+        "status_histogram": {
+          "401": 3
+        },
+        "error_histogram": {
+          "HTTPError:401": 3
+        }
+      },
+      "runs": [
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 101.797,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/products"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 115.587,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/products"
+        },
+        {
+          "ok": false,
+          "status_code": 401,
+          "elapsed_ms": 102.468,
+          "body_size_bytes": 34,
+          "error": "HTTPError:401",
+          "url": "http://127.0.0.1:8000/api/user/products"
+        }
+      ]
+    },
+    {
+      "key": "GET /api/health-check",
+      "method": "GET",
+      "route_uri": "/api/health-check",
+      "resolved_path": "/api/health-check",
+      "name": "None",
+      "action": "App\\Http\\Controllers\\HealthCheckController",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 3,
+        "avg_ms": 104.168,
+        "min_ms": 88.802,
+        "max_ms": 116.673,
+        "p50_ms": 107.028,
+        "p95_ms": 115.709,
+        "status_histogram": {
+          "200": 3
+        },
+        "error_histogram": {}
+      },
+      "runs": [
+        {
+          "ok": true,
+          "status_code": 200,
+          "elapsed_ms": 116.673,
+          "body_size_bytes": 64,
+          "error": "",
+          "url": "http://127.0.0.1:8000/api/health-check"
+        },
+        {
+          "ok": true,
+          "status_code": 200,
+          "elapsed_ms": 88.802,
+          "body_size_bytes": 64,
+          "error": "",
+          "url": "http://127.0.0.1:8000/api/health-check"
+        },
+        {
+          "ok": true,
+          "status_code": 200,
+          "elapsed_ms": 107.028,
+          "body_size_bytes": 64,
+          "error": "",
+          "url": "http://127.0.0.1:8000/api/health-check"
+        }
+      ]
+    },
+    {
+      "key": "GET /up",
+      "method": "GET",
+      "route_uri": "/up",
+      "resolved_path": "/up",
+      "name": "None",
+      "action": "Closure",
+      "summary": {
+        "runs": 3,
+        "ok_runs": 3,
+        "avg_ms": 102.684,
+        "min_ms": 85.462,
+        "max_ms": 119.353,
+        "p50_ms": 103.237,
+        "p95_ms": 117.741,
+        "status_histogram": {
+          "200": 3
+        },
+        "error_histogram": {}
+      },
+      "runs": [
+        {
+          "ok": true,
+          "status_code": 200,
+          "elapsed_ms": 103.237,
+          "body_size_bytes": 1938,
+          "error": "",
+          "url": "http://127.0.0.1:8000/up"
+        },
+        {
+          "ok": true,
+          "status_code": 200,
+          "elapsed_ms": 85.462,
+          "body_size_bytes": 1938,
+          "error": "",
+          "url": "http://127.0.0.1:8000/up"
+        },
+        {
+          "ok": true,
+          "status_code": 200,
+          "elapsed_ms": 119.353,
+          "body_size_bytes": 1938,
+          "error": "",
+          "url": "http://127.0.0.1:8000/up"
+        }
+      ]
+    }
+  ]
+}

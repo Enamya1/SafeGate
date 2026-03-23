@@ -36,6 +36,21 @@ def load_json_file(path: str) -> dict[str, Any]:
         return json.load(f)
 
 
+def resolve_token_value(raw: Any) -> str:
+    if raw is None:
+        return ""
+    if isinstance(raw, str):
+        value = raw.strip()
+        if value.startswith("@file:"):
+            file_path = value[len("@file:"):].strip()
+            if file_path and os.path.exists(file_path):
+                with open(file_path, "r", encoding="utf-8") as f:
+                    return f.read().strip()
+            return ""
+        return value
+    return str(raw).strip()
+
+
 def ensure_dir(path: str) -> None:
     os.makedirs(path, exist_ok=True)
 
@@ -130,7 +145,8 @@ def route_to_cases(routes: list[dict[str, Any]], cfg: dict[str, Any]) -> list[En
     skip_patterns = [re.compile(p) for p in benchmark_cfg.get("skip_patterns", [])]
     path_params = cfg.get("path_params", {})
     base_headers = cfg.get("headers", {"Accept": "application/json"})
-    auth_token = cfg.get("auth", {}).get("bearer_token", "")
+    auth_token = resolve_token_value(cfg.get("auth", {}).get("bearer_token", ""))
+    auth_by_path = cfg.get("auth", {}).get("auth_by_path", [])
     overrides = cfg.get("endpoint_overrides", {})
     timeout_seconds = float(benchmark_cfg.get("timeout_seconds", 15))
     cases: list[EndpointCase] = []
@@ -156,9 +172,18 @@ def route_to_cases(routes: list[dict[str, Any]], cfg: dict[str, Any]) -> list[En
             resolved_path, _ = apply_path_params(route_path, {**path_params, **override.get("path_params", {})})
             query = override.get("query", {})
             body = override.get("body")
-            headers = build_headers(base_headers, override.get("headers", {}), auth_token)
+            resolved_auth_token = auth_token
+            for rule in auth_by_path:
+                pattern = str(rule.get("path_regex", "")).strip()
+                if not pattern:
+                    continue
+                if re.search(pattern, resolved_path):
+                    resolved_auth_token = resolve_token_value(rule.get("bearer_token", ""))
+                    break
+
+            headers = build_headers(base_headers, override.get("headers", {}), resolved_auth_token)
             if override.get("auth_token") is not None:
-                headers = build_headers(base_headers, override.get("headers", {}), str(override.get("auth_token")))
+                headers = build_headers(base_headers, override.get("headers", {}), resolve_token_value(override.get("auth_token")))
             case = EndpointCase(
                 method=method,
                 route_uri=route_path,
@@ -283,7 +308,7 @@ def main() -> int:
 
     routes = run_route_list(project_path)
     cases = route_to_cases(routes, cfg)
-    now_tag = datetime.now().strftime("%Y%m%d_%H%M%S")
+    now_tag = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
     output_dir = os.path.abspath(str(cfg.get("output_dir", "reports")))
     ensure_dir(output_dir)
 
