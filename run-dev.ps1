@@ -25,7 +25,7 @@ $laravelProc = Start-Process -FilePath "php" -WorkingDirectory $laravelDir -Argu
     "artisan",
     "serve",
     "--host",
-    "127.0.0.1",
+    "0.0.0.0",
     "--port",
     "8000"
 ) -PassThru
@@ -35,7 +35,7 @@ $pythonProc = Start-Process -FilePath $pythonExe -WorkingDirectory $pythonDir -A
     "uvicorn",
     "app.main:app",
     "--host",
-    "127.0.0.1",
+    "0.0.0.0",
     "--port",
     "8001",
     "--reload"
