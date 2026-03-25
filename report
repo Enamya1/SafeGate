@@ -337,9 +337,10 @@ User Products
    - Response 200:
      {
        "message":"Messages retrieved successfully",
-      "conversation":{"id":...,"other_user":{"id":...,"username":"..."}},
+      "conversation":{"id":...,"other_user":{"id":...,"username":"...","wallet_id":...}},
      "messages":[{"id":...,"sender_id":...,"sender_username":"...","message_text":"...","read_at":"...","created_at":"..."}]
      }
+   - Notes: other_user.wallet_id is the primary wallet ID (wallet_type_id=1) of the other user, null if no primary wallet exists
    - Response 403: {"message":"Unauthorized: You are not part of this conversation."}
    - Response 422: {"message":"Validation Error","errors":{...}}
 

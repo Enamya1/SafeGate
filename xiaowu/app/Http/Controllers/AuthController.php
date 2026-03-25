@@ -480,15 +480,23 @@ class AuthController extends Controller
             : (int) $conversation->buyer_id;
 
         $otherUser = DB::table('users')
-            ->select(['id', 'username'])
-            ->where('id', $otherUserId)
+            ->leftJoin('wallets', function ($join) use ($otherUserId) {
+                $join->on('users.id', '=', 'wallets.user_id')
+                    ->where('wallets.wallet_type_id', 1); // Primary wallet
+            })
+            ->select(['users.id', 'users.username', 'wallets.id as wallet_id'])
+            ->where('users.id', $otherUserId)
             ->first();
 
         return response()->json([
             'message' => 'Messages retrieved successfully',
             'conversation' => [
                 'id' => (int) $conversation->id,
-                'other_user' => $otherUser,
+                'other_user' => [
+                    'id' => (int) $otherUser->id,
+                    'username' => $otherUser->username,
+                    'wallet_id' => $otherUser->wallet_id ? (int) $otherUser->wallet_id : null,
+                ],
             ],
             'messages' => $messages,
         ], 200);
