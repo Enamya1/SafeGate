@@ -337,10 +337,16 @@ User Products
    - Response 200:
      {
        "message":"Messages retrieved successfully",
-      "conversation":{"id":...,"other_user":{"id":...,"username":"...","wallet_id":...}},
+      "conversation":{
+        "id":...,
+        "current_user_wallet_id":...,
+        "other_user":{"id":...,"username":"...","wallet_id":...}
+      },
      "messages":[{"id":...,"sender_id":...,"sender_username":"...","message_text":"...","read_at":"...","created_at":"..."}]
      }
-   - Notes: other_user.wallet_id is the primary wallet ID (wallet_type_id=1) of the other user, null if no primary wallet exists
+   - Notes: 
+     - current_user_wallet_id is the primary wallet ID (wallet_type_id=1) of the authenticated user, null if no primary wallet exists
+     - other_user.wallet_id is the primary wallet ID (wallet_type_id=1) of the other user, null if no primary wallet exists
    - Response 403: {"message":"Unauthorized: You are not part of this conversation."}
    - Response 422: {"message":"Validation Error","errors":{...}}
 
@@ -373,6 +379,55 @@ User Products
     }
   - Response 422: {"message":"Validation Error","errors":{...}}
   - Response 403: {"message":"Unauthorized: Only users can access this endpoint."}
+
+18e) POST /api/user/messages/transfer
+  - Auth: auth:sanctum, role=user
+  - Description: Transfer money to another user in a conversation. Creates a transfer message and executes wallet-to-wallet transaction.
+  - Request body:
+    - conversation_id (required integer, exists conversations.id)
+    - amount (required numeric >= 0.01)
+    - currency (required string size 3, e.g., "CNY", "USD")
+    - reference (optional string max 255)
+  - Behavior:
+    - Validates both users have primary wallets (wallet_type_id=1) with matching currency
+    - Checks sender has sufficient balance
+    - Creates atomic transaction with debit and credit ledger entries
+    - Updates both wallet balances
+    - Creates a message with type "transfer" containing transfer details
+    - All operations wrapped in database transaction for consistency
+  - Side effect: 
+    - Creates atomic_transactions record
+    - Creates two transaction_ledgers records (debit and credit)
+    - Updates wallet balances
+    - Creates messages record with message_type="transfer" and transfer_data JSON
+  - Response 200:
+    {
+      "message":"Transfer completed successfully",
+      "transfer":{
+        "amount":...,
+        "currency":"...",
+        "from_wallet_id":...,
+        "to_wallet_id":...,
+        "atomic_transaction_id":...,
+        "reference":"..."
+      }
+    }
+  - Response 404: 
+    - {"message":"Conversation not found."}
+    - {"message":"Recipient does not have a wallet."}
+  - Response 409: 
+    - {"message":"You do not have a wallet."}
+    - {"message":"Your wallet is not active."}
+    - {"message":"Currency mismatch."}
+    - {"message":"Insufficient balance."}
+    - {"message":"Recipient wallet is not active."}
+    - {"message":"Recipient wallet currency does not match."}
+  - Response 422: {"message":"Validation Error","errors":{...}}
+  - Response 403: {"message":"Unauthorized: Only users can access this endpoint."}
+  - Notes: 
+    - The transfer message appears in the conversation history with message_type="transfer"
+    - transfer_data JSON contains: amount, currency, from_wallet_id, to_wallet_id, transaction_ledger_id, atomic_transaction_id, sender_username, reference
+    - Uses atomic transactions to ensure all-or-nothing execution
 
 19) POST /api/user/products/{product_id}/images
    - Auth: auth:sanctum, role=user (must be product seller)

@@ -488,10 +488,18 @@ class AuthController extends Controller
             ->where('users.id', $otherUserId)
             ->first();
 
+        // Get current user's wallet
+        $currentUserWallet = DB::table('wallets')
+            ->select('id')
+            ->where('user_id', (int) $user->id)
+            ->where('wallet_type_id', 1) // Primary wallet
+            ->first();
+
         return response()->json([
             'message' => 'Messages retrieved successfully',
             'conversation' => [
                 'id' => (int) $conversation->id,
+                'current_user_wallet_id' => $currentUserWallet ? (int) $currentUserWallet->id : null,
                 'other_user' => [
                     'id' => (int) $otherUser->id,
                     'username' => $otherUser->username,
@@ -500,6 +508,229 @@ class AuthController extends Controller
             ],
             'messages' => $messages,
         ], 200);
+    }
+
+    public function transferMoney(Request $request)
+    {
+        $user = $request->user();
+
+        if (($user->role ?? 'user') !== 'user') {
+            return response()->json([
+                'message' => 'Unauthorized: Only users can access this endpoint.',
+            ], 403);
+        }
+
+        try {
+            $validated = $request->validate([
+                'conversation_id' => 'required|integer|min:1|exists:conversations,id',
+                'amount' => 'required|numeric|min:0.01',
+                'currency' => 'required|string|size:3',
+                'reference' => 'nullable|string|max:255',
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation Error',
+                'errors' => $e->errors(),
+            ], 422);
+        }
+
+        $conversation = DB::table('conversations')
+            ->select(['id', 'buyer_id', 'seller_id'])
+            ->where('id', (int) $validated['conversation_id'])
+            ->first();
+
+        if (! $conversation) {
+            return response()->json([
+                'message' => 'Conversation not found.',
+            ], 404);
+        }
+
+        if ((int) $conversation->buyer_id !== (int) $user->id && (int) $conversation->seller_id !== (int) $user->id) {
+            return response()->json([
+                'message' => 'Unauthorized: You are not part of this conversation.',
+            ], 403);
+        }
+
+        // Determine the other user's wallet ID
+        $otherUserId = (int) $conversation->buyer_id === (int) $user->id
+            ? (int) $conversation->seller_id
+            : (int) $conversation->buyer_id;
+
+        // Get sender's primary wallet
+        $senderWallet = DB::table('wallets')
+            ->select('id', 'balance', 'currency', 'status_id')
+            ->where('user_id', (int) $user->id)
+            ->where('wallet_type_id', 1)
+            ->first();
+
+        if (! $senderWallet) {
+            return response()->json([
+                'message' => 'You do not have a wallet.',
+            ], 409);
+        }
+
+        // Check if wallet is active
+        if ($senderWallet->status_id !== 1) { // Assuming 1 = active
+            return response()->json([
+                'message' => 'Your wallet is not active.',
+            ], 409);
+        }
+
+        // Check currency match
+        if ($senderWallet->currency !== $validated['currency']) {
+            return response()->json([
+                'message' => 'Currency mismatch.',
+            ], 409);
+        }
+
+        // Check sufficient balance
+        if ((float) $senderWallet->balance < (float) $validated['amount']) {
+            return response()->json([
+                'message' => 'Insufficient balance.',
+            ], 409);
+        }
+
+        // Get recipient's primary wallet
+        $recipientWallet = DB::table('wallets')
+            ->select('id', 'currency', 'status_id')
+            ->where('user_id', $otherUserId)
+            ->where('wallet_type_id', 1)
+            ->first();
+
+        if (! $recipientWallet) {
+            return response()->json([
+                'message' => 'Recipient does not have a wallet.',
+            ], 404);
+        }
+
+        // Check if recipient wallet is active
+        if ($recipientWallet->status_id !== 1) {
+            return response()->json([
+                'message' => 'Recipient wallet is not active.',
+            ], 409);
+        }
+
+        // Check currency match
+        if ($recipientWallet->currency !== $validated['currency']) {
+            return response()->json([
+                'message' => 'Recipient wallet currency does not match.',
+            ], 409);
+        }
+
+        // Perform the transfer using atomic transaction
+        try {
+            $atomicTransactionId = DB::transaction(function () use ($senderWallet, $recipientWallet, $validated, $user, $conversation) {
+                // Create atomic transaction record
+                $atomicTransactionId = DB::table('atomic_transactions')->insertGetId([
+                    'atomic_uuid' => (string) \Illuminate\Support\Str::uuid(),
+                    'status' => 'completed',
+                    'total_amount' => $validated['amount'],
+                    'currency' => $validated['currency'],
+                    'initiated_by' => (int) $user->id,
+                    'metadata' => json_encode([
+                        'type' => 'chat_transfer',
+                        'conversation_id' => (int) $conversation->id,
+                        'reference' => $validated['reference'] ?? null,
+                    ]),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+
+                // Debit from sender
+                $debitLedgerId = DB::table('transaction_ledgers')->insertGetId([
+                    'ledger_uuid' => (string) \Illuminate\Support\Str::uuid(),
+                    'atomic_transaction_id' => $atomicTransactionId,
+                    'wallet_id' => (int) $senderWallet->id,
+                    'related_wallet_id' => (int) $recipientWallet->id,
+                    'direction' => 'debit',
+                    'amount' => $validated['amount'],
+                    'currency' => $validated['currency'],
+                    'status' => 'completed',
+                    'type' => 'transfer_sent',
+                    'reference' => $validated['reference'] ?? null,
+                    'metadata' => json_encode([
+                        'conversation_id' => (int) $conversation->id,
+                        'recipient_wallet_id' => (int) $recipientWallet->id,
+                    ]),
+                    'occurred_at' => now(),
+                    'initiated_by' => (int) $user->id,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+
+                // Credit to recipient
+                $creditLedgerId = DB::table('transaction_ledgers')->insertGetId([
+                    'ledger_uuid' => (string) \Illuminate\Support\Str::uuid(),
+                    'atomic_transaction_id' => $atomicTransactionId,
+                    'wallet_id' => (int) $recipientWallet->id,
+                    'related_wallet_id' => (int) $senderWallet->id,
+                    'direction' => 'credit',
+                    'amount' => $validated['amount'],
+                    'currency' => $validated['currency'],
+                    'status' => 'completed',
+                    'type' => 'transfer_received',
+                    'reference' => $validated['reference'] ?? null,
+                    'metadata' => json_encode([
+                        'conversation_id' => (int) $conversation->id,
+                        'sender_wallet_id' => (int) $senderWallet->id,
+                    ]),
+                    'occurred_at' => now(),
+                    'initiated_by' => (int) $user->id,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+
+                // Update wallet balances
+                DB::table('wallets')
+                    ->where('id', (int) $senderWallet->id)
+                    ->decrement('balance', $validated['amount']);
+
+                DB::table('wallets')
+                    ->where('id', (int) $recipientWallet->id)
+                    ->increment('balance', $validated['amount']);
+
+                // Create transfer message
+                $transferData = [
+                    'amount' => (float) $validated['amount'],
+                    'currency' => $validated['currency'],
+                    'from_wallet_id' => (int) $senderWallet->id,
+                    'to_wallet_id' => (int) $recipientWallet->id,
+                    'transaction_ledger_id' => $creditLedgerId,
+                    'atomic_transaction_id' => $atomicTransactionId,
+                    'sender_username' => $user->username,
+                    'reference' => $validated['reference'] ?? null,
+                ];
+
+                DB::table('messages')->insert([
+                    'conversation_id' => (int) $conversation->id,
+                    'sender_id' => (int) $user->id,
+                    'message_text' => sprintf('Sent %.2f %s', $validated['amount'], $validated['currency']),
+                    'message_type' => 'transfer',
+                    'transfer_data' => json_encode($transferData),
+                    'read_at' => null,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+
+                return $atomicTransactionId;
+            });
+
+            return response()->json([
+                'message' => 'Transfer completed successfully',
+                'transfer' => [
+                    'amount' => (float) $validated['amount'],
+                    'currency' => $validated['currency'],
+                    'from_wallet_id' => (int) $senderWallet->id,
+                    'to_wallet_id' => (int) $recipientWallet->id,
+                    'atomic_transaction_id' => $atomicTransactionId,
+                    'reference' => $validated['reference'] ?? null,
+                ],
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Transfer failed: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 
     public function unreadMessages(Request $request)
