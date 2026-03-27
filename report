@@ -342,11 +342,29 @@ User Products
         "current_user_wallet_id":...,
         "other_user":{"id":...,"username":"...","wallet_id":...}
       },
-     "messages":[{"id":...,"sender_id":...,"sender_username":"...","message_text":"...","read_at":"...","created_at":"..."}]
+     "messages":[
+       {
+         "id":...,
+         "sender_id":...,
+         "sender_username":"...",
+         "message_text":"...",
+         "read_at":"...",
+         "created_at":"...",
+         "message_type":"text|payment_request|payment_confirmation|transfer",
+         "message_kind":"normal|payment_request_unconfirmed|payment_request_confirmed|transfer",
+         "payment_request_status":"pending|paid|null",
+         "transfer_data":{...} // present for transfer/payment_request/payment_confirmation when available
+       }
+     ]
      }
    - Notes: 
      - current_user_wallet_id is the primary wallet ID (wallet_type_id=1) of the authenticated user, null if no primary wallet exists
      - other_user.wallet_id is the primary wallet ID (wallet_type_id=1) of the other user, null if no primary wallet exists
+    - message_kind is derived for UI display:
+      - normal for standard text messages
+      - payment_request_unconfirmed for message_type=payment_request with status pending
+      - payment_request_confirmed for message_type=payment_request with status paid or message_type=payment_confirmation
+      - transfer for message_type=transfer
    - Response 403: {"message":"Unauthorized: You are not part of this conversation."}
    - Response 422: {"message":"Validation Error","errors":{...}}
 
@@ -428,6 +446,115 @@ User Products
     - The transfer message appears in the conversation history with message_type="transfer"
     - transfer_data JSON contains: amount, currency, from_wallet_id, to_wallet_id, transaction_ledger_id, atomic_transaction_id, sender_username, reference
     - Uses atomic transactions to ensure all-or-nothing execution
+
+18f) POST /api/user/payment-requests
+  - Auth: auth:sanctum, role=user
+  - Description: Create a payment request in a conversation. Sends a payment request message to the other user with product reference.
+  - Request body:
+    - conversation_id (required integer, exists conversations.id)
+    - product_id (optional integer, exists products.id) - References the product being paid for
+    - amount (required numeric >= 0.01)
+    - currency (required string size 3, e.g., "CNY", "USD")
+    - message (optional string max 1000) - Custom message for the payment request
+    - expires_in_hours (optional integer, min 1, max 720, default 24) - Expiration time
+  - Behavior:
+    - Creates payment_requests record with status "pending"
+    - Creates a message with type "payment_request" containing request details
+    - Product must belong to one of the conversation participants
+    - Automatically calculates expiration time
+  - Side effect:
+    - Creates payment_requests record
+    - Creates messages record with message_type="payment_request"
+    - Stores payment request details in transfer_data JSON
+  - Response 201:
+    {
+      "message":"Payment request created successfully",
+      "payment_request":{
+        "id":...,
+        "conversation_id":...,
+        "sender_id":...,
+        "sender_username":"...",
+        "receiver_id":...,
+        "product_id":...,
+        "product_title":"...",
+        "amount":...,
+        "currency":"...",
+        "status":"pending",
+        "message":"...",
+        "expires_at":"...",
+        "created_at":"..."
+      }
+    }
+  - Response 404:
+    - {"message":"Conversation not found."}
+    - {"message":"Product not found."}
+  - Response 409:
+    - {"message":"Product is not related to this conversation."}
+  - Response 422: {"message":"Validation Error","errors":{...}}
+  - Response 403: {"message":"Unauthorized: Only users can access this endpoint."}
+  - Notes:
+    - The payment request message appears in conversation with message_type="payment_request"
+    - transfer_data JSON contains: type, payment_request_id, amount, currency, product_id, product_title, sender_username, receiver_id, expires_at, reference
+    - Receiver can confirm payment using POST /api/user/payment-requests/{request_id}/confirm
+    - Payment requests expire after expires_in_hours (default 24 hours)
+
+18g) POST /api/user/payment-requests/{request_id}/confirm
+  - Auth: auth:sanctum, role=user
+  - Description: Confirm and pay a payment request. Executes wallet-to-wallet transfer and creates payment confirmation message.
+  - Path params:
+    - request_id (required integer, exists payment_requests.id)
+  - Behavior:
+    - Validates user is the receiver of the payment request
+    - Checks payment request is still pending and not expired
+    - Validates both users have active wallets with matching currency
+    - Checks payer has sufficient balance
+    - Creates atomic transaction with debit and credit ledger entries
+    - Updates payment request status to "paid"
+    - Creates payment confirmation message in conversation
+    - Updates original payment request message with payment details
+    - If payment_request includes product_id, marks the associated product status to "sold"
+  - Side effect:
+    - Creates atomic_transactions record
+    - Creates two transaction_ledgers records (debit and credit)
+    - Updates wallet balances (payer decrement, recipient increment)
+    - Updates payment_requests status to "paid"
+    - Creates messages record with message_type="payment_confirmation"
+    - Updates original payment request message transfer_data with payment info
+  - Response 200:
+    {
+      "message":"Payment request confirmed and paid successfully",
+      "payment":{
+        "payment_request_id":...,
+        "amount":...,
+        "currency":"...",
+        "from_wallet_id":...,
+        "to_wallet_id":...,
+        "atomic_transaction_id":...,
+        "status":"paid"
+      }
+    }
+  - Response 403:
+    - {"message":"Unauthorized: You are not the receiver of this payment request."}
+  - Response 404:
+    - {"message":"Payment request not found."}
+    - {"message":"Recipient does not have a wallet."}
+  - Response 409:
+    - {"message":"This payment request has already been paid/cancelled/expired."}
+    - {"message":"Payment request has expired."}
+    - {"message":"You do not have a wallet."}
+    - {"message":"Your wallet is not active."}
+    - {"message":"Currency mismatch."}
+    - {"message":"Insufficient balance."}
+    - {"message":"Recipient wallet is not active."}
+    - {"message":"Recipient wallet currency does not match."}
+  - Response 422: {"message":"Validation Error","errors":{...}}
+  - Response 403: {"message":"Unauthorized: Only users can access this endpoint."}
+  - Notes:
+    - Creates payment confirmation message with message_type="payment_confirmation"
+    - Updates original payment request message with paid status and atomic_transaction_id
+    - Automatically marks referenced product as sold when payment succeeds
+    - Uses atomic transactions for secure all-or-nothing execution
+    - Full audit trail via transaction ledgers
 
 19) POST /api/user/products/{product_id}/images
    - Auth: auth:sanctum, role=user (must be product seller)

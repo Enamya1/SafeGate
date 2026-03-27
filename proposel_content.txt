@@ -1,0 +1,316 @@
+Student
+Name	Aymane ouled Assafi   	Major	Computer Science and Technology 	Student Number	229J82
+Title of the Thesis	校物圈 / Xiaowu: A Campus-Based Second-Hand Trading Platform
+
+
+Project Overview
+- Xiaowu is a campus-focused second-hand marketplace implemented with a Laravel (PHP) backend and a Python microservice for AI and visual search. It provides authenticated student accounts, product listing and management, search and discovery (textual, visual, and location-based), direct messaging, wallet-backed payments and payment requests, exchange listings, and an AI chat assistant integrated with the marketplace data.
+
+Codebase Overview (Frontend Evidence)
+- The frontend is a single‑page application built with React, React Router, and TanStack Query, with route coverage for the marketplace feed, exchange area, nearby map, wallet, messaging, AI assistant, and onboarding flow.
+- A centralized authentication/API layer connects UI screens to live endpoints (products, messages, AI sessions, search, exchange, listings), ensuring the application is wired to real operations rather than static prototypes.
+- Core domain entities (products, categories, tags, dormitories, condition levels) are modeled in the UI with typed structures, using safe mock defaults when live payloads are temporarily unavailable.
+
+Frontend Implemented Features
+- Personalized product discovery with filters and sorting: backend recommendations rendered in grid/list views; filters for category, condition, tags, price range, and keyword; pagination and view switching.
+- Location‑aware marketplace: geolocation request, distance calculation, and nearby map view with category/condition filters.
+- Rich product detail with similar items and favorites: detail pages show images, tags, condition, exchange intent, and similar item suggestions; users can toggle favorites.
+- Favorites management: saved items presented with grid/list layouts and meaningful empty states.
+- Structured listing creation: multi‑step listing flow for both sale and exchange, including category/condition/dormitory selection, tag creation, and image uploads.
+- Seller profile and listings: seller pages present profile metadata and their active listings, pulled from backend.
+- My listings management: users view and manage their own items, filter by sell vs exchange, paginate, and change view layout.
+- Exchange marketplace: exchange‑focused items fetched and filtered, highlighting swap intent and target item details.
+- Search with text and image‑based retrieval: keyword search and visual search by image upload with type/size validation and top‑k results.
+- Messaging with transaction flow: in‑app chat allows negotiation and supports sending wallet transfers inside a conversation.
+- Wallet management: wallet list, transaction history, and status history; UI supports top‑up, withdrawal, and transfer flows.
+- Multi‑currency display: prices converted and formatted using live exchange rates, with user preferences saved locally.
+- User onboarding: onboarding collects profile details, university, dormitory, and language preferences to complete the account.
+- AI assistant: chat sessions include history, rename/delete actions, and product suggestions via dedicated API calls.
+
+Key Features
+- Account and Profile Management: Student signup/login with Sanctum tokens; profile updates including university and dormitory selection; account completion tracking; email verification and login history.
+- Product Listing and Media: Creation and update of listings with categories, condition levels, tags, price, dormitory; multi-image upload or URL-based images with selectable primary thumbnail; mark-as-sold; seller profile with statistics.
+- Search and Discovery: Full-text and phonetic search with relevance scoring and cached suggestions; location-based “nearby” search using Haversine distance and dormitory coordinates; image-based visual search powered by CLIP and FAISS via the Python service; recommendations for products and exchange listings based on behavioral events.
+- Favorites and Engagement: Favorite management; per-product engagement metrics (views, clicks, recent clickers); event logging for search/view/favorite to drive recommendations.
+- Messaging and Transactions: Conversation messaging, unread summaries, contact list; in-chat money transfer between primary wallets; payment requests creation and confirmation linked to conversations and products.
+- Wallet and Ledger System: User wallets with top-up, withdraw, transfer; transaction history filters; status freeze/unfreeze requests and admin approvals; atomic transactions with ledgers and multi-step audit trails; reversal workflows with multi-level approvals; fraud detection evaluations on ledgers.
+- Exchange Marketplace: Exchange product listings with target criteria, status lifecycles (open/pending/accepted/completed/expired), negotiation messaging, user history, and public detail retrieval; AI-powered exchange recommendations via the Python service.
+- AI Chat Assistant: Session-based chat that infers functions (search by price/category/similar or product details) against the database; returns concise answers and product payloads; event recording for AI interactions.
+- Metadata and Caching: Category, condition level, tag, dormitory/university metadata endpoints with caching; search and recommendation caches; resilience to upstream failures with cooldowns and fallbacks.
+- Security and Roles: Strict role checks for user-only endpoints; admin routes for moderation (products/users), finance controls (wallet freezes, ledgers, reversals, fraud alerts); token-based authentication across services.
+
+Necessity of the System
+- Local Trust and Relevance: Public marketplaces mix anonymous participants and distant inventory; Xiaowu restricts participation to the campus context with dormitory/university metadata, increasing trust and relevance for student needs.
+- Efficient Discovery of Campus Goods: Students often lack precise keywords; visual search, suggestions, and nearby filters reduce friction in finding items like books and equipment within walking distance.
+- Safe Peer-to-Peer Payments: Ad-hoc transfers are risky; integrated wallets, atomic ledgers, payment requests, freeze/unfreeze workflows, and reversal mechanisms provide traceable, safer transactions.
+- Barter and Negotiation Support: Many students prefer exchanging items; dedicated exchange listings and negotiation messaging formalize barter flows with clear status lifecycles.
+- Sustainability and Rapid Turnover: Moving or graduation requires quick resale of goods; localized recommendations and messaging accelerate matching, reduce waste, and promote circular use on campus.
+
+Feature-to-Problem Mapping
+- Dormitory/University Context → Solves anonymous trading by anchoring listings to campus locations; supports meetups and localized relevance.
+- Visual and Full-Text Search → Solves poor keyword recall; users can search by image or discover via relevance-ranked queries and suggestions.
+- Nearby Search and Recommendations → Solves long-distance logistics; prioritizes inventory close to the buyer’s dorm/university and recent, promoted items.
+- Wallet, Ledgers, and Payment Requests → Solves payment safety; provides audited, reversible, and freeze-controlled monetary flows inside conversations.
+- Exchange Listings and Messaging → Solves barter coordination; structured offers, status updates, and negotiation messages reduce misunderstandings and disputes.
+- Engagement Tracking → Solves cold-start recommendations; events feed AI and rule-based recommenders for more relevant results.
+- Admin Finance and Moderation → Solves fraud and misuse; freeze/unfreeze, reversals, fraud alerts, and user/product administration improve platform integrity.
+
+Value and Impact
+- Benefits for Users: Faster discovery of relevant items nearby; safer payments and clearer negotiation flows; richer search (visual, suggestions); transparent engagement metrics and seller profiles.
+- Benefits for Society: Encourages reuse and reduces waste on campus; lowers cost of essentials for students; fosters a trustworthy local circular economy; reduces shipping-related footprint by enabling local meetups.
+
+Academic Positioning
+- The implementation aligns domain concepts (product condition, dormitory location, exchange intent) with user workflows, supporting a socio‑technical argument that localized second‑hand trade is both a logistical and informational challenge, addressed through geo‑aware discovery, structured listings, and authenticated communication.
+- Framed as a campus‑scale circular economy system: exchange support, re‑use flows, and price transparency operationalize sustainability goals in tangible user‑level features.
+
+Improved Proposal Paragraph
+- Xiaowu (校物圈) operationalizes a campus-centric second-hand marketplace with production-grade features implemented across a Laravel backend and a Python AI microservice. The system authenticates student users and contextualizes listings by dormitory and university, enabling proximity-aware discovery through full-text relevance search, cached suggestions, and geospatial filtering, and augmenting discovery with CLIP/FAISS-based visual search. Peer-to-peer transactions are secured via managed wallets, atomic ledgers, payment requests, freeze/unfreeze and reversal workflows, and fraud evaluation, all traceable and auditable. Messaging and exchange modules support negotiation and bartering with explicit status lifecycles, while engagement events (view, search, favorite) drive recommendations for both products and exchange listings. Administrative finance controls and moderation reinforce trust and safety. Collectively, these capabilities address campus-specific constraints—budget, proximity, trust—and promote sustainable, rapid turnover of student goods, making Xiaowu a academically rigorous and practically relevant contribution to community-based digital commerce.
+
+I. Background
+The digital marketplace's rapid development has dramatically changed how consumers shop. Consumers now have many choices to pick from on public platforms (Xianyu / Taobao / Marketplace) containing millions (and usually anonymous) users, thus creating problems with trust/safety and relevance based on their specific community needs & challenges, which are increasingly prevalent for (university) students creating an even greater challenge when it comes to buying/trading second-hand goods. Students are typically on a (limited) budget when purchasing necessities for their school life (ie. books, computer equipment, furniture, etc.) and do not have a specific platform to access when trying to buy/sell equipment in relation to their university community. With many students graduating or relocating off of campus, they usually need to sell their belongings quickly; however, current platforms don't have a solution that is localized and trustworthy - which results in less efficiency, wasted resources, and fewer opportunities for sustainable consumption through second-hand items.
+
+Xiaowu, or 校物圈, was created as a dedicated second-hand trading platform exclusive to university students in their university community so that they can buy, sell and trade items easily and safely. Xiaowu will utilize advanced technology to allow students to find better products from within their university community, by using technology such as AI (Image Recognition), voice search & intelligent recommendations. Xiaowu will be accessible as a web-based platform and as a mobile platform, providing accessibility and convenience to all users. The ultimate goal of Xiaowu is to work toward promoting sustainable consumption.
+
+II. Research Questions and Its Significance
+The research aims to answer five questions about how to develop a successful trading platform for university students and thus help solve some of the issues identified above – How can we design a campus-based second-hand trading platform which meets university student's needs? How can AI-powered features (for example: image searching and intelligent recommendations) be leveraged to provide better product discovery and user experience with peer-to-peer trading? What mechanisms can create trust, security and verification of users/integrate a localized campus marketplace? How can the design and features of the platform encourage sustainable consumption and waste reduction among university students? What technical and operational challenges will need to be overcome in order to develop and deploy a scalable campus trading platform? The contribution of this research will be at the intersection of technology, sustainability and community-based commerce in a specific geographic area (university campuses). The project will provide practical information on how digital trading platforms can help facilitate better resource sharing between university students through the design and development of Xiaowu. The findings will benefit researchers in electronic commerce; human-computer interaction; and information systems as well as university administration, and student communities wanting to promote sustainable practices and a circular economy on campus.
+
+Ⅲ. Literature Review
+Digital platforms have long been the subject of inquiry regarding their role in facilitating peer-to-peer commerce and the sharing economy. For example, Behar, Manners, and Nelson (2009) conducted research exploring logistics and trade efficiency while identifying the critical importance of infrastructure in enabling exchange. Blyde and Molina (2015) explored the impact of logistics infrastructure on determining the location of fragmented production around the world; thus, they provided important insights into how platform design will influence user behaviour.
+
+A considerable amount of literature has looked at second-hand markets from the perspective of consumer motivations, trust-building mechanisms, and the environmental benefits associated with product reuse. The sharing economy literature looks primarily at enabling access rather than ownership through digital platforms; therefore, it promotes sustainable consumption and helps create less waste (Botsman & Rogers, 2010). The platforms eBay, Craigslist, and Xianyu have all been closely examined for their business models, user interfaces, and trust-building features.
+
+However, research that focuses on trading platforms specific to the campus has been limited. Research has shown that college students engage in second-hand markets for three main reasons: affordability, convenience, and trust (Armstrong et al., 2015). Additional research presents evidence for how both recommendation systems based on AI (Ricci et al., 2015) and image recognition technology (Krizhevsky et al., 2012) have the potential to assist consumers with product discovery and increase user engagement.
+
+
+IV. Difficulties and Initiatives of the Research
+Developing a comprehensive campus trading platform involves several challenges that must be addressed through careful planning and innovative solutions.
+Technical Difficulties:
+Integrating Laravel APIs with the Python Service:
+Ensuring smooth communication between the Laravel backend and the Python-based recommendation service can be challenging. Both services must maintain consistent authentication headers, request structures, and timeout configurations to prevent failed API calls or delays in data exchange.
+Maintaining Consistent Data Models Across Services:
+The platform uses multiple services that manage different parts of the system. Keeping data models synchronized between services—such as products, exchange listings, user profiles, and dormitory information—requires careful schema design to avoid mismatches or data inconsistencies.
+Ensuring Recommendation Quality:
+Developing a recommendation system that provides relevant suggestions to users requires proper filtering and data processing. The system must exclude expired, unavailable, or completed listings to ensure that the recommendations remain accurate and useful.
+Handling Validation Edge Cases:
+Managing user-generated listings and exchange transactions introduces complex validation scenarios. The system must handle edge cases such as incomplete listings, duplicate exchange requests, or invalid transaction states to prevent errors and maintain platform reliability.
+Maintaining Wallet and Ledger Integrity:
+The platform includes a wallet-based transaction system, which requires strict consistency when processing payments or credit transfers between users. Ensuring atomic transactions and implementing proper rollback mechanisms is necessary to prevent inconsistencies caused by system failures or concurrent requests.
+Maintaining Consistent Error Handling Across Services:
+Since the platform consists of multiple backend services and APIs, it is important to standardize error responses across all endpoints. Consistent error codes and response formats help the frontend handle failures properly and improve the debugging and monitoring process.
+Implementing Accurate Image Recognition: Developing an AI model that can accurately identify products from user-uploaded images requires significant training data and computational resources. The system must handle diverse product categories, varying image qualities, and different angles and lighting conditions.
+Handling Real-Time Messaging: Implementing a reliable and scalable real-time chat system that supports instant messaging, image sharing, and read receipts requires robust backend infrastructure and efficient data synchronization..
+Developing Cross-Platform Functionality: Building both a web platform and a mobile application with consistent features and user experience requires careful coordination of frontend and backend development.
+Operational Difficulties:
+User Trust and Safety: Establishing trust among users in a peer-to-peer marketplace is critical. The platform must implement effective user verification, reputation systems, and dispute resolution mechanisms.
+Verification of Campus Users: Ensuring that only verified students can access the platform requires integration with university email systems or student ID verification processes, which may involve partnerships with educational institutions.
+Scalability of the System: As the platform grows to include multiple campuses, the system architecture must be designed to handle increasing numbers of users, listings, and transactions without compromising performance.
+Initiatives to Address Difficulties:
+To overcome these challenges, the following initiatives will be undertaken:
+Standardizing Service Communication:
+To ensure reliable interaction between the Laravel backend and the Python recommendation service, the system will implement standardized API contracts using shared request and response schemas. API versioning will also be introduced to maintain backward compatibility and allow future updates without breaking existing integrations.
+Implementing Integration Testing:
+Comprehensive integration tests will be developed to verify the communication between the Laravel APIs and the Python service. These tests will simulate real-world scenarios, including mocked upstream failures, to ensure the system can handle unexpected service interruptions and maintain stability.
+Strengthening Validation and Error Handling:
+Stricter input validation mechanisms will be implemented across all API endpoints to prevent invalid data from entering the system. Additionally, a centralized error mapping strategy will be used to standardize error responses, ensuring that all services return consistent error codes and messages for the frontend application.
+Improving Recommendation Reliability:
+Caching mechanisms will be introduced to reduce the load on the recommendation service and improve response times. In addition, fallback logic will be implemented so that the system can provide alternative results if the recommendation engine fails or becomes temporarily unavailable.
+Enhancing Transaction Safety:
+To protect the integrity of the wallet and ledger system, transaction safeguards will be implemented to guarantee atomic operations during credit transfers. Idempotency mechanisms will also be introduced to prevent duplicate transactions when requests are retried due to network or system failures.
+Improving Monitoring and System Observability:
+Monitoring tools will be used to track system performance, including API latency and error rates. Dashboards and automated alerts will be configured to notify developers when issues such as API timeouts or service failures occur, enabling faster detection and resolution of problems.
+Develop a responsive web application using React and a native mobile application using React Native to ensure code reuse and consistent functionality.
+Implement a multi-tier verification system combining university email confirmation and optional student ID upload.
+Design a modular and cloud-native architecture using microservices to enable horizontal scaling.
+
+V. Outline of the Proposed Structure of the Dissertation 
+CHAPTER 1: INTRODUCTION AND RESEARCH PROPOSAL
+1.1 Background of the Study
+1.2 Problem Statement
+1.3 Research Questions
+1.4 Significance of the Research
+1.5 Scope and Limitations
+1.6 Structure of the Dissertation
+
+CHAPTER 2: LITERATURE REVIEW
+2.1 Theoretical Framework: Sharing Economy and Peer-to-Peer Commerce
+2.2 Digital Platforms for Second-Hand Trading
+2.3 Consumer Behavior in Second-Hand Markets
+2.4 AI Applications in E-Commerce: Image Recognition and Recommendation Systems
+2.5 Trust and Safety in Online Marketplaces
+2.6 Sustainability and Circular Economy in Campus Communities
+2.7 Research Gap
+
+CHAPTER 3: SYSTEM DESIGN AND METHODOLOGY
+3.1 Research Methodology Overview
+3.2 Requirement Analysis
+3.2.1 User Requirements
+3.2.2 Functional Requirements
+3.2.3 Non-Functional Requirements
+3.3 System Architecture Design(fig 1)
+
+Fig1 : Data Flow Diagram
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+3.4 Database Design (fig 2)
+
+Fig2 : Entity-Relationship Diagram
+3.5 AI Module Design
+3.5.1 Image Recognition System
+3.5.2 Recommendation Engine
+3.5.3 Price Suggestion Algorithm
+3.6 User Interface Design
+3.7 Development Tools and Technologies
+
+CHAPTER 4: IMPLEMENTATION OF XIAOWU PLATFORM
+4.1 Development Environment Setup
+4.2 Implementation of Core Features
+4.2.1 User Authentication and Verification
+4.2.2 Product Listing and Management
+4.2.3 Search and Filtering
+4.2.4 Chat System
+4.3 Implementation of AI Features
+4.3.1 Image-Based Product Search
+4.3.2 Smart Auto-Tagging
+4.3.3 AI Price Recommendation
+4.3.4 Intelligent Product Recommendations
+4.4 Implementation of Advanced Features
+4.4.1 Voice-to-Text Search
+4.4.2 Location-Based Recommendations
+4.4.3 Secure Payment Integration
+4.5 Web Platform Development
+4.6 Mobile Application Development
+4.7 Testing and Quality Assurance
+4.7.1 Unit Testing
+4.7.2 Integration Testing
+4.7.3 User Acceptance Testing (fig:3)
+
+Fig :3 Testing Results Summary ( real survey data) 
+CHAPTER 5: EVALUATION AND DISCUSSION
+5.1 Evaluation of System Performance
+5.1.1 Response Time and Throughput
+5.1.2 Accuracy of AI Features
+5.1.3 Scalability Assessment
+5.2 User Experience Evaluation
+5.2.1 Usability Testing Results
+5.2.2 User Feedback and Satisfaction
+CHART 5: User Satisfaction Survey Results - showing ratings for different features
+5.3 Discussion of Findings
+5.3.1 Effectiveness of Campus-Based Model
+5.3.2 Impact of AI Features on Product Discovery
+5.3.3 Trust and Safety Mechanisms
+5.3.4 Contribution to Sustainable Consumption
+5.4 Challenges Encountered and Solutions
+
+CHAPTER 6: CONCLUSION AND FUTURE WORK
+6.1 Summary of Research
+6.2 Key Contributions
+6.3 Limitations of the Study
+6.4 Recommendations for Future Research
+6.5 Practical Implications for Campus Communities
+Ⅵ. Methodology 
+The said research will follow a system design and development methodology, combining elements of software engineering, user-centered design, and experimental evaluation. The methodology is structured into the following phases:
+
+1. Requirement Analysis Phase
+Conduct surveys and interviews with university students to identify their needs, preferences, and pain points regarding second-hand trading.
+Analyze existing platforms to identify gaps and opportunities.
+Document functional and non-functional requirements for the Xiaowu platform.
+
+2. System Design Phase
+Design the overall system architecture, including frontend, backend, database, and AI service components.
+Create detailed database schemas and API specifications.
+Design user interfaces for both web and mobile platforms, focusing on usability and accessibility.
+Develop algorithms for AI-powered features including image recognition, recommendation, and price suggestion.
+
+3. Implementation Phase
+Develop the web platform using React for the frontend and Laravel/Python microservices for the backend.
+Develop the mobile application using React Native to ensure cross-platform compatibility.
+Implement AI modules using Python, TensorFlow/PyTorch, and pre-trained models such as ResNet and CLIP.
+Integrate third-party services including payment gateways (Alipay, WeChat Pay) and real-time messaging (Socket.IO).
+Implement user verification systems using university email domains and optional ID upload.
+
+4. Testing Phase
+Conduct unit testing for individual components.
+Perform integration testing to ensure seamless interaction between modules.
+Execute user acceptance testing with a pilot group of students to gather feedback.
+Test AI feature accuracy using validation datasets.
+Conduct performance testing to assess response times, concurrency handling, and scalability.
+
+5. Evaluation Phase
+Evaluate system performance based on technical metrics (response time, accuracy, throughput).
+Assess user satisfaction through surveys and interviews.
+Analyze the platform's impact on trading efficiency and sustainable consumption.
+Document lessons learned and recommendations for improvement.
+Ⅶ. References 
+1. Second-Hand Marketplaces & Sharing Economy
+Jang, Y., & Kim, S. (2023). Factors influencing trust and loyalty in consumer-to-consumer second-hand marketplace platforms. Behavioral Sciences. 
+Wang, L., & Sun, H. (2023). Influencing factors of second-hand platform trading in C2C e-commerce. Journal of Intelligent Management Decision. 
+Sun, Y., Wang, Z., Lyu, H., & Qu, Q. (2025). C2C e-commerce platform trust from the seller’s perspective. Systems. 
+Choi, C., Lee, I., & Yoo, H. (2024). Seller trust and purchase intention in C2C second-hand markets. Behavioral Sciences. 
+Yamamoto, K. (2025). Determinants of second-hand consumer choices in C2C marketplaces. Resources, Environment and Sustainability. 
+Frenken, K., & Schor, J. (2021). The sharing economy and sustainable consumption. Environmental Innovation and Societal Transitions.
+Turunen, L., & Leipämaa-Leskinen, H. (2021). Pre-owned fashion consumption motivations. Journal of Business Research.
+Guiot, D., & Roux, D. (2022). Consumer motivations for second-hand shopping. Journal of Retailing.
+2. Trust & C2C E-commerce Platforms
+Kim, J., & Park, J. (2023). Trust mechanisms in peer-to-peer marketplaces. Information Systems Frontiers.
+Mittendorf, C. (2023). Trust in online peer-to-peer marketplaces. Electronic Markets.
+Zhao, K., Stylianou, A., & Zheng, Y. (2022). Trust formation in online marketplaces. Information & Management.
+Nguyen, T., & Simkin, L. (2022). Risk and trust in peer-to-peer commerce platforms. Journal of Business Research.
+Hajli, N., Sims, J., & Zadeh, A. (2021). Social commerce and consumer trust. Technological Forecasting and Social Change.
+3. AI Recommendation Systems
+Necula, S., & Păvăloaia, V. (2023). AI-driven recommendation systems in e-commerce. Applied Sciences. 
+Geetha, V., et al. (2024). AI-based recommendation systems for personalized shopping. International Journal of Engineering Research & Technology. 
+Kumari, A., & Laheri, V. (2025). Consumer behavior and recommender systems: Bibliometric analysis. Indian Journal of Marketing. 
+Liau, K., & Santoso, H. (2025). Generative AI in e-commerce recommender systems. Journal of Informatics and Web Engineering. 
+An, Y., Tan, Y., Sun, X., & Ferrari, G. (2024). Recommender systems: Technical challenges and implications. ICCK Transactions on Sensing, Communication and Control. 
+Aggarwal, C. (2022). Recommender systems: Algorithms and applications. Springer.
+Ricci, F., Rokach, L., & Shapira, B. (2022). Recommender Systems Handbook (3rd ed.). Springer.
+Fan, W., Zhao, X., & Chen, X. (2022). Trustworthy recommender systems. ACM Computing Surveys.
+Deldjoo, Y., Jannach, D., Bellogin, A., & Zanzonelli, D. (2022). Fairness in recommender systems. ACM Transactions on Information Systems.
+4. AI & Computer Vision for Product Search
+Zhang, Y., Chen, X., & Liu, H. (2023). AI in e-commerce product discovery. Electronic Commerce Research.
+Li, H., Wang, J., & Zhou, X. (2024). Deep learning approaches for product image recognition in online marketplaces. IEEE Access.
+Liu, Q., Wu, S., & Wang, L. (2022). Deep neural networks for recommendation systems. ACM Transactions on Information Systems.
+Chen, J., Zhao, W., & Li, X. (2023). Visual search technologies for e-commerce. IEEE Transactions on Multimedia.
+5. Digital Platforms & Social Commerce
+Dwivedi, Y., Hughes, D., & Ismagilova, E. (2022). Artificial intelligence in digital commerce. International Journal of Information Management.
+Huang, Z., Benyoucef, M., & Chen, J. (2023). Social commerce platforms and consumer behavior. Electronic Commerce Research.
+Liang, T., & Turban, E. (2021). Social commerce research framework. International Journal of Electronic Commerce.
+Varadarajan, R., & Yadav, M. (2022). Marketing strategies in digital marketplaces. Journal of the Academy of Marketing Science.
+6. Backend Systems & Software Architecture
+Newman, S. (2021). Building Microservices (2nd Edition). O’Reilly.
+Kleppmann, M. (2022). Designing Data-Intensive Applications. O’Reilly.
+Richards, M., & Ford, N. (2020/2021 updated). Fundamentals of Software Architecture. O’Reilly.
+Richardson, L., & Ruby, S. (2021). RESTful Web APIs. O’Reilly.
+7. Web / Mobile Development
+React Documentation Team. (2024). React Official Documentation.
+Laravel Documentation. (2024). Laravel Framework Documentation.
+FastAPI Documentation. (2024). FastAPI Official Documentation.
+Meta Engineering Team. (2023). React architecture and component-based UI design.
+Facebook Research. (2022). Efficient front-end architecture for scalable web applications.
+Google Developers. (2023). Progressive web apps and mobile-first architectures.
+
+Supervisor’s Evaluation	
+
+                           Signature
+Date
+Approval from Department	
+
+Signature
+Date
+Notes	

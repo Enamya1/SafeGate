@@ -29,6 +29,8 @@ Route::middleware('auth:sanctum')->get('/user/messages', [AuthController::class,
 Route::middleware('auth:sanctum')->get('/user/messages/notification', [AuthController::class, 'unreadMessages']);
 Route::middleware('auth:sanctum')->get('/user/messages/contacts', [AuthController::class, 'messageContacts']);
 Route::middleware('auth:sanctum')->post('/user/messages/transfer', [AuthController::class, 'transferMoney']);
+Route::middleware('auth:sanctum')->post('/user/payment-requests', [AuthController::class, 'createPaymentRequest']);
+Route::middleware('auth:sanctum')->post('/user/payment-requests/{request_id}/confirm', [AuthController::class, 'confirmPaymentRequest']);
 Route::middleware('auth:sanctum')->post('/user/products', [ProductController::class, 'store']);
 Route::middleware('auth:sanctum')->get('/user/products', [ProductController::class, 'myProducts']);
 Route::middleware('auth:sanctum')->get('/user/nearby', [ProductController::class, 'nearby']);

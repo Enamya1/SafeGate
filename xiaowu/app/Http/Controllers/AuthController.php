@@ -440,6 +440,8 @@ class AuthController extends Controller
                 'messages.sender_id',
                 'users.username as sender_username',
                 'messages.message_text',
+                'messages.message_type',
+                'messages.transfer_data',
                 'messages.read_at',
                 'messages.created_at',
             ])
@@ -474,6 +476,43 @@ class AuthController extends Controller
                 return $message;
             })->values();
         }
+
+        $messages = $messages->map(function ($message) {
+            $type = is_string($message->message_type ?? null) ? $message->message_type : 'text';
+            $transferDataRaw = $message->transfer_data ?? null;
+            $transferData = null;
+            if (is_string($transferDataRaw) && trim($transferDataRaw) !== '') {
+                try {
+                    $decoded = json_decode($transferDataRaw, true);
+                    $transferData = is_array($decoded) ? $decoded : null;
+                } catch (\Throwable $e) {
+                    $transferData = null;
+                }
+            }
+            $kind = 'normal';
+            $paymentStatus = null;
+            if ($type === 'payment_request') {
+                $paymentStatus = is_array($transferData) ? ($transferData['status'] ?? 'pending') : 'pending';
+                $kind = $paymentStatus === 'paid' ? 'payment_request_confirmed' : 'payment_request_unconfirmed';
+            } elseif ($type === 'payment_confirmation') {
+                $paymentStatus = 'paid';
+                $kind = 'payment_request_confirmed';
+            } elseif ($type === 'transfer') {
+                $kind = 'transfer';
+            }
+            return [
+                'id' => (int) $message->id,
+                'sender_id' => (int) $message->sender_id,
+                'sender_username' => $message->sender_username,
+                'message_text' => $message->message_text,
+                'read_at' => $message->read_at,
+                'created_at' => $message->created_at,
+                'message_type' => $type,
+                'message_kind' => $kind,
+                'payment_request_status' => $paymentStatus,
+                'transfer_data' => $transferData,
+            ];
+        })->values();
 
         $otherUserId = (int) $conversation->buyer_id === (int) $user->id
             ? (int) $conversation->seller_id
@@ -729,6 +768,427 @@ class AuthController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Transfer failed: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function createPaymentRequest(Request $request)
+    {
+        $user = $request->user();
+
+        if (($user->role ?? 'user') !== 'user') {
+            return response()->json([
+                'message' => 'Unauthorized: Only users can access this endpoint.',
+            ], 403);
+        }
+
+        try {
+            $validated = $request->validate([
+                'conversation_id' => 'required|integer|min:1|exists:conversations,id',
+                'product_id' => 'nullable|integer|min:1|exists:products,id',
+                'amount' => 'required|numeric|min:0.01',
+                'currency' => 'required|string|size:3',
+                'message' => 'nullable|string|max:1000',
+                'expires_in_hours' => 'nullable|integer|min:1|max:720', // Default 24 hours, max 30 days
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation Error',
+                'errors' => $e->errors(),
+            ], 422);
+        }
+
+        $conversation = DB::table('conversations')
+            ->select(['id', 'buyer_id', 'seller_id'])
+            ->where('id', (int) $validated['conversation_id'])
+            ->first();
+
+        if (! $conversation) {
+            return response()->json([
+                'message' => 'Conversation not found.',
+            ], 404);
+        }
+
+        if ((int) $conversation->buyer_id !== (int) $user->id && (int) $conversation->seller_id !== (int) $user->id) {
+            return response()->json([
+                'message' => 'Unauthorized: You are not part of this conversation.',
+            ], 403);
+        }
+
+        // Determine the other user (receiver of the payment request)
+        $otherUserId = (int) $conversation->buyer_id === (int) $user->id
+            ? (int) $conversation->seller_id
+            : (int) $conversation->buyer_id;
+
+        // Get product details if provided
+        $product = null;
+        if (isset($validated['product_id'])) {
+            $product = DB::table('products')
+                ->select(['id', 'title', 'price', 'seller_id'])
+                ->where('id', (int) $validated['product_id'])
+                ->first();
+
+            if (! $product) {
+                return response()->json([
+                    'message' => 'Product not found.',
+                ], 404);
+            }
+
+            // Verify product belongs to one of the conversation participants
+            if ($product->seller_id !== (int) $user->id && $product->seller_id !== $otherUserId) {
+                return response()->json([
+                    'message' => 'Product is not related to this conversation.',
+                ], 409);
+            }
+        }
+
+        // Calculate expiration time
+        $expiresAt = $validated['expires_in_hours'] ?? 24;
+        $expiresAtTime = now()->addHours($expiresAt);
+
+        // Create payment request
+        $paymentRequestId = DB::table('payment_requests')->insertGetId([
+            'conversation_id' => (int) $conversation->id,
+            'sender_id' => (int) $user->id,
+            'receiver_id' => $otherUserId,
+            'product_id' => isset($validated['product_id']) ? (int) $validated['product_id'] : null,
+            'amount' => $validated['amount'],
+            'currency' => $validated['currency'],
+            'status' => 'pending',
+            'message' => $validated['message'] ?? null,
+            'expires_at' => $expiresAtTime,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        // Create a message about the payment request
+        $messageText = sprintf(
+            'Payment request created for %s %s%s',
+            number_format($validated['amount'], 2),
+            $validated['currency'],
+            $product ? ' - ' . $product->title : ''
+        );
+
+        if (isset($validated['message'])) {
+            $messageText .= ': ' . $validated['message'];
+        }
+
+        $messageId = DB::table('messages')->insertGetId([
+            'conversation_id' => (int) $conversation->id,
+            'sender_id' => (int) $user->id,
+            'message_text' => $messageText,
+            'message_type' => 'payment_request',
+            'transfer_data' => json_encode([
+                'type' => 'payment_request',
+                'payment_request_id' => $paymentRequestId,
+                'amount' => (float) $validated['amount'],
+                'currency' => $validated['currency'],
+                'product_id' => $product?->id,
+                'product_title' => $product?->title,
+                'sender_username' => $user->username,
+                'receiver_id' => $otherUserId,
+                'expires_at' => $expiresAtTime->toIso8601String(),
+                'reference' => $validated['message'] ?? null,
+            ]),
+            'read_at' => null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        // Update payment request with message_id
+        DB::table('payment_requests')
+            ->where('id', $paymentRequestId)
+            ->update(['message_id' => $messageId]);
+
+        return response()->json([
+            'message' => 'Payment request created successfully',
+            'payment_request' => [
+                'id' => $paymentRequestId,
+                'conversation_id' => (int) $conversation->id,
+                'sender_id' => (int) $user->id,
+                'sender_username' => $user->username,
+                'receiver_id' => $otherUserId,
+                'product_id' => $product?->id,
+                'product_title' => $product?->title,
+                'amount' => (float) $validated['amount'],
+                'currency' => $validated['currency'],
+                'status' => 'pending',
+                'message' => $validated['message'] ?? null,
+                'expires_at' => $expiresAtTime->toIso8601String(),
+                'created_at' => now()->toIso8601String(),
+            ],
+        ], 201);
+    }
+
+    public function confirmPaymentRequest(Request $request, int $requestId)
+    {
+        $user = $request->user();
+
+        if (($user->role ?? 'user') !== 'user') {
+            return response()->json([
+                'message' => 'Unauthorized: Only users can access this endpoint.',
+            ], 403);
+        }
+
+        $paymentRequest = DB::table('payment_requests')
+            ->select([
+                'id',
+                'conversation_id',
+                'sender_id',
+                'receiver_id',
+                'product_id',
+                'amount',
+                'currency',
+                'status',
+                'message',
+                'expires_at',
+                'message_id',
+            ])
+            ->where('id', $requestId)
+            ->first();
+
+        if (! $paymentRequest) {
+            return response()->json([
+                'message' => 'Payment request not found.',
+            ], 404);
+        }
+
+        // Check if user is the receiver
+        if ((int) $paymentRequest->receiver_id !== (int) $user->id) {
+            return response()->json([
+                'message' => 'Unauthorized: You are not the receiver of this payment request.',
+            ], 403);
+        }
+
+        // Check status
+        if ($paymentRequest->status !== 'pending') {
+            return response()->json([
+                'message' => 'This payment request has already been ' . $paymentRequest->status . '.',
+            ], 409);
+        }
+
+        // Check expiration
+        if ($paymentRequest->expires_at && now()->gt($paymentRequest->expires_at)) {
+            // Mark as expired
+            DB::table('payment_requests')
+                ->where('id', $paymentRequest->id)
+                ->update(['status' => 'expired']);
+
+            return response()->json([
+                'message' => 'Payment request has expired.',
+            ], 409);
+        }
+
+        // Get wallets
+        $payerWallet = DB::table('wallets')
+            ->select('id', 'balance', 'currency', 'status_id')
+            ->where('user_id', (int) $user->id)
+            ->where('wallet_type_id', 1)
+            ->first();
+
+        if (! $payerWallet) {
+            return response()->json([
+                'message' => 'You do not have a wallet.',
+            ], 409);
+        }
+
+        if ($payerWallet->status_id !== 1) {
+            return response()->json([
+                'message' => 'Your wallet is not active.',
+            ], 409);
+        }
+
+        if ($payerWallet->currency !== $paymentRequest->currency) {
+            return response()->json([
+                'message' => 'Currency mismatch.',
+            ], 409);
+        }
+
+        if ((float) $payerWallet->balance < (float) $paymentRequest->amount) {
+            return response()->json([
+                'message' => 'Insufficient balance.',
+            ], 409);
+        }
+
+        // Get recipient's wallet
+        $recipientWallet = DB::table('wallets')
+            ->select('id', 'currency', 'status_id')
+            ->where('user_id', (int) $paymentRequest->sender_id)
+            ->where('wallet_type_id', 1)
+            ->first();
+
+        if (! $recipientWallet) {
+            return response()->json([
+                'message' => 'Recipient does not have a wallet.',
+            ], 404);
+        }
+
+        if ($recipientWallet->status_id !== 1) {
+            return response()->json([
+                'message' => 'Recipient wallet is not active.',
+            ], 409);
+        }
+
+        if ($recipientWallet->currency !== $paymentRequest->currency) {
+            return response()->json([
+                'message' => 'Recipient wallet currency does not match.',
+            ], 409);
+        }
+
+        // Perform the payment
+        try {
+            $atomicTransactionId = DB::transaction(function () use ($paymentRequest, $payerWallet, $recipientWallet, $user) {
+                // Create atomic transaction record
+                $atomicTransactionId = DB::table('atomic_transactions')->insertGetId([
+                    'atomic_uuid' => (string) \Illuminate\Support\Str::uuid(),
+                    'status' => 'completed',
+                    'total_amount' => $paymentRequest->amount,
+                    'currency' => $paymentRequest->currency,
+                    'initiated_by' => (int) $user->id,
+                    'metadata' => json_encode([
+                        'type' => 'payment_request_fulfillment',
+                        'payment_request_id' => $paymentRequest->id,
+                        'conversation_id' => (int) $paymentRequest->conversation_id,
+                    ]),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+
+                // Debit from payer
+                $debitLedgerId = DB::table('transaction_ledgers')->insertGetId([
+                    'ledger_uuid' => (string) \Illuminate\Support\Str::uuid(),
+                    'atomic_transaction_id' => $atomicTransactionId,
+                    'wallet_id' => (int) $payerWallet->id,
+                    'related_wallet_id' => (int) $recipientWallet->id,
+                    'direction' => 'debit',
+                    'amount' => $paymentRequest->amount,
+                    'currency' => $paymentRequest->currency,
+                    'status' => 'completed',
+                    'type' => 'payment_request_paid',
+                    'reference' => $paymentRequest->message,
+                    'metadata' => json_encode([
+                        'payment_request_id' => $paymentRequest->id,
+                        'conversation_id' => (int) $paymentRequest->conversation_id,
+                        'product_id' => $paymentRequest->product_id,
+                    ]),
+                    'occurred_at' => now(),
+                    'initiated_by' => (int) $user->id,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+
+                // Credit to recipient
+                $creditLedgerId = DB::table('transaction_ledgers')->insertGetId([
+                    'ledger_uuid' => (string) \Illuminate\Support\Str::uuid(),
+                    'atomic_transaction_id' => $atomicTransactionId,
+                    'wallet_id' => (int) $recipientWallet->id,
+                    'related_wallet_id' => (int) $payerWallet->id,
+                    'direction' => 'credit',
+                    'amount' => $paymentRequest->amount,
+                    'currency' => $paymentRequest->currency,
+                    'status' => 'completed',
+                    'type' => 'payment_request_received',
+                    'reference' => $paymentRequest->message,
+                    'metadata' => json_encode([
+                        'payment_request_id' => $paymentRequest->id,
+                        'conversation_id' => (int) $paymentRequest->conversation_id,
+                        'product_id' => $paymentRequest->product_id,
+                    ]),
+                    'occurred_at' => now(),
+                    'initiated_by' => (int) $user->id,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+
+                // Update wallet balances
+                DB::table('wallets')
+                    ->where('id', (int) $payerWallet->id)
+                    ->decrement('balance', $paymentRequest->amount);
+
+                DB::table('wallets')
+                    ->where('id', (int) $recipientWallet->id)
+                    ->increment('balance', $paymentRequest->amount);
+
+                // Update payment request status
+                DB::table('payment_requests')
+                    ->where('id', $paymentRequest->id)
+                    ->update([
+                        'status' => 'paid',
+                        'atomic_transaction_id' => $atomicTransactionId,
+                    ]);
+
+                // Create payment confirmation message
+                $recipient = DB::table('users')->select('username')->where('id', (int) $paymentRequest->sender_id)->first();
+                
+                $confirmationMessageText = sprintf(
+                    'Payment request of %s %s confirmed and paid%s',
+                    number_format($paymentRequest->amount, 2),
+                    $paymentRequest->currency,
+                    $paymentRequest->product_id ? ' - Product ID: ' . $paymentRequest->product_id : ''
+                );
+
+                $confirmationMessageId = DB::table('messages')->insertGetId([
+                    'conversation_id' => (int) $paymentRequest->conversation_id,
+                    'sender_id' => (int) $user->id,
+                    'message_text' => $confirmationMessageText,
+                    'message_type' => 'payment_confirmation',
+                    'transfer_data' => json_encode([
+                        'type' => 'payment_confirmation',
+                        'payment_request_id' => $paymentRequest->id,
+                        'amount' => (float) $paymentRequest->amount,
+                        'currency' => $paymentRequest->currency,
+                        'product_id' => $paymentRequest->product_id,
+                        'atomic_transaction_id' => $atomicTransactionId,
+                        'payer_username' => $user->username,
+                        'recipient_username' => $recipient?->username,
+                        'transaction_ledger_id' => $creditLedgerId,
+                    ]),
+                    'read_at' => null,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+
+                // Update original payment request message
+                if ($paymentRequest->message_id) {
+                    $originalMessageData = DB::table('messages')->where('id', $paymentRequest->message_id)->first();
+                    if ($originalMessageData) {
+                        $transferData = json_decode($originalMessageData->transfer_data, true);
+                        if (is_array($transferData)) {
+                            $transferData['status'] = 'paid';
+                            $transferData['paid_at'] = now()->toIso8601String();
+                            $transferData['atomic_transaction_id'] = $atomicTransactionId;
+                            
+                            DB::table('messages')
+                                ->where('id', $paymentRequest->message_id)
+                                ->update(['transfer_data' => json_encode($transferData)]);
+                        }
+                    }
+                }
+
+                if ($paymentRequest->product_id) {
+                    DB::table('products')
+                        ->where('id', (int) $paymentRequest->product_id)
+                        ->update(['status' => 'sold', 'updated_at' => now()]);
+                }
+
+                return $atomicTransactionId;
+            });
+
+            return response()->json([
+                'message' => 'Payment request confirmed and paid successfully',
+                'payment' => [
+                    'payment_request_id' => $paymentRequest->id,
+                    'amount' => (float) $paymentRequest->amount,
+                    'currency' => $paymentRequest->currency,
+                    'from_wallet_id' => (int) $payerWallet->id,
+                    'to_wallet_id' => (int) $recipientWallet->id,
+                    'atomic_transaction_id' => $atomicTransactionId,
+                    'status' => 'paid',
+                ],
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Payment failed: ' . $e->getMessage(),
             ], 500);
         }
     }
