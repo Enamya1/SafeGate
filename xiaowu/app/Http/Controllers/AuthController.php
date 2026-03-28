@@ -349,6 +349,7 @@ class AuthController extends Controller
             $validated = $request->validate([
                 'receiver_id' => 'required|integer|min:1|exists:users,id',
                 'message_text' => 'required|string|max:2000',
+                'product_id' => 'nullable|integer|min:1|exists:products,id',
             ]);
         } catch (ValidationException $e) {
             return response()->json([
@@ -386,10 +387,19 @@ class AuthController extends Controller
             ]);
         }
 
+        $productId = array_key_exists('product_id', $validated) && $validated['product_id'] !== null
+            ? (int) $validated['product_id']
+            : null;
+
+        $messageType = $productId !== null ? 'product_mention' : 'text';
+        $transferData = $productId !== null ? json_encode(['product_id' => $productId]) : null;
+
         $messageId = DB::table('messages')->insertGetId([
             'conversation_id' => $conversationId,
             'sender_id' => $senderId,
             'message_text' => $validated['message_text'],
+            'message_type' => $messageType,
+            'transfer_data' => $transferData,
             'read_at' => null,
             'created_at' => now(),
             'updated_at' => now(),
@@ -491,8 +501,7 @@ class AuthController extends Controller
             })->values();
         }
 
-        $messages = $messages->map(function ($message) {
-            $type = is_string($message->message_type ?? null) ? $message->message_type : 'text';
+        $transferPayloads = $messages->mapWithKeys(function ($message) {
             $transferDataRaw = $message->transfer_data ?? null;
             $transferData = null;
             if (is_string($transferDataRaw) && trim($transferDataRaw) !== '') {
@@ -503,6 +512,26 @@ class AuthController extends Controller
                     $transferData = null;
                 }
             }
+            return [$message->id => $transferData];
+        });
+
+        $productIds = $transferPayloads
+            ->map(fn ($payload) => is_array($payload) ? ($payload['product_id'] ?? null) : null)
+            ->filter()
+            ->unique()
+            ->values();
+
+        $productsById = $productIds->isNotEmpty()
+            ? DB::table('products')
+                ->select(['id', 'seller_id', 'title', 'price', 'currency'])
+                ->whereIn('id', $productIds->all())
+                ->get()
+                ->keyBy('id')
+            : collect();
+
+        $messages = $messages->map(function ($message) use ($transferPayloads, $productsById) {
+            $type = is_string($message->message_type ?? null) ? $message->message_type : 'text';
+            $transferData = $transferPayloads->get($message->id);
             $kind = 'normal';
             $paymentStatus = null;
             if ($type === 'payment_request') {
@@ -513,6 +542,22 @@ class AuthController extends Controller
                 $kind = 'payment_request_confirmed';
             } elseif ($type === 'transfer') {
                 $kind = 'transfer';
+            } elseif ($type === 'product_mention') {
+                $kind = 'product_mention';
+            }
+            $product = null;
+            if ($type === 'product_mention' && is_array($transferData)) {
+                $productId = $transferData['product_id'] ?? null;
+                if ($productId !== null && $productsById->has($productId)) {
+                    $row = $productsById->get($productId);
+                    $product = [
+                        'id' => (int) $row->id,
+                        'seller_id' => (int) $row->seller_id,
+                        'title' => $row->title,
+                        'price' => $row->price !== null ? (float) $row->price : null,
+                        'currency' => $row->currency,
+                    ];
+                }
             }
             return [
                 'id' => (int) $message->id,
@@ -525,6 +570,7 @@ class AuthController extends Controller
                 'message_kind' => $kind,
                 'payment_request_status' => $paymentStatus,
                 'transfer_data' => $transferData,
+                'product' => $product,
             ];
         })->values();
 

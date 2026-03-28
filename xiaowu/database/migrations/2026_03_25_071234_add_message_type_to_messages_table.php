@@ -11,6 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasColumn('messages', 'message_type')) {
+            Schema::table('messages', function (Blueprint $table) {
+                $table->string('message_type', 40)->nullable()->after('message_text');
+            });
+        }
+
         if (!Schema::hasColumn('messages', 'transfer_data')) {
             Schema::table('messages', function (Blueprint $table) {
                 $table->json('transfer_data')->nullable()->after('message_type');
@@ -26,6 +32,12 @@ return new class extends Migration
         if (Schema::hasColumn('messages', 'transfer_data')) {
             Schema::table('messages', function (Blueprint $table) {
                 $table->dropColumn('transfer_data');
+            });
+        }
+
+        if (Schema::hasColumn('messages', 'message_type')) {
+            Schema::table('messages', function (Blueprint $table) {
+                $table->dropColumn('message_type');
             });
         }
     }

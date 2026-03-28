@@ -321,6 +321,7 @@ User Products
    - Request body:
      - receiver_id (required integer, exists users.id)
      - message_text (required string, max 2000)
+     - product_id (optional integer, exists products.id) // sends a product mention message
    - Response 201: {"message":"Message sent successfully","conversation_id":...,"message_data":{...}}
    - Response 403: {"message":"Unauthorized: Only users can access this endpoint."}
    - Response 422: {"message":"Validation Error","errors":{...}}
@@ -350,10 +351,17 @@ User Products
          "message_text":"...",
          "read_at":"...",
          "created_at":"...",
-         "message_type":"text|payment_request|payment_confirmation|transfer",
-         "message_kind":"normal|payment_request_unconfirmed|payment_request_confirmed|transfer",
+         "message_type":"text|payment_request|payment_confirmation|transfer|product_mention",
+         "message_kind":"normal|payment_request_unconfirmed|payment_request_confirmed|transfer|product_mention",
          "payment_request_status":"pending|paid|null",
-         "transfer_data":{...} // present for transfer/payment_request/payment_confirmation when available
+         "transfer_data":{...} // present for transfer/payment_request/payment_confirmation/product_mention when available
+         "product":{
+           "id":...,
+           "seller_id":...,
+           "title":"...",
+           "price":...,
+           "currency":"..."
+         } // present for message_type=product_mention when available
        }
      ]
      }
@@ -365,6 +373,7 @@ User Products
       - payment_request_unconfirmed for message_type=payment_request with status pending
       - payment_request_confirmed for message_type=payment_request with status paid or message_type=payment_confirmation
       - transfer for message_type=transfer
+      - product_mention for message_type=product_mention
    - Response 403: {"message":"Unauthorized: You are not part of this conversation."}
    - Response 422: {"message":"Validation Error","errors":{...}}
 
