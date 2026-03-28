@@ -24,14 +24,28 @@ class ProductController extends Controller
 {
     private function publicDiskUrl(string $path): string
     {
-        $baseUrl = (string) config('filesystems.disks.public.url', '');
         $path = ltrim($path, '/');
+        $request = request();
+        $baseUrl = '';
+        if ($request) {
+            $baseUrl = $request->getSchemeAndHttpHost();
+        }
+
+        if ($baseUrl === '') {
+            $baseUrl = (string) config('filesystems.disks.public.url', '');
+        }
 
         if ($baseUrl === '') {
             return '/storage/'.$path;
         }
 
-        return rtrim($baseUrl, '/').'/'.$path;
+        $baseUrl = rtrim($baseUrl, '/');
+
+        if (str_ends_with($baseUrl, '/storage')) {
+            return $baseUrl.'/'.$path;
+        }
+
+        return $baseUrl.'/storage/'.$path;
     }
 
     private function pythonServiceBaseUrl(): string
@@ -54,6 +68,8 @@ class ProductController extends Controller
         $connectTimeoutSeconds = (int) env('PYTHON_SERVICE_CONNECT_TIMEOUT_SECONDS', 5);
         $retryAttempts = max(1, (int) env('VISUAL_SEARCH_INDEX_RETRY_ATTEMPTS', 2));
         $baseUrl = $this->pythonServiceBaseUrl();
+        $request = request();
+        $laravelBaseUrl = $request ? $request->getSchemeAndHttpHost() : '';
         $attempted = 0;
         $indexed = 0;
         $failed = [];
@@ -78,6 +94,7 @@ class ProductController extends Controller
                         ->acceptJson()
                         ->withHeaders([
                             'X-Internal-Token' => $pythonInternalToken,
+                            'X-Laravel-Base-Url' => $laravelBaseUrl,
                         ])
                         ->post($baseUrl.'/py/api/internal/visual-search/index', [
                             'product_id' => (int) $image->product_id,
@@ -993,6 +1010,7 @@ class ProductController extends Controller
         $pythonTimeoutSeconds = (int) env('PYTHON_SERVICE_TIMEOUT_SECONDS', 45);
         $pythonConnectTimeoutSeconds = (int) env('PYTHON_SERVICE_CONNECT_TIMEOUT_SECONDS', 5);
         $baseUrl = $this->pythonServiceBaseUrl();
+        $laravelBaseUrl = $request->getSchemeAndHttpHost();
 
         try {
             /** @var \Illuminate\Http\Client\Response $pythonResponse */
@@ -1005,6 +1023,7 @@ class ProductController extends Controller
                     'X-User-Id' => (string) $user->id,
                     'X-User-Role' => (string) ($user->role ?? 'user'),
                     'X-User-Dormitory-Id' => $user->dormitory_id !== null ? (string) $user->dormitory_id : '',
+                    'X-Laravel-Base-Url' => $laravelBaseUrl,
                 ])
                 ->attach(
                     'image',

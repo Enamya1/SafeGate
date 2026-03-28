@@ -106,7 +106,16 @@ def _laravel_get_json(authorization: str, path: str) -> Dict[str, Any]:
     raise HTTPException(status_code=502, detail=detail)
 
 
-def _resolve_image_url(image_url: Optional[str]) -> Optional[str]:
+def _request_laravel_base_url(request: Optional[Request]) -> Optional[str]:
+    if request is None:
+        return None
+    header = request.headers.get("x-laravel-base-url") or request.headers.get("x-base-url")
+    if not header:
+        return None
+    return header.strip()
+
+
+def _resolve_image_url(image_url: Optional[str], base_url: Optional[str] = None) -> Optional[str]:
     if not isinstance(image_url, str) or image_url.strip() == "":
         return None
 
@@ -122,7 +131,9 @@ def _resolve_image_url(image_url: Optional[str]) -> Optional[str]:
         else:
             return normalized
 
-    base_url = (os.environ.get("LARAVEL_BASE_URL") or "http://127.0.0.1:8000").strip().rstrip("/")
+    if not base_url:
+        base_url = os.environ.get("LARAVEL_BASE_URL") or "http://127.0.0.1:8000"
+    base_url = base_url.strip().rstrip("/")
     if not normalized.startswith("/"):
         normalized = f"/{normalized}"
     return f"{base_url}{normalized}"
@@ -1053,6 +1064,7 @@ async def visual_search(
 
 @py_router.get("/py/api/user/recommendations/products")
 def recommend_products(
+    request: Request,
     authorization: Optional[str] = Header(default=None),
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=10, ge=1, le=50),
@@ -1480,6 +1492,7 @@ def recommend_products(
     images_by_product = _group_by_key([dict(x) for x in images], "product_id")
     tag_rows_by_product = _group_by_key([dict(x) for x in tags], "product_id")
 
+    base_url = _request_laravel_base_url(request)
     payload_products = []
     for p in combined:
         pid = int(p["id"])
@@ -1487,8 +1500,8 @@ def recommend_products(
         image_thumbnail_url = None
         if imgs:
             first = imgs[0]
-            image_thumbnail_url = _resolve_image_url(first.get("image_thumbnail_url"))
-        seller_profile_picture = _resolve_image_url(p.get("seller__profile_picture"))
+            image_thumbnail_url = _resolve_image_url(first.get("image_thumbnail_url"), base_url)
+        seller_profile_picture = _resolve_image_url(p.get("seller__profile_picture"), base_url)
         prod: Dict[str, Any] = {
             "id": pid,
             "title": p.get("title"),
@@ -1535,6 +1548,7 @@ def recommend_products(
 
 @py_router.get("/py/api/user/recommendations/exchange-products")
 def recommend_exchange_products(
+    request: Request,
     authorization: Optional[str] = Header(default=None),
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=10, ge=1, le=50),
@@ -1989,6 +2003,7 @@ def recommend_exchange_products(
     images_by_product = _group_by_key([dict(x) for x in images], "product_id")
     tag_rows_by_product = _group_by_key([dict(x) for x in tags], "product_id")
 
+    base_url = _request_laravel_base_url(request)
     payload_exchange_products = []
     for p in combined:
         pid = int(p["id"])
@@ -1997,17 +2012,17 @@ def recommend_exchange_products(
         image_thumbnail_url = None
         if imgs:
             first = imgs[0]
-            image_url = _resolve_image_url(first.get("image_url"))
-            image_thumbnail_url = _resolve_image_url(first.get("image_thumbnail_url"))
+            image_url = _resolve_image_url(first.get("image_url"), base_url)
+            image_thumbnail_url = _resolve_image_url(first.get("image_thumbnail_url"), base_url)
         product_images = [
             {
-                "image_url": _resolve_image_url(img.get("image_url")),
-                "image_thumbnail_url": _resolve_image_url(img.get("image_thumbnail_url")),
+                "image_url": _resolve_image_url(img.get("image_url"), base_url),
+                "image_thumbnail_url": _resolve_image_url(img.get("image_thumbnail_url"), base_url),
                 "is_primary": bool(img.get("is_primary")),
             }
             for img in imgs
         ]
-        seller_profile_picture = _resolve_image_url(p.get("seller__profile_picture"))
+        seller_profile_picture = _resolve_image_url(p.get("seller__profile_picture"), base_url)
 
         expiration_date = p.get("expiration_date")
         if isinstance(expiration_date, datetime):

@@ -17,14 +17,28 @@ class ExchangeProductController extends Controller
 {
     private function publicDiskUrl(string $path): string
     {
-        $baseUrl = (string) config('filesystems.disks.public.url', '');
         $path = ltrim($path, '/');
+        $request = request();
+        $baseUrl = '';
+        if ($request) {
+            $baseUrl = $request->getSchemeAndHttpHost();
+        }
+
+        if ($baseUrl === '') {
+            $baseUrl = (string) config('filesystems.disks.public.url', '');
+        }
 
         if ($baseUrl === '') {
             return '/storage/'.$path;
         }
 
-        return rtrim($baseUrl, '/').'/'.$path;
+        $baseUrl = rtrim($baseUrl, '/');
+
+        if (str_ends_with($baseUrl, '/storage')) {
+            return $baseUrl.'/'.$path;
+        }
+
+        return $baseUrl.'/storage/'.$path;
     }
 
     private function pythonServiceBaseUrl(): string
@@ -277,6 +291,7 @@ class ExchangeProductController extends Controller
         $pythonTimeoutSeconds = (float) env('PYTHON_EXCHANGE_RECOMMEND_TIMEOUT_SECONDS', 2.0);
         $pythonConnectTimeoutSeconds = (float) env('PYTHON_EXCHANGE_RECOMMEND_CONNECT_TIMEOUT_SECONDS', 0.8);
         $baseUrl = $this->pythonServiceBaseUrl();
+        $laravelBaseUrl = $request->getSchemeAndHttpHost();
         $cacheKey = 'exchange:recommendations:v1:user:'.(int) $user->id.':'.md5(json_encode($params));
         $cacheTtlSeconds = (int) env('EXCHANGE_RECOMMENDATION_CACHE_SECONDS', 60);
         $upstreamDownKey = 'exchange:recommendations:upstream_down_until';
@@ -304,6 +319,7 @@ class ExchangeProductController extends Controller
                     'X-User-Id' => (string) $user->id,
                     'X-User-Role' => (string) ($user->role ?? 'user'),
                     'X-User-Dormitory-Id' => $user->dormitory_id !== null ? (string) $user->dormitory_id : '',
+                    'X-Laravel-Base-Url' => $laravelBaseUrl,
                 ])
                 ->get($baseUrl.'/py/api/user/recommendations/exchange-products', $params);
         } catch (\Throwable $e) {

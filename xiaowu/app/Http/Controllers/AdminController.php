@@ -20,14 +20,28 @@ class AdminController extends Controller
 {
     private function publicDiskUrl(string $path): string
     {
-        $baseUrl = (string) config('filesystems.disks.public.url', '');
         $path = ltrim($path, '/');
+        $request = request();
+        $baseUrl = '';
+        if ($request) {
+            $baseUrl = $request->getSchemeAndHttpHost();
+        }
+
+        if ($baseUrl === '') {
+            $baseUrl = (string) config('filesystems.disks.public.url', '');
+        }
 
         if ($baseUrl === '') {
             return '/storage/'.$path;
         }
 
-        return rtrim($baseUrl, '/').'/'.$path;
+        $baseUrl = rtrim($baseUrl, '/');
+
+        if (str_ends_with($baseUrl, '/storage')) {
+            return $baseUrl.'/'.$path;
+        }
+
+        return $baseUrl.'/storage/'.$path;
     }
 
     private function storeProfilePicture($file, int $userId): string
