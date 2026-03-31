@@ -774,6 +774,60 @@ User Metadata
   - Response 422: {"message":"Validation Error","errors":{...}}
 
 Admin
+27d) GET /api/admin/dashboard
+   - Auth: token_auth (Sanctum token), role=admin
+   - Description: Returns aggregated dashboard data for the admin panel. All data is cached for 60 seconds for performance.
+   - Response 200:
+     {
+       "message":"Dashboard data retrieved successfully",
+       "data":{
+         "stats":{
+           "total_users":{"value":190000,"change_pct":12.5,"trend":"up|down|stable"},
+           "active_listings":{"value":82433,"change_pct":4.5,"trend":"up|down|stable"},
+           "total_value_exchanged":{"value":540000.00,"change_pct":-2.1,"trend":"up|down|stable"},
+           "transactions":{"value":3200,"change_pct":8.0,"trend":"up|down|stable"},
+           "active_users":1500,
+           "new_users_month":320
+         },
+         "universities":[
+           {"id":1,"name":"...","address":"...","latitude":38.97,"longitude":121.53}
+         ],
+         "universities_overview":[
+           {"university_id":1,"university_name":"...","users_count":4500}
+         ],
+         "chart_data":[
+           {"name":"Jan","users":1200,"transactions_amount":400.00},
+           {"name":"Feb","users":1900,"transactions_amount":600.00},
+           ...
+           {"name":"Dec","users":12450,"transactions_amount":8945.00}
+         ],
+         "recent_users":[
+           {
+             "id":99,
+             "full_name":"...",
+             "email":"...",
+             "username":"...",
+             "profile_picture":"...",
+             "status":"active",
+             "university":"...",
+             "joined_at":"..."
+           }
+         ]
+       }
+     }
+   - Notes:
+     - change_pct compares current month vs previous month for each metric
+     - trend is "up" when current month > last month, "down" when less, "stable" when equal
+     - total_value_exchanged is the sum of prices of all sold products
+     - transactions counts products with status="sold"
+     - active_users counts users with status="active"
+     - new_users_month counts users created since the start of the current month
+     - recent_users returns the 5 most recently registered users
+     - universities_overview uses a single JOIN query for performance
+     - chart_data covers all 12 months of the current year; months with no data return 0
+     - Cache key: admin:dashboard:v1, TTL: 60 seconds
+   - Response 403: {"message":"Unauthorized: Only administrators can access this endpoint."}
+
 28) POST /api/admin/test
    - Response 200: {"message":"Admin endpoint reached!"}
 

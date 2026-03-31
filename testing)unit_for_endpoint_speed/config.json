@@ -51,6 +51,9 @@
     ]
   },
   "endpoint_overrides": {
+    "GET /api/admin/dashboard": {
+      "auth_token": "@file:d:\\ty_now\\SafeGate\\testing)unit_for_endpoint_speed\\admin_token.txt"
+    },
     "POST /api/user/login": {
       "body": {
         "email": "user@example.com",

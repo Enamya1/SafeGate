@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\AdminFinanceController;
 use App\Http\Controllers\AiChatController;
 use App\Http\Controllers\AtomicTransactionController;
@@ -104,6 +105,7 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 Route::prefix('admin')->group(function () {
+    Route::middleware('token_auth')->get('/dashboard', [AdminDashboardController::class, 'index']);
     Route::post('/test', [AdminController::class, 'index']);
     Route::post('/login', [AdminController::class, 'login']);
     Route::middleware('token_auth')->post('/logout', [AdminController::class, 'logout']);
