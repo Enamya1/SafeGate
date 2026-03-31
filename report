@@ -1242,6 +1242,29 @@ AI Chat
    - Response 422: {"message":"Validation Error","errors":{...}}
    - Response 502: {"message":"AI service unavailable."}
 
+53c) POST /api/ai/sessions/{session_id}/voice-call
+   - Auth: auth:sanctum, role=user
+   - Path params:
+     - session_id (required uuid from create session)
+   - Request body:
+     - message (required string, max 5000)
+     - audio_duration_seconds (optional number, min 0, max 9999.99)
+   - Response 200:
+     {
+       "response":"...",
+       "voice_response":{"text":"...","should_speak":true},
+       "function_calls":[{"name":"...","arguments":{...},"result_count":...}],
+       "products":[{"id":...,"title":"...","image_thumbnail_url":"..."}],
+       "should_display_products":true,
+       "display_payload":{"type":"products","count":...,"products":[...]}
+     }
+   - Behavior:
+     - Forces voice interaction mode and stores assistant output as voice content_type.
+     - If products are requested/found, returns structured display_payload so client can render product cards/images during the call.
+   - Response 404: {"message":"Session not found."}
+   - Response 422: {"message":"Validation Error","errors":{...}}
+   - Response 502: {"message":"AI service unavailable."}
+
 54) GET /api/ai/sessions/{session_id}/messages
    - Auth: auth:sanctum, role=user
    - Path params:
@@ -1257,6 +1280,7 @@ AI Chat
    - Request body:
      - message (required string)
      - message_type (optional enum: text|voice)
+     - interaction_mode (optional enum: chat|voice_call, default chat)
    - Response 200:
      {
        "response":"...",
@@ -1264,6 +1288,10 @@ AI Chat
        "products":[...],
        "usage":{"total_tokens":...,"prompt_tokens":...,"completion_tokens":...},
        "message_type":"text|voice",
+       "interaction_mode":"chat|voice_call",
+       "voice_response":{"text":"...","should_speak":true|false},
+       "should_display_products":true|false,
+       "display_payload":{"type":"products","count":...,"products":[...]}|null,
        "user_id":...
      }
    - Behavior:
@@ -1272,6 +1300,7 @@ AI Chat
    - Response 401: {"detail":"Missing Authorization header"}
    - Response 422: {"detail":"message is required"}
    - Response 422: {"detail":"message_type must be text or voice"}
+   - Response 422: {"detail":"interaction_mode must be chat or voice_call"}
    - Response 503: {"detail":"Database unavailable"}
 
 AI Table New Options

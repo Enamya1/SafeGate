@@ -352,4 +352,89 @@ class UserAiChatTest extends TestCase
         $this->assertNotNull($historySession);
         $this->assertSame('New Chat Name', $historySession['title']);
     }
+
+    public function test_user_can_use_voice_call_endpoint_and_receive_products_payload(): void
+    {
+        $user = User::factory()->create([
+            'role' => 'user',
+            'status' => 'active',
+        ]);
+
+        $session = AiChatSession::create([
+            'user_id' => $user->id,
+            'session_uuid' => (string) Str::uuid(),
+            'title' => 'Voice Session',
+            'provider' => 'qwen',
+            'model' => 'qwen-plus',
+        ]);
+
+        Http::fake([
+            'http://127.0.0.1:8001/api/ai/respond' => Http::response([
+                'response' => 'I found great products for you.',
+                'function_calls' => [
+                    [
+                        'name' => 'search_products',
+                        'arguments' => ['keyword' => 'gaming keyboard'],
+                        'result_count' => 1,
+                    ],
+                ],
+                'products' => [
+                    [
+                        'id' => 27,
+                        'title' => 'Mechanical Gaming Keyboard',
+                        'image_thumbnail_url' => 'http://127.0.0.1:8000/storage/key.jpg',
+                    ],
+                ],
+                'voice_response' => [
+                    'text' => 'I found one gaming keyboard option. I will show it on your screen now.',
+                    'should_speak' => true,
+                ],
+                'should_display_products' => true,
+                'display_payload' => [
+                    'type' => 'products',
+                    'count' => 1,
+                    'products' => [
+                        ['id' => 27, 'title' => 'Mechanical Gaming Keyboard'],
+                    ],
+                ],
+                'usage' => [
+                    'total_tokens' => 30,
+                    'prompt_tokens' => 11,
+                    'completion_tokens' => 19,
+                ],
+            ], 200),
+        ]);
+
+        Sanctum::actingAs($user);
+
+        $response = $this
+            ->withHeader('Accept', 'application/json')
+            ->withHeader('Authorization', 'Bearer test-token')
+            ->postJson('/api/ai/sessions/'.$session->session_uuid.'/voice-call', [
+                'message' => 'Show me gaming keyboards',
+                'audio_duration_seconds' => 2.5,
+            ]);
+
+        $response
+            ->assertStatus(200)
+            ->assertJsonPath('response', 'I found great products for you.')
+            ->assertJsonPath('voice_response.should_speak', true)
+            ->assertJsonPath('should_display_products', true)
+            ->assertJsonPath('display_payload.type', 'products')
+            ->assertJsonPath('products.0.id', 27);
+
+        Http::assertSent(function ($request) {
+            return $request->url() === 'http://127.0.0.1:8001/api/ai/respond'
+                && $request['interaction_mode'] === 'voice_call'
+                && $request['message_type'] === 'voice';
+        });
+
+        $this->assertDatabaseHas('ai_chat_messages', [
+            'session_id' => $session->id,
+            'message_type' => 'assistant',
+            'content_type' => 'voice',
+            'content' => 'I found great products for you.',
+            'tokens_used' => 30,
+        ]);
+    }
 }

@@ -89,6 +89,7 @@ Route::middleware('auth:sanctum')->prefix('ai')->group(function () {
     Route::delete('/history/{session_id}', [AiChatController::class, 'deleteHistory']);
     Route::post('/sessions', [AiChatController::class, 'createSession']);
     Route::post('/sessions/{session_id}/messages', [AiChatController::class, 'sendMessage']);
+    Route::post('/sessions/{session_id}/voice-call', [AiChatController::class, 'sendVoiceCall']);
     Route::get('/sessions/{session_id}/messages', [AiChatController::class, 'listMessages']);
 });
 

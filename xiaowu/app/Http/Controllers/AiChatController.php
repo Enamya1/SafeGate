@@ -253,6 +253,16 @@ class AiChatController extends Controller
 
     public function sendMessage(Request $request, string $sessionId)
     {
+        return $this->handleSessionMessage($request, $sessionId, false);
+    }
+
+    public function sendVoiceCall(Request $request, string $sessionId)
+    {
+        return $this->handleSessionMessage($request, $sessionId, true);
+    }
+
+    private function handleSessionMessage(Request $request, string $sessionId, bool $voiceCallMode)
+    {
         $user = $request->user();
 
         if (($user->role ?? 'user') !== 'user') {
@@ -285,7 +295,8 @@ class AiChatController extends Controller
             ], 404);
         }
 
-        $messageType = $validated['message_type'] ?? 'text';
+        $messageType = $voiceCallMode ? 'voice' : ($validated['message_type'] ?? 'text');
+        $interactionMode = $voiceCallMode ? 'voice_call' : 'chat';
         $contentType = $messageType === 'voice' ? 'voice' : 'text';
 
         AiChatMessage::create([
@@ -317,6 +328,12 @@ class AiChatController extends Controller
         $assistantText = '';
         $functionCalls = [];
         $products = [];
+        $voiceResponse = [
+            'text' => '',
+            'should_speak' => $messageType === 'voice',
+        ];
+        $shouldDisplayProducts = false;
+        $displayPayload = null;
         $upstreamStatusCode = null;
         $upstreamDetail = null;
         $usage = [
@@ -339,6 +356,7 @@ class AiChatController extends Controller
                     'session_id' => $session->session_uuid,
                     'message' => $validated['message'],
                     'message_type' => $messageType,
+                    'interaction_mode' => $interactionMode,
                     'user_context' => [
                         'id' => $user->id,
                         'role' => $user->role,
@@ -357,6 +375,11 @@ class AiChatController extends Controller
                 $assistantText = (string) ($payload['response'] ?? '');
                 $functionCalls = is_array($payload['function_calls'] ?? null) ? $payload['function_calls'] : [];
                 $products = is_array($payload['products'] ?? null) ? $payload['products'] : [];
+                $voiceResponsePayload = is_array($payload['voice_response'] ?? null) ? $payload['voice_response'] : [];
+                $voiceResponse['text'] = (string) ($voiceResponsePayload['text'] ?? $assistantText);
+                $voiceResponse['should_speak'] = (bool) ($voiceResponsePayload['should_speak'] ?? ($messageType === 'voice'));
+                $shouldDisplayProducts = (bool) ($payload['should_display_products'] ?? (count($products) > 0));
+                $displayPayload = is_array($payload['display_payload'] ?? null) ? $payload['display_payload'] : null;
                 $usagePayload = is_array($payload['usage'] ?? null) ? $payload['usage'] : [];
                 $usage['total_tokens'] = (int) ($usagePayload['total_tokens'] ?? 0);
                 $usage['prompt_tokens'] = (int) ($usagePayload['prompt_tokens'] ?? 0);
@@ -382,6 +405,7 @@ class AiChatController extends Controller
                 'payload' => [
                     'session_id' => $session->session_uuid,
                     'message_type' => $messageType,
+                    'interaction_mode' => $interactionMode,
                 ],
                 'event_type' => 'chat_message',
                 'model_used' => env('AI_MODEL', 'qwen-plus'),
@@ -408,7 +432,7 @@ class AiChatController extends Controller
             'user_id' => null,
             'role' => 'assistant',
             'message_type' => 'assistant',
-            'content_type' => 'text',
+            'content_type' => $voiceResponse['should_speak'] ? 'voice' : 'text',
             'content' => $assistantText,
             'function_name' => is_array($primaryCall) ? ($primaryCall['name'] ?? null) : null,
             'function_arguments' => is_array($primaryCall) ? ($primaryCall['arguments'] ?? null) : null,
@@ -426,6 +450,7 @@ class AiChatController extends Controller
             'payload' => [
                 'session_id' => $session->session_uuid,
                 'message_type' => $messageType,
+                'interaction_mode' => $interactionMode,
             ],
             'event_type' => 'chat_message',
             'model_used' => env('AI_MODEL', 'qwen-plus'),
@@ -438,11 +463,19 @@ class AiChatController extends Controller
             'error_message' => null,
         ]);
 
-        return response()->json([
+        $responsePayload = [
             'response' => $assistantText,
             'function_calls' => $functionCalls,
             'products' => $products,
-        ], 200);
+        ];
+
+        if ($voiceCallMode) {
+            $responsePayload['voice_response'] = $voiceResponse;
+            $responsePayload['should_display_products'] = $shouldDisplayProducts;
+            $responsePayload['display_payload'] = $displayPayload;
+        }
+
+        return response()->json($responsePayload, 200);
     }
 
     public function listMessages(Request $request, string $sessionId)

@@ -714,6 +714,37 @@ def _fallback_response_text(user_message: str, function_name: str, products: Lis
     return "I found these options:\n" + "\n".join(lines)
 
 
+def _build_voice_response_text(base_text: str, function_name: str, products: List[Dict[str, Any]]) -> str:
+    trimmed = (base_text or "").strip()
+    if function_name == "general_chat":
+        return trimmed if trimmed else "I am here. Tell me what you need."
+    if not products:
+        return trimmed if trimmed else "I could not find matching products right now."
+    top = products[:2]
+    snippets: List[str] = []
+    for product in top:
+        title = str(product.get("title") or "item").strip()
+        price = product.get("price")
+        currency = str(product.get("currency") or "CNY").strip().upper()
+        if price is None:
+            snippets.append(f"{title}")
+        else:
+            snippets.append(f"{title} at {price} {currency}")
+    prefix = f"I found {len(products)} products."
+    spoken = f"{prefix} Top options: " + "; ".join(snippets) + "."
+    return spoken
+
+
+def _build_display_payload(function_name: str, products: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    if function_name == "general_chat" or not products:
+        return None
+    return {
+        "type": "products",
+        "count": len(products),
+        "products": products[:10],
+    }
+
+
 def _read_user_context_from_payload(payload: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     ctx = payload.get("user_context")
     if not isinstance(ctx, dict):
@@ -769,6 +800,10 @@ def ai_respond(
     message_type = "text" if not isinstance(message_type_raw, str) else message_type_raw.strip().lower()
     if message_type not in {"text", "voice"}:
         raise HTTPException(status_code=422, detail="message_type must be text or voice")
+    interaction_mode_raw = payload.get("interaction_mode")
+    interaction_mode = "chat" if not isinstance(interaction_mode_raw, str) else interaction_mode_raw.strip().lower()
+    if interaction_mode not in {"chat", "voice_call"}:
+        raise HTTPException(status_code=422, detail="interaction_mode must be chat or voice_call")
 
     internal_user = None
     if _has_valid_internal_token(x_internal_token):
@@ -821,7 +856,16 @@ def ai_respond(
     if ai_key:
         try:
             manager = AIModelManager()
-            if function_name == "general_chat":
+            if function_name == "general_chat" and interaction_mode == "voice_call":
+                ai_result = manager.generate(
+                    user_prompt=message,
+                    system_prompt=(
+                        "You are XiaoWu assistant in a real-time voice call. "
+                        "Respond in short, clear, natural spoken sentences. "
+                        "If user asks for products, ask one focused follow-up question when needed."
+                    ),
+                )
+            elif function_name == "general_chat":
                 ai_result = manager.generate(
                     user_prompt=message,
                     system_prompt=(
@@ -842,6 +886,10 @@ def ai_respond(
                         "You are a shopping assistant for XiaoWu. "
                         "Use only the provided function result. "
                         "Be concise and helpful."
+                        if interaction_mode != "voice_call"
+                        else "You are a shopping assistant for XiaoWu in a voice call. "
+                        "Use only the provided function result. "
+                        "Speak naturally, keep it concise, and mention at most two product highlights."
                     ),
                 )
             ai_content = ai_result.get("content")
@@ -855,6 +903,10 @@ def ai_respond(
     prompt_tokens = max(1, len(message.split()))
     completion_tokens = max(1, len(response_text.split()))
     total_tokens = prompt_tokens + completion_tokens
+    display_payload = _build_display_payload(function_name, products)
+    should_display_products = display_payload is not None
+    should_speak = interaction_mode == "voice_call" or message_type == "voice"
+    voice_text = _build_voice_response_text(response_text, function_name, products) if should_speak else response_text
 
     return {
         "response": response_text,
@@ -866,6 +918,13 @@ def ai_respond(
             "completion_tokens": completion_tokens,
         },
         "message_type": message_type,
+        "interaction_mode": interaction_mode,
+        "voice_response": {
+            "text": voice_text,
+            "should_speak": should_speak,
+        },
+        "should_display_products": should_display_products,
+        "display_payload": display_payload,
         "user_id": user_id,
     }
 
