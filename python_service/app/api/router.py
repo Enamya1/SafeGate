@@ -5,6 +5,8 @@ import math
 import os
 import random
 import re
+import threading
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -24,6 +26,16 @@ py_router = APIRouter()
 
 _engine: Optional[Engine] = None
 _visual_search_engine: Optional[VisualSearchEngine] = None
+_user_cache_lock = threading.Lock()
+_user_cache: Dict[str, Tuple[float, Dict[str, Any]]] = {}
+_user_cache_ttl_seconds = 5
+_category_cache_lock = threading.Lock()
+_category_cache_ttl_seconds = 3
+_category_cache: Dict[str, Any] = {
+    "expires_at": 0.0,
+    "marker": (0, 0),
+    "names": [],
+}
 
 
 def _get_env_int(name: str, default: int) -> int:
@@ -34,6 +46,10 @@ def _get_env_int(name: str, default: int) -> int:
         return int(raw)
     except Exception:
         return default
+
+
+_user_cache_ttl_seconds = max(1, _get_env_int("PY_USER_CACHE_TTL_SECONDS", _user_cache_ttl_seconds))
+_category_cache_ttl_seconds = max(1, _get_env_int("PY_CATEGORY_CACHE_TTL_SECONDS", _category_cache_ttl_seconds))
 
 
 def _get_db_engine() -> Engine:
@@ -104,6 +120,26 @@ def _laravel_get_json(authorization: str, path: str) -> Dict[str, Any]:
     if last_error is not None:
         detail = f"Could not reach Laravel: {type(last_error).__name__}"
     raise HTTPException(status_code=502, detail=detail)
+
+
+def _read_user_from_authorization(authorization: str) -> Dict[str, Any]:
+    token = (authorization or "").strip()
+    if not token:
+        raise HTTPException(status_code=401, detail="Missing Authorization header")
+    now_monotonic = time.monotonic()
+    with _user_cache_lock:
+        cached = _user_cache.get(token)
+        if cached is not None and cached[0] > now_monotonic:
+            return dict(cached[1])
+
+    me = _laravel_get_json(token, "/api/user/me")
+    user = me.get("user") if isinstance(me, dict) else None
+    if not isinstance(user, dict) or not user.get("id"):
+        raise HTTPException(status_code=401, detail="Invalid user")
+    normalized = dict(user)
+    with _user_cache_lock:
+        _user_cache[token] = (now_monotonic + max(1, _user_cache_ttl_seconds), normalized)
+    return normalized
 
 
 def _request_laravel_base_url(request: Optional[Request]) -> Optional[str]:
@@ -284,6 +320,29 @@ def _normalize_text(value: str) -> str:
 
 
 def _load_category_names(conn) -> List[str]:
+    marker = (0, 0)
+    try:
+        marker_row = conn.execute(text("SELECT COUNT(*) AS row_count, MAX(id) AS max_id FROM categories")).mappings().first()
+        if marker_row is not None:
+            marker = (
+                int(marker_row.get("row_count") or 0),
+                int(marker_row.get("max_id") or 0),
+            )
+    except Exception:
+        marker = (0, 0)
+
+    now_monotonic = time.monotonic()
+    with _category_cache_lock:
+        cached_expires_at = float(_category_cache.get("expires_at") or 0.0)
+        cached_marker = _category_cache.get("marker")
+        cached_names = _category_cache.get("names")
+        if (
+            cached_expires_at > now_monotonic
+            and cached_marker == marker
+            and isinstance(cached_names, list)
+        ):
+            return list(cached_names)
+
     try:
         rows = conn.execute(text("SELECT name FROM categories ORDER BY id ASC")).mappings().all()
     except Exception:
@@ -293,6 +352,10 @@ def _load_category_names(conn) -> List[str]:
         name = row.get("name")
         if isinstance(name, str) and name.strip():
             out.append(name.strip())
+    with _category_cache_lock:
+        _category_cache["expires_at"] = now_monotonic + max(1, _category_cache_ttl_seconds)
+        _category_cache["marker"] = marker
+        _category_cache["names"] = list(out)
     return out
 
 
@@ -303,6 +366,103 @@ def _infer_category_name(message: str, category_names: List[str]) -> Optional[st
         if re.search(rf"\b{escaped}\b", haystack):
             return name
     return None
+
+
+def _load_condition_level_names(conn) -> List[str]:
+    try:
+        rows = conn.execute(text("SELECT name FROM condition_levels ORDER BY id ASC")).mappings().all()
+    except Exception:
+        return []
+    out: List[str] = []
+    for row in rows:
+        name = row.get("name")
+        if isinstance(name, str) and name.strip():
+            out.append(name.strip())
+    return out
+
+
+def _infer_condition_level_name(message: str, condition_level_names: List[str]) -> Optional[str]:
+    haystack = _normalize_text(message)
+    for name in condition_level_names:
+        escaped = re.escape(_normalize_text(name))
+        if re.search(rf"\b{escaped}\b", haystack):
+            return name
+    fallback_pairs = [
+        ("brand new", "new"),
+        ("like new", "like new"),
+        ("excellent", "excellent"),
+        ("good", "good"),
+        ("fair", "fair"),
+        ("poor", "poor"),
+    ]
+    for marker, target in fallback_pairs:
+        if re.search(rf"\b{re.escape(marker)}\b", haystack):
+            for name in condition_level_names:
+                if _normalize_text(name) == target:
+                    return name
+    return None
+
+
+def _extract_search_keyword(message: str, category_name: Optional[str], condition_level_name: Optional[str]) -> Optional[str]:
+    raw = re.sub(r"[^a-zA-Z0-9\s]", " ", message.lower())
+    tokens = [token.strip() for token in raw.split() if token.strip()]
+    if not tokens:
+        return None
+
+    stop_words = {
+        "can",
+        "could",
+        "you",
+        "find",
+        "search",
+        "show",
+        "me",
+        "a",
+        "an",
+        "the",
+        "please",
+        "need",
+        "want",
+        "for",
+        "with",
+        "under",
+        "below",
+        "less",
+        "than",
+        "or",
+        "equal",
+        "to",
+        "price",
+        "condition",
+        "products",
+        "product",
+        "item",
+        "items",
+        "cny",
+        "rmb",
+        "yuan",
+        "usd",
+    }
+
+    excluded = set(stop_words)
+    if category_name:
+        excluded.update([x for x in _normalize_text(category_name).split(" ") if x])
+    if condition_level_name:
+        excluded.update([x for x in _normalize_text(condition_level_name).split(" ") if x])
+
+    selected: List[str] = []
+    for token in tokens:
+        if token in excluded:
+            continue
+        if token.isdigit() or any(ch.isdigit() for ch in token):
+            continue
+        if len(token) < 2:
+            continue
+        selected.append(token)
+
+    if not selected:
+        return None
+    return " ".join(selected[:4]).strip() or None
 
 
 def _visibility_clause(user_dormitory_id: Optional[int]) -> Tuple[str, Dict[str, Any]]:
@@ -425,10 +585,14 @@ def _search_by_price(
     max_price: float,
     user_dormitory_id: Optional[int],
     category_name: Optional[str] = None,
+    keyword: Optional[str] = None,
+    condition_level_name: Optional[str] = None,
     limit: int = 20,
 ) -> List[Dict[str, Any]]:
     visibility_sql, visibility_params = _visibility_clause(user_dormitory_id)
     category_sql = ""
+    keyword_sql = ""
+    condition_sql = ""
     params: Dict[str, Any] = {
         **visibility_params,
         "max_price": max_price,
@@ -437,6 +601,18 @@ def _search_by_price(
     if category_name:
         category_sql = " AND c.name = :category_name"
         params["category_name"] = category_name
+    if keyword:
+        keyword_sql = """
+              AND (
+                p.title LIKE :keyword_like
+                OR p.description LIKE :keyword_like
+                OR c.name LIKE :keyword_like
+              )
+        """
+        params["keyword_like"] = f"%{keyword.strip()}%"
+    if condition_level_name:
+        condition_sql = " AND cl.name = :condition_level_name"
+        params["condition_level_name"] = condition_level_name
     rows = conn.execute(
         text(
             f"""
@@ -459,6 +635,8 @@ def _search_by_price(
               AND {visibility_sql}
               AND p.price <= :max_price
               {category_sql}
+              {keyword_sql}
+              {condition_sql}
             ORDER BY p.price ASC, p.created_at DESC, p.id DESC
             LIMIT :limit
             """
@@ -635,6 +813,7 @@ def _infer_function(
     user_dormitory_id: Optional[int],
 ) -> Tuple[str, Dict[str, Any], List[Dict[str, Any]]]:
     category_names = _load_category_names(conn)
+    condition_level_names = _load_condition_level_names(conn)
     normalized = _normalize_text(message)
     product_keywords = {
         "find",
@@ -666,6 +845,8 @@ def _infer_function(
         return "general_chat", {}, []
 
     category_name = _infer_category_name(message, category_names)
+    condition_level_name = _infer_condition_level_name(message, condition_level_names)
+    keyword_hint = _extract_search_keyword(message, category_name, condition_level_name)
 
     if "similar" in normalized and product_id is not None:
         args = {"product_id": product_id, "limit": 10}
@@ -679,11 +860,17 @@ def _infer_function(
         args: Dict[str, Any] = {"max_price": price_cap, "limit": 20}
         if category_name:
             args["category"] = category_name
+        if condition_level_name:
+            args["condition_level"] = condition_level_name
+        if keyword_hint:
+            args["keyword"] = keyword_hint
         return "search_by_price", args, _search_by_price(
             conn,
             max_price=price_cap,
             user_dormitory_id=user_dormitory_id,
             category_name=category_name,
+            keyword=keyword_hint,
+            condition_level_name=condition_level_name,
             limit=20,
         )
 
@@ -814,10 +1001,7 @@ def ai_respond(
         user_id = internal_user["id"]
         user_dormitory_id = internal_user["dormitory_id"]
     else:
-        me = _laravel_get_json(authorization, "/api/user/me")
-        user = me.get("user") if isinstance(me, dict) else None
-        if not isinstance(user, dict) or not user.get("id"):
-            raise HTTPException(status_code=401, detail="Invalid user")
+        user = _read_user_from_authorization(authorization)
         role = user.get("role")
         if role is not None and str(role).lower() != "user":
             raise HTTPException(status_code=403, detail="Only users can access this endpoint")
@@ -942,12 +1126,7 @@ def test_py() -> dict:
 
 @router.get("/hi")
 def hi(authorization: Optional[str] = Header(default=None)) -> dict:
-    if not authorization:
-        raise HTTPException(status_code=401, detail="Missing Authorization header")
-
-    data = _laravel_get_json(authorization, "/api/user/me")
-
-    user = data.get("user") if isinstance(data, dict) else None
+    user = _read_user_from_authorization(authorization or "")
     username = None
 
     if isinstance(user, dict):
@@ -1029,6 +1208,41 @@ async def internal_visual_search_index(
     }
 
 
+@py_router.post("/py/api/internal/visual-search/refresh")
+async def internal_visual_search_refresh(
+    request: Request,
+    x_internal_token: Optional[str] = Header(default=None),
+) -> dict:
+    if not (_has_valid_internal_token(x_internal_token) or _is_loopback_request(request)):
+        raise HTTPException(status_code=401, detail="Unauthorized internal request")
+
+    engine = _get_db_engine()
+    try:
+        conn = engine.connect()
+    except Exception:
+        raise HTTPException(status_code=503, detail="Database unavailable")
+
+    visual_engine = _get_visual_search_engine()
+    with conn:
+        try:
+            refreshed = visual_engine.refresh_snapshot(conn)
+        except ProgrammingError as e:
+            if getattr(e.orig, "args", None) and len(e.orig.args) >= 1 and int(e.orig.args[0]) == 1146:
+                table = visual_engine.missing_table_name_from_programming_error(e) or "unknown"
+                raise HTTPException(
+                    status_code=503,
+                    detail=f"Database '{os.environ.get('DB_DATABASE', 'XiaoWu')}' missing table: {table}. Check DB_* env or run Laravel migrations.",
+                )
+            raise
+        except RuntimeError as e:
+            raise HTTPException(status_code=503, detail=str(e))
+
+    return {
+        "message": "Visual search index refreshed successfully",
+        "snapshot": refreshed,
+    }
+
+
 @py_router.post("/py/api/user/search/visual")
 async def visual_search(
     request: Request,
@@ -1063,13 +1277,7 @@ async def visual_search(
             "dormitory_id": dormitory_value,
         }
     else:
-        if not authorization:
-            raise HTTPException(status_code=401, detail="Missing Authorization header")
-
-        me = _laravel_get_json(authorization, "/api/user/me")
-        user = me.get("user") if isinstance(me, dict) else None
-        if not isinstance(user, dict) or not user.get("id"):
-            raise HTTPException(status_code=401, detail="Invalid user")
+        user = _read_user_from_authorization(authorization or "")
         role = user.get("role")
         if role is not None and str(role).lower() != "user":
             raise HTTPException(status_code=403, detail="Only users can access this endpoint")
@@ -1131,16 +1339,10 @@ def recommend_products(
     lookback_days: int = Query(default=30, ge=1, le=365),
     seed: Optional[int] = Query(default=None),
 ) -> dict:
-    if not authorization:
-        raise HTTPException(status_code=401, detail="Missing Authorization header")
-
     if random_count > page_size:
         random_count = page_size
 
-    me = _laravel_get_json(authorization, "/api/user/me")
-    user = me.get("user") if isinstance(me, dict) else None
-    if not isinstance(user, dict) or not user.get("id"):
-        raise HTTPException(status_code=401, detail="Invalid user")
+    user = _read_user_from_authorization(authorization or "")
     role = user.get("role")
     if role is not None and str(role).lower() != "user":
         raise HTTPException(status_code=403, detail="Only users can access this endpoint")
@@ -1616,9 +1818,6 @@ def recommend_exchange_products(
     seed: Optional[int] = Query(default=None),
     exchange_type: Optional[str] = Query(default=None),
 ) -> dict:
-    if not authorization:
-        raise HTTPException(status_code=401, detail="Missing Authorization header")
-
     if random_count > page_size:
         random_count = page_size
 
@@ -1630,10 +1829,7 @@ def recommend_exchange_products(
     if exchange_type_value is not None and exchange_type_value not in {"exchange_only", "exchange_or_purchase"}:
         raise HTTPException(status_code=422, detail="Invalid exchange_type")
 
-    me = _laravel_get_json(authorization, "/api/user/me")
-    user = me.get("user") if isinstance(me, dict) else None
-    if not isinstance(user, dict) or not user.get("id"):
-        raise HTTPException(status_code=401, detail="Invalid user")
+    user = _read_user_from_authorization(authorization or "")
     role = user.get("role")
     if role is not None and str(role).lower() != "user":
         raise HTTPException(status_code=403, detail="Only users can access this endpoint")
@@ -2180,13 +2376,7 @@ def similar_products(
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=10, ge=1, le=50),
 ) -> dict:
-    if not authorization:
-        raise HTTPException(status_code=401, detail="Missing Authorization header")
-
-    me = _laravel_get_json(authorization, "/api/user/me")
-    user = me.get("user") if isinstance(me, dict) else None
-    if not isinstance(user, dict) or not user.get("id"):
-        raise HTTPException(status_code=401, detail="Invalid user")
+    user = _read_user_from_authorization(authorization or "")
     role = user.get("role")
     if role is not None and str(role).lower() != "user":
         raise HTTPException(status_code=403, detail="Only users can access this endpoint")
@@ -2249,30 +2439,6 @@ def similar_products(
 
         filter_sql = " OR ".join(filters)
 
-        try:
-            total_row = conn.execute(
-                text(
-                    f"""
-                    SELECT COUNT(*) AS total
-                    FROM products p
-                    WHERE p.status = 'available' AND p.deleted_at IS NULL
-                      AND p.id <> :product_id
-                      AND ({filter_sql})
-                    """
-                ),
-                params,
-            ).mappings().first()
-        except ProgrammingError as e:
-            if getattr(e.orig, "args", None) and len(e.orig.args) >= 1 and int(e.orig.args[0]) == 1146:
-                table = _missing_table_name_from_programming_error(e) or "unknown"
-                raise HTTPException(
-                    status_code=503,
-                    detail=f"Database '{os.environ.get('DB_DATABASE', 'XiaoWu')}' missing table: {table}. Check DB_* env or run Laravel migrations.",
-                )
-            raise
-
-        total = int(total_row.get("total") or 0) if total_row else 0
-        total_pages = max(1, math.ceil(total / page_size)) if page_size > 0 else 1
         offset = (page - 1) * page_size
 
         try:
@@ -2286,7 +2452,8 @@ def similar_products(
                         COALESCE(d_user.longitude, d_product.longitude) AS dormitory__longitude,
                         cl.id AS condition_level__id, cl.name AS condition_level__name,
                         cl.level AS condition_level__level,
-                        CASE WHEN pl.id IS NULL THEN 0 ELSE 1 END AS is_promoted
+                        CASE WHEN pl.id IS NULL THEN 0 ELSE 1 END AS is_promoted,
+                        COUNT(*) OVER() AS total_count
                     FROM products p
                     JOIN users u ON u.id = p.seller_id
                     LEFT JOIN dormitories d_user ON d_user.id = u.dormitory_id
@@ -2310,6 +2477,9 @@ def similar_products(
                     detail=f"Database '{os.environ.get('DB_DATABASE', 'XiaoWu')}' missing table: {table}. Check DB_* env or run Laravel migrations.",
                 )
             raise
+
+        total = int(rows[0].get("total_count") or 0) if rows else 0
+        total_pages = max(1, math.ceil(total / page_size)) if page_size > 0 else 1
 
         product_ids = [int(r["id"]) for r in rows]
         images = []

@@ -4,6 +4,7 @@ import hashlib
 import io
 import os
 import threading
+import time
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
@@ -135,6 +136,7 @@ def _json_to_vector(raw: str) -> np.ndarray:
 @dataclass
 class _FaissSnapshot:
     cache_key: str
+    index_marker: str
     index: Any
     product_ids: List[int]
     image_ids: List[int]
@@ -148,8 +150,10 @@ class VisualSearchEngine:
         self.image_download_timeout_seconds = _safe_env_int("VISUAL_SEARCH_IMAGE_TIMEOUT_SECONDS", 12)
         self.query_top_k_max = _safe_env_int("VISUAL_SEARCH_TOP_K_MAX", 50)
         self.min_similarity_score = _safe_env_float("VISUAL_SEARCH_MIN_SCORE", 0.12)
+        self.snapshot_check_interval_seconds = _safe_env_float("VISUAL_SEARCH_SNAPSHOT_CHECK_SECONDS", 1.0)
         self._lock = threading.Lock()
         self._snapshot: Optional[_FaissSnapshot] = None
+        self._last_snapshot_check_at = 0.0
         self._model = None
         self._preprocess = None
         self._device = None
@@ -280,6 +284,7 @@ class VisualSearchEngine:
 
         with self._lock:
             self._snapshot = None
+            self._last_snapshot_check_at = 0.0
 
         return {
             "product_id": int(product_id),
@@ -289,7 +294,31 @@ class VisualSearchEngine:
             "indexed_at": datetime.utcnow().isoformat(),
         }
 
-    def _build_faiss_snapshot(self, conn) -> _FaissSnapshot:
+    def _read_index_marker(self, conn) -> str:
+        row = conn.execute(
+            text(
+                """
+                SELECT
+                    COUNT(*) AS row_count,
+                    MAX(pie.id) AS max_embedding_id,
+                    MAX(pie.updated_at) AS max_updated_at
+                FROM product_image_embeddings pie
+                JOIN products p ON p.id = pie.product_id
+                WHERE p.status = 'available'
+                  AND p.deleted_at IS NULL
+                  AND pie.embedding_vector IS NOT NULL
+                  AND pie.model_name = :model_name
+                """
+            ),
+            {"model_name": self.model_name},
+        ).mappings().first()
+        if row is None:
+            return "0:0:"
+        max_updated_at = row.get("max_updated_at")
+        updated_raw = max_updated_at.isoformat() if isinstance(max_updated_at, datetime) else ""
+        return f"{int(row.get('row_count') or 0)}:{int(row.get('max_embedding_id') or 0)}:{updated_raw}"
+
+    def _build_faiss_snapshot(self, conn, index_marker: str) -> _FaissSnapshot:
         self._ensure_dependencies_for_search()
         rows = conn.execute(
             text(
@@ -342,23 +371,64 @@ class VisualSearchEngine:
 
         if len(vectors) == 0:
             empty_index = faiss.IndexFlatIP(1)
-            return _FaissSnapshot(cache_key="empty", index=empty_index, product_ids=[], image_ids=[])
+            return _FaissSnapshot(
+                cache_key="empty",
+                index_marker=index_marker,
+                index=empty_index,
+                product_ids=[],
+                image_ids=[],
+            )
 
         dim = int(vectors[0].shape[0])
         matrix = np.stack(vectors).astype(np.float32)
         index = faiss.IndexFlatIP(dim)
         index.add(matrix)
         cache_key = f"{len(vectors)}:{latest_update}:{dim}"
-        return _FaissSnapshot(cache_key=cache_key, index=index, product_ids=product_ids, image_ids=image_ids)
+        return _FaissSnapshot(
+            cache_key=cache_key,
+            index_marker=index_marker,
+            index=index,
+            product_ids=product_ids,
+            image_ids=image_ids,
+        )
+
+    def invalidate_snapshot(self) -> None:
+        with self._lock:
+            self._snapshot = None
+            self._last_snapshot_check_at = 0.0
+
+    def refresh_snapshot(self, conn) -> Dict[str, Any]:
+        index_marker = self._read_index_marker(conn)
+        fresh = self._build_faiss_snapshot(conn, index_marker=index_marker)
+        with self._lock:
+            self._snapshot = fresh
+            self._last_snapshot_check_at = time.monotonic()
+        return {
+            "cache_key": fresh.cache_key,
+            "index_marker": fresh.index_marker,
+            "embedding_count": len(fresh.product_ids),
+            "model_name": self.model_name,
+        }
 
     def _get_snapshot(self, conn) -> _FaissSnapshot:
         with self._lock:
             snapshot = self._snapshot
-        if snapshot is not None:
+            last_check_at = self._last_snapshot_check_at
+        now_monotonic = time.monotonic()
+        if (
+            snapshot is not None
+            and (now_monotonic - last_check_at) < max(0.05, self.snapshot_check_interval_seconds)
+        ):
             return snapshot
-        fresh = self._build_faiss_snapshot(conn)
+        current_marker = self._read_index_marker(conn)
+        if snapshot is not None and snapshot.index_marker == current_marker:
+            with self._lock:
+                self._last_snapshot_check_at = now_monotonic
+            return snapshot
+        fresh = self._build_faiss_snapshot(conn, index_marker=current_marker)
         with self._lock:
             self._snapshot = fresh
+            self._last_snapshot_check_at = now_monotonic
         return fresh
 
     def search(self, conn, query_image_bytes: bytes, top_k: int) -> Dict[str, Any]:

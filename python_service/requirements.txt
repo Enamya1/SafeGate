@@ -2,6 +2,7 @@ fastapi>=0.110
 uvicorn[standard]>=0.27
 sqlalchemy>=2.0
 pymysql>=1.1
+mysql-connector-python>=9.0
 python-multipart>=0.0.9
 numpy>=1.26
 opencv-python>=4.10
