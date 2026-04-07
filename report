@@ -407,7 +407,30 @@ User Products
   - Response 422: {"message":"Validation Error","errors":{...}}
   - Response 403: {"message":"Unauthorized: Only users can access this endpoint."}
 
-18e) POST /api/user/messages/transfer
+18e) GET /api/user/messages/view_message
+  - Auth: auth:sanctum, role=user
+  - Description: returns latest message details for each conversation with sender information
+  - Query:
+    - limit (optional integer 1-100, default 20)
+  - Response 200:
+    {
+      "message":"Messages retrieved successfully",
+      "total":2,
+      "messages":[
+        {
+          "conversation_id":...,
+          "message_id":...,
+          "sender_name":"...",
+          "sender_profile_picture":"...",
+          "last_message":"...",
+          "message_time":"..."
+        }
+      ]
+    }
+  - Response 422: {"message":"Validation Error","errors":{...}}
+  - Response 403: {"message":"Unauthorized: Only users can access this endpoint."}
+
+18f) POST /api/user/messages/transfer
   - Auth: auth:sanctum, role=user
   - Description: Transfer money to another user in a conversation. Creates a transfer message and executes wallet-to-wallet transaction.
   - Request body:
@@ -456,7 +479,7 @@ User Products
     - transfer_data JSON contains: amount, currency, from_wallet_id, to_wallet_id, transaction_ledger_id, atomic_transaction_id, sender_username, reference
     - Uses atomic transactions to ensure all-or-nothing execution
 
-18f) POST /api/user/payment-requests
+18g) POST /api/user/payment-requests
   - Auth: auth:sanctum, role=user
   - Description: Create a payment request in a conversation. Sends a payment request message to the other user with product reference.
   - Request body:
@@ -507,7 +530,7 @@ User Products
     - Receiver can confirm payment using POST /api/user/payment-requests/{request_id}/confirm
     - Payment requests expire after expires_in_hours (default 24 hours)
 
-18g) POST /api/user/payment-requests/{request_id}/confirm
+18h) POST /api/user/payment-requests/{request_id}/confirm
   - Auth: auth:sanctum, role=user
   - Description: Confirm and pay a payment request. Executes wallet-to-wallet transfer and creates payment confirmation message.
   - Path params:

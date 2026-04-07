@@ -1465,6 +1465,77 @@ class AuthController extends Controller
         ], 200);
     }
 
+    public function viewMessage(Request $request)
+    {
+        $user = $request->user();
+
+        if (($user->role ?? 'user') !== 'user') {
+            return response()->json([
+                'message' => 'Unauthorized: Only users can access this endpoint.',
+            ], 403);
+        }
+
+        try {
+            $validated = $request->validate([
+                'limit' => 'nullable|integer|min:1|max:100',
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation Error',
+                'errors' => $e->errors(),
+            ], 422);
+        }
+
+        $userId = (int) $user->id;
+        $limit = (int) ($validated['limit'] ?? 20);
+
+        $latestMessages = DB::table('messages')
+            ->select(['conversation_id', DB::raw('MAX(id) as last_message_id')])
+            ->groupBy('conversation_id');
+
+        $rows = DB::table('conversations')
+            ->joinSub($latestMessages, 'latest_messages', function ($join) {
+                $join->on('conversations.id', '=', 'latest_messages.conversation_id');
+            })
+            ->join('messages', 'messages.id', '=', 'latest_messages.last_message_id')
+            ->join('users', 'users.id', '=', 'messages.sender_id')
+            ->where(function ($query) use ($userId) {
+                $query->where('conversations.buyer_id', $userId)
+                    ->orWhere('conversations.seller_id', $userId);
+            })
+            ->select([
+                'conversations.id as conversation_id',
+                'messages.id as message_id',
+                'messages.message_text as last_message',
+                'messages.created_at as message_time',
+                'users.full_name as sender_full_name',
+                'users.username as sender_username',
+                'users.profile_picture as sender_profile_picture',
+            ])
+            ->orderByDesc('messages.id')
+            ->limit($limit)
+            ->get();
+
+        $messages = $rows
+            ->map(function ($row) {
+                return [
+                    'conversation_id' => (int) $row->conversation_id,
+                    'message_id' => (int) $row->message_id,
+                    'sender_name' => $row->sender_full_name ?: $row->sender_username,
+                    'sender_profile_picture' => $row->sender_profile_picture,
+                    'last_message' => $row->last_message,
+                    'message_time' => $row->message_time,
+                ];
+            })
+            ->values();
+
+        return response()->json([
+            'message' => 'Messages retrieved successfully',
+            'total' => $messages->count(),
+            'messages' => $messages,
+        ], 200);
+    }
+
     public function language(Request $request)
     {
         $user = $request->user();
