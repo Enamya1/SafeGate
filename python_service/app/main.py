@@ -27,8 +27,15 @@ def _load_local_env() -> None:
 _load_local_env()
 
 from app.api.router import py_router, router as api_router
+from app.api.router import _get_db_engine
+from app.recommendation_engine import start_trending_batch_updater
 
 app = FastAPI(title="XiaoWu Python Service")
+
+
+@app.on_event("startup")
+def _startup_trending_updater() -> None:
+    start_trending_batch_updater(_get_db_engine())
 
 
 @app.get("/health")

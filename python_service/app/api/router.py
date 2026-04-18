@@ -19,6 +19,14 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.exc import ProgrammingError
 
 from app.ai_manager import AIModelManager
+from app.recommendation_engine import (
+    build_hybrid_recommendations,
+    get_related_products,
+    get_trending_products,
+    run_trending_batch_update,
+    safe_recommendation_call,
+    track_behavior_event,
+)
 from app.visual_search import VisualSearchEngine
 
 router = APIRouter()
@@ -1138,6 +1146,138 @@ def hi(authorization: Optional[str] = Header(default=None)) -> dict:
     return {"message": f"hi {username}"}
 
 
+@router.post("/track-event")
+def track_event(payload: Dict[str, Any]) -> dict:
+    user_id_raw = payload.get("user_id")
+    event_type_raw = payload.get("event_type")
+    product_id_raw = payload.get("product_id")
+
+    if user_id_raw is None:
+        raise HTTPException(status_code=422, detail="user_id is required")
+    if not isinstance(event_type_raw, str) or not event_type_raw.strip():
+        raise HTTPException(status_code=422, detail="event_type is required")
+
+    try:
+        user_id = int(user_id_raw)
+    except Exception:
+        raise HTTPException(status_code=422, detail="user_id must be an integer")
+
+    product_id = None
+    if product_id_raw not in (None, ""):
+        try:
+            product_id = int(product_id_raw)
+        except Exception:
+            raise HTTPException(status_code=422, detail="product_id must be an integer")
+
+    timestamp_raw = payload.get("timestamp")
+    event_at: Optional[datetime] = None
+    if isinstance(timestamp_raw, str) and timestamp_raw.strip():
+        try:
+            event_at = datetime.fromisoformat(timestamp_raw.replace("Z", "+00:00")).replace(tzinfo=None)
+        except Exception:
+            raise HTTPException(status_code=422, detail="timestamp must be ISO-8601 format")
+
+    engine = _get_db_engine()
+    try:
+        with engine.begin() as conn:
+            event_payload = safe_recommendation_call(
+                track_behavior_event,
+                conn,
+                user_id=user_id,
+                product_id=product_id,
+                event_type=event_type_raw,
+                event_at=event_at,
+            )
+            updated_feed = safe_recommendation_call(
+                build_hybrid_recommendations,
+                conn,
+                user_id=user_id,
+                last_interacted_product_id=product_id,
+                limit=30,
+            )
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except RuntimeError as e:
+        raise HTTPException(status_code=503, detail=str(e))
+    except Exception:
+        raise HTTPException(status_code=503, detail="Database unavailable")
+
+    return {
+        "message": "Event tracked successfully",
+        "event": event_payload,
+        "updated_recommendations": updated_feed,
+    }
+
+
+@router.get("/trending-products")
+def trending_products(limit: int = Query(default=20, ge=1, le=100)) -> dict:
+    engine = _get_db_engine()
+    try:
+        with engine.connect() as conn:
+            products = safe_recommendation_call(get_trending_products, conn, limit=limit)
+    except RuntimeError as e:
+        raise HTTPException(status_code=503, detail=str(e))
+    except Exception:
+        raise HTTPException(status_code=503, detail="Database unavailable")
+
+    return {
+        "message": "Trending products retrieved successfully",
+        "products": products,
+    }
+
+
+@router.get("/related-products/{product_id}")
+def related_products(product_id: int, limit: int = Query(default=20, ge=1, le=100)) -> dict:
+    engine = _get_db_engine()
+    try:
+        with engine.connect() as conn:
+            products = safe_recommendation_call(get_related_products, conn, product_id=product_id, limit=limit)
+    except RuntimeError as e:
+        raise HTTPException(status_code=503, detail=str(e))
+    except Exception:
+        raise HTTPException(status_code=503, detail="Database unavailable")
+
+    return {
+        "message": "Related products retrieved successfully",
+        "product_id": product_id,
+        "products": products,
+    }
+
+
+@router.get("/recommendations/{user_id}")
+def hybrid_recommendations(
+    user_id: int,
+    limit: int = Query(default=30, ge=3, le=100),
+    last_product_id: Optional[int] = Query(default=None),
+) -> dict:
+    engine = _get_db_engine()
+    try:
+        with engine.connect() as conn:
+            feed = safe_recommendation_call(
+                build_hybrid_recommendations,
+                conn,
+                user_id=user_id,
+                last_interacted_product_id=last_product_id,
+                limit=limit,
+            )
+    except RuntimeError as e:
+        raise HTTPException(status_code=503, detail=str(e))
+    except Exception:
+        raise HTTPException(status_code=503, detail="Database unavailable")
+
+    return {
+        "message": "Recommendations retrieved successfully",
+        **feed,
+    }
+
+
+@router.post("/trending-products/recompute")
+def recompute_trending_scores() -> dict:
+    engine = _get_db_engine()
+    run_trending_batch_update(engine)
+    return {"message": "Trending scores recomputed"}
+
+
 @py_router.post("/py/api/internal/visual-search/index")
 async def internal_visual_search_index(
     request: Request,
@@ -1523,13 +1663,6 @@ def recommend_products(
         params: Dict[str, Any] = {}
         where_parts: List[str] = []
 
-        if seen_product_ids:
-            seen_list = list(seen_product_ids)[:2000]
-            placeholders = ", ".join([f":seen_{i}" for i in range(len(seen_list))])
-            where_parts.append(f"p.id NOT IN ({placeholders})")
-            for i, v in enumerate(seen_list):
-                params[f"seen_{i}"] = v
-
         if top_categories or top_sellers:
             or_parts: List[str] = []
             if top_categories:
@@ -1587,7 +1720,7 @@ def recommend_products(
             known = {int(r["id"]) for r in rows}
             for r in rows_more:
                 pid = int(r["id"])
-                if pid not in known and pid not in seen_product_ids:
+                if pid not in known:
                     rows.append(r)
                     known.add(pid)
                 if len(rows) >= 600:
@@ -1616,6 +1749,12 @@ def recommend_products(
                     score += 1.0 * seller_scores.get(int(sid), 0.0)
                 except Exception:
                     pass
+
+            try:
+                if int(r.get("id") or 0) in seen_product_ids:
+                    score += 6.0
+            except Exception:
+                pass
 
             if int(r.get("is_promoted") or 0) == 1:
                 score += 3.0
@@ -1707,6 +1846,16 @@ def recommend_products(
         random_items = random_items[:random_count]
 
         combined = base_items + random_items
+        if len(combined) < page_size:
+            existing_ids = {int(p["id"]) for p in combined}
+            for candidate in ranked:
+                pid = int(candidate["id"])
+                if pid in existing_ids:
+                    continue
+                combined.append(candidate)
+                existing_ids.add(pid)
+                if len(combined) >= page_size:
+                    break
         combined_ids = [int(p["id"]) for p in combined]
 
         images = []
@@ -2028,13 +2177,6 @@ def recommend_exchange_products(
             where_parts.append("ep.exchange_type = :exchange_type")
             params["exchange_type"] = exchange_type_value
 
-        if seen_product_ids:
-            seen_list = list(seen_product_ids)[:2000]
-            placeholders = ", ".join([f":seen_{i}" for i in range(len(seen_list))])
-            where_parts.append(f"p.id NOT IN ({placeholders})")
-            for i, v in enumerate(seen_list):
-                params[f"seen_{i}"] = v
-
         if top_categories or top_sellers:
             or_parts: List[str] = []
             if top_categories:
@@ -2092,7 +2234,7 @@ def recommend_exchange_products(
             known = {int(r["id"]) for r in rows}
             for r in rows_more:
                 pid = int(r["id"])
-                if pid not in known and pid not in seen_product_ids:
+                if pid not in known:
                     rows.append(r)
                     known.add(pid)
                 if len(rows) >= 600:
@@ -2121,6 +2263,12 @@ def recommend_exchange_products(
                     score += 1.0 * seller_scores.get(int(sid), 0.0)
                 except Exception:
                     pass
+
+            try:
+                if int(r.get("id") or 0) in seen_product_ids:
+                    score += 6.0
+            except Exception:
+                pass
 
             if int(r.get("is_promoted") or 0) == 1:
                 score += 3.0
@@ -2212,6 +2360,16 @@ def recommend_exchange_products(
         random_items = random_items[:random_count]
 
         combined = base_items + random_items
+        if len(combined) < page_size:
+            existing_ids = {int(p["id"]) for p in combined}
+            for candidate in ranked:
+                pid = int(candidate["id"])
+                if pid in existing_ids:
+                    continue
+                combined.append(candidate)
+                existing_ids.add(pid)
+                if len(combined) >= page_size:
+                    break
         combined_ids = [int(p["id"]) for p in combined]
 
         images = []
