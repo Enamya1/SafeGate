@@ -1,0 +1,32 @@
+[
+  {
+    "name": "New",
+    "description": "Brand new, never used item with original packaging",
+    "sort_order": 1,
+    "level": 5
+  },
+  {
+    "name": "Like New",
+    "description": "Used once or twice, no visible signs of use",
+    "sort_order": 2,
+    "level": 4
+  },
+  {
+    "name": "Excellent",
+    "description": "Gently used, very minimal signs of wear",
+    "sort_order": 3,
+    "level": 3
+  },
+  {
+    "name": "Good",
+    "description": "Normal wear, fully functional",
+    "sort_order": 4,
+    "level": 2
+  },
+  {
+    "name": "Fair",
+    "description": "Visible wear, fully functional",
+    "sort_order": 5,
+    "level": 1
+  }
+]

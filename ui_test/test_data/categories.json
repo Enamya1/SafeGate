@@ -1,0 +1,110 @@
+[
+  {
+    "name": "Electronics",
+    "description": "Electronic devices, gadgets, and accessories including phones, laptops, tablets, cameras, and tech accessories",
+    "logo": "💻",
+    "parent_name": null
+  },
+  {
+    "name": "Laptops & Computers",
+    "description": "Laptop computers, desktops, monitors, and computer accessories",
+    "logo": "🖥️",
+    "parent_name": "Electronics"
+  },
+  {
+    "name": "Phones & Tablets",
+    "description": "Smartphones, tablets, and mobile accessories",
+    "logo": "📱",
+    "parent_name": "Electronics"
+  },
+  {
+    "name": "Furniture",
+    "description": "Dorm room furniture including desks, chairs, beds, and storage solutions",
+    "logo": "🪑",
+    "parent_name": null
+  },
+  {
+    "name": "Study Desks",
+    "description": "Desks and study tables for dorm rooms",
+    "logo": "🗄️",
+    "parent_name": "Furniture"
+  },
+  {
+    "name": "Chairs & Seating",
+    "description": "Office chairs, gaming chairs, and seating options",
+    "logo": "💺",
+    "parent_name": "Furniture"
+  },
+  {
+    "name": "Books & Textbooks",
+    "description": "Academic textbooks, novels, and educational materials",
+    "logo": "📚",
+    "parent_name": null
+  },
+  {
+    "name": "Textbooks",
+    "description": "Academic textbooks for various subjects",
+    "logo": "📖",
+    "parent_name": "Books & Textbooks"
+  },
+  {
+    "name": "Fiction",
+    "description": "Novels and fiction books",
+    "logo": "📕",
+    "parent_name": "Books & Textbooks"
+  },
+  {
+    "name": "Clothing",
+    "description": "Clothing items including casual wear, formal wear, and school uniforms",
+    "logo": "👕",
+    "parent_name": null
+  },
+  {
+    "name": "Kitchen & Dining",
+    "description": "Kitchen appliances, cookware, and dining essentials for dorm cooking",
+    "logo": "🍳",
+    "parent_name": null
+  },
+  {
+    "name": "Small Appliances",
+    "description": "Microwaves, mini fridges, electric kettles, and small kitchen appliances",
+    "logo": "🔌",
+    "parent_name": "Kitchen & Dining"
+  },
+  {
+    "name": "Cookware",
+    "description": "Pots, pans, and cooking utensils",
+    "logo": "🥘",
+    "parent_name": "Kitchen & Dining"
+  },
+  {
+    "name": "Sports & Fitness",
+    "description": "Sports equipment, fitness accessories, and outdoor gear",
+    "logo": "⚽",
+    "parent_name": null
+  },
+  {
+    "name": "Stationery & Supplies",
+    "description": "Office supplies, stationery, pens, pencils, and art supplies",
+    "logo": "✏️",
+    "parent_name": null
+  },
+  {
+    "name": "Bedding & Linens",
+    "description": "Bed sheets, pillows, blankets, and dorm bedding essentials",
+    "logo": "🛏️",
+    "parent_name": null
+  },
+  {
+    "name": "Storage & Organization",
+    "description": "Storage bins, organizers, and closet organization solutions",
+    "logo": "📦",
+    "parent_name": null
+  },
+  {
+    "name": "Entertainment",
+    "description": "Gaming consoles, board games, and entertainment electronics",
+    "logo": "🎮",
+    "parent_name": null
+  }
+]

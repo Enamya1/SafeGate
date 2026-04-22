@@ -1,0 +1,167 @@
+[
+  {
+    "dormitory_name": "Qinghua Dorm A1",
+    "domain": "qinghua-a1.tsinghua.edu.cn",
+    "latitude": 40.0035,
+    "longitude": 116.3265,
+    "address": "Qinghua University, Qinghua Garden, Haidian District, Beijing",
+    "description": "Modern dormitory building for undergraduate students",
+    "full_capacity": 400,
+    "is_active": true,
+    "university_domain": "tsinghua.edu.cn"
+  },
+  {
+    "dormitory_name": "Qinghua Dorm A2",
+    "domain": "qinghua-a2.tsinghua.edu.cn",
+    "latitude": 40.0038,
+    "longitude": 116.3272,
+    "address": "Qinghua University, Qinghua Garden, Haidian District, Beijing",
+    "description": "Graduate student dormitory building",
+    "full_capacity": 300,
+    "is_active": true,
+    "university_domain": "tsinghua.edu.cn"
+  },
+  {
+    "dormitory_name": "Yanyuan Dorm 1",
+    "domain": "yanyuan1.pku.edu.cn",
+    "latitude": 39.9872,
+    "longitude": 116.3055,
+    "address": "Peking University, Yiheyuan Road, Haidian District, Beijing",
+    "description": "Main dormitory building near campus center",
+    "full_capacity": 350,
+    "is_active": true,
+    "university_domain": "pku.edu.cn"
+  },
+  {
+    "dormitory_name": "Yanyuan Dorm 2",
+    "domain": "yanyuan2.pku.edu.cn",
+    "latitude": 39.9868,
+    "longitude": 116.3062,
+    "address": "Peking University, Yiheyuan Road, Haidian District, Beijing",
+    "description": "Graduate student dormitory complex",
+    "full_capacity": 280,
+    "is_active": true,
+    "university_domain": "pku.edu.cn"
+  },
+  {
+    "dormitory_name": "East Dorm Building",
+    "domain": "east-dorm.fudan.edu.cn",
+    "latitude": 31.2992,
+    "longitude": 121.4998,
+    "address": "Fudan University, 220 Handan Road, Yangpu District, Shanghai",
+    "description": "East campus dormitory for freshmen",
+    "full_capacity": 450,
+    "is_active": true,
+    "university_domain": "fudan.edu.cn"
+  },
+  {
+    "dormitory_name": "West Dorm Building",
+    "domain": "west-dorm.fudan.edu.cn",
+    "latitude": 31.2988,
+    "longitude": 121.4992,
+    "address": "Fudan University, 220 Handan Road, Yangpu District, Shanghai",
+    "description": "West campus dormitory for upperclassmen",
+    "full_capacity": 320,
+    "is_active": true,
+    "university_domain": "fudan.edu.cn"
+  },
+  {
+    "dormitory_name": "Dongzhimen Dorm",
+    "domain": "dongzhi.sjtu.edu.cn",
+    "latitude": 31.2018,
+    "longitude": 121.4305,
+    "address": "Shanghai Jiao Tong University, 800 Dongchuan Road, Minhang District, Shanghai",
+    "description": "Dongzhimen dormitory building near east gate",
+    "full_capacity": 380,
+    "is_active": true,
+    "university_domain": "sjtu.edu.cn"
+  },
+  {
+    "dormitory_name": "Zijingang Dorm 1",
+    "domain": "zijingang1.zju.edu.cn",
+    "latitude": 30.2635,
+    "longitude": 120.1202,
+    "address": "Zhejiang University, 79 Haining Road, Xihu District, Hangzhou",
+    "description": "Zijingang campus dormitory Complex A",
+    "full_capacity": 420,
+    "is_active": true,
+    "university_domain": "zju.edu.cn"
+  },
+  {
+    "dormitory_name": "Xianxing Building",
+    "domain": "xianxing.ustc.edu.cn",
+    "latitude": 31.8382,
+    "longitude": 117.2725,
+    "address": "University of Science and Technology of China, 96 Jinzhai Road, Baohe District, Hefei",
+    "description": "Science campus dormitory for engineering students",
+    "full_capacity": 360,
+    "is_active": true,
+    "university_domain": "ustc.edu.cn"
+  },
+  {
+    "dormitory_name": "Gulou Dorm A",
+    "domain": "guloua.nju.edu.cn",
+    "latitude": 32.0588,
+    "longitude": 118.7678,
+    "address": "Nanjing University, 163 Xianlin Avenue, Qixia District, Nanjing",
+    "description": "Gulou campus dormitory for liberal arts students",
+    "full_capacity": 340,
+    "is_active": true,
+    "university_domain": "nju.edu.cn"
+  },
+  {
+    "dormitory_name": "Xianliao Dorm Complex",
+    "domain": "xianliao.xjtu.edu.cn",
+    "latitude": 34.2483,
+    "longitude": 108.9862,
+    "address": "Xi'an Jiaotong University, 28 Xianning West Road, Beilin District, Xi'an",
+    "description": "Xianliao campus dormitory for graduate students",
+    "full_capacity": 290,
+    "is_active": true,
+    "university_domain": "xjtu.edu.cn"
+  },
+  {
+    "dormitory_name": "Dorm Building 1",
+    "domain": "dorm1.hit.edu.cn",
+    "latitude": 45.7471,
+    "longitude": 126.6305,
+    "address": "Harbin Institute of Technology, 92 West Dazhi Street, Nangang District, Harbin",
+    "description": "Main campus dormitory for freshman engineering students",
+    "full_capacity": 480,
+    "is_active": true,
+    "university_domain": "hit.edu.cn"
+  },
+  {
+    "dormitory_name": "West China Dorm A",
+    "domain": "wca.hust.edu.cn",
+    "latitude": 30.5086,
+    "longitude": 114.4172,
+    "address": "Huazhong University of Science and Technology, 1037 Luoyu Road, Hongshan District, Wuhan",
+    "description": "West campus dormitory for medical students",
+    "full_capacity": 410,
+    "is_active": true,
+    "university_domain": "hust.edu.cn"
+  },
+  {
+    "dormitory_name": "Wuhan University Dorm 1",
+    "domain": "dorm1.whu.edu.cn",
+    "latitude": 30.5409,
+    "longitude": 114.3656,
+    "address": "Wuhan University, 299 Bayi Road, Wuchang District, Wuhan",
+    "description": "Main campus dormitory near Lotus Pond",
+    "full_capacity": 370,
+    "is_active": true,
+    "university_domain": "whu.edu.cn"
+  },
+  {
+    "dormitory_name": "South Campus Dorm",
+    "domain": "south-campus.sysu.edu.cn",
+    "latitude": 23.0995,
+    "longitude": 113.2941,
+    "address": "Sun Yat-sen University, 135 Xingang West Road, Haizhu District, Guangzhou",
+    "description": "South campus dormitory for international students",
+    "full_capacity": 330,
+    "is_active": true,
+    "university_domain": "sysu.edu.cn"
+  }
+]

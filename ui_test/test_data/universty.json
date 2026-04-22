@@ -1,0 +1,282 @@
+[
+  {
+    "name": "Tsinghua University",
+    "domain": "tsinghua.edu.cn",
+    "imageUrl": "https://picsum.photos/id/104/200/150",
+    "location": "Beijing",
+    "lat": 40.0033,
+    "lng": 116.3267
+  },
+  {
+    "name": "Peking University",
+    "domain": "pku.edu.cn",
+    "imageUrl": "https://picsum.photos/id/20/200/150",
+    "location": "Beijing",
+    "lat": 39.9869,
+    "lng": 116.3058
+  },
+  {
+    "name": "Fudan University",
+    "domain": "fudan.edu.cn",
+    "imageUrl": "https://picsum.photos/id/96/200/150",
+    "location": "Shanghai",
+    "lat": 31.2989,
+    "lng": 121.4995
+  },
+  {
+    "name": "Shanghai Jiao Tong University",
+    "domain": "sjtu.edu.cn",
+    "imageUrl": "https://picsum.photos/id/15/200/150",
+    "location": "Shanghai",
+    "lat": 31.2014,
+    "lng": 121.4303
+  },
+  {
+    "name": "Zhejiang University",
+    "domain": "zju.edu.cn",
+    "imageUrl": "https://picsum.photos/id/24/200/150",
+    "location": "Hangzhou, Zhejiang",
+    "lat": 30.2631,
+    "lng": 120.1199
+  },
+  {
+    "name": "University of Science and Technology of China",
+    "domain": "ustc.edu.cn",
+    "imageUrl": "https://picsum.photos/id/26/200/150",
+    "location": "Hefei, Anhui",
+    "lat": 31.8378,
+    "lng": 117.2721
+  },
+  {
+    "name": "Nanjing University",
+    "domain": "nju.edu.cn",
+    "imageUrl": "https://picsum.photos/id/28/200/150",
+    "location": "Nanjing, Jiangsu",
+    "lat": 32.0584,
+    "lng": 118.7674
+  },
+  {
+    "name": "Xi'an Jiaotong University",
+    "domain": "xjtu.edu.cn",
+    "imageUrl": "https://picsum.photos/id/29/200/150",
+    "location": "Xi'an, Shaanxi",
+    "lat": 34.2479,
+    "lng": 108.9858
+  },
+  {
+    "name": "Harbin Institute of Technology",
+    "domain": "hit.edu.cn",
+    "imageUrl": "https://picsum.photos/id/30/200/150",
+    "location": "Harbin, Heilongjiang",
+    "lat": 45.7467,
+    "lng": 126.6301
+  },
+  {
+    "name": "Huazhong University of Science and Technology",
+    "domain": "hust.edu.cn",
+    "imageUrl": "https://picsum.photos/id/33/200/150",
+    "location": "Wuhan, Hubei",
+    "lat": 30.5082,
+    "lng": 114.4169
+  },
+  {
+    "name": "Wuhan University",
+    "domain": "whu.edu.cn",
+    "imageUrl": "https://picsum.photos/id/34/200/150",
+    "location": "Wuhan, Hubei",
+    "lat": 30.5405,
+    "lng": 114.3652
+  },
+  {
+    "name": "Sun Yat-sen University",
+    "domain": "sysu.edu.cn",
+    "imageUrl": "https://picsum.photos/id/37/200/150",
+    "location": "Guangzhou, Guangdong",
+    "lat": 23.0991,
+    "lng": 113.2937
+  },
+  {
+    "name": "Sichuan University",
+    "domain": "scu.edu.cn",
+    "imageUrl": "https://picsum.photos/id/38/200/150",
+    "location": "Chengdu, Sichuan",
+    "lat": 30.6305,
+    "lng": 104.0745
+  },
+  {
+    "name": "Tianjin University",
+    "domain": "tju.edu.cn",
+    "imageUrl": "https://picsum.photos/id/39/200/150",
+    "location": "Tianjin",
+    "lat": 39.1074,
+    "lng": 117.1743
+  },
+  {
+    "name": "Nankai University",
+    "domain": "nankai.edu.cn",
+    "imageUrl": "https://picsum.photos/id/41/200/150",
+    "location": "Tianjin",
+    "lat": 39.1004,
+    "lng": 117.1654
+  },
+  {
+    "name": "Beijing Normal University",
+    "domain": "bnu.edu.cn",
+    "imageUrl": "https://picsum.photos/id/42/200/150",
+    "location": "Beijing",
+    "lat": 39.9568,
+    "lng": 116.3665
+  },
+  {
+    "name": "Beihang University (BUAA)",
+    "domain": "buaa.edu.cn",
+    "imageUrl": "https://picsum.photos/id/43/200/150",
+    "location": "Beijing",
+    "lat": 39.9831,
+    "lng": 116.3487
+  },
+  {
+    "name": "Beijing Institute of Technology",
+    "domain": "bit.edu.cn",
+    "imageUrl": "https://picsum.photos/id/44/200/150",
+    "location": "Beijing",
+    "lat": 39.9583,
+    "lng": 116.3186
+  },
+  {
+    "name": "Renmin University of China",
+    "domain": "ruc.edu.cn",
+    "imageUrl": "https://picsum.photos/id/45/200/150",
+    "location": "Beijing",
+    "lat": 39.9696,
+    "lng": 116.3225
+  },
+  {
+    "name": "China Agricultural University",
+    "domain": "cau.edu.cn",
+    "imageUrl": "https://picsum.photos/id/46/200/150",
+    "location": "Beijing",
+    "lat": 40.0078,
+    "lng": 116.3482
+  },
+  {
+    "name": "Central South University",
+    "domain": "csu.edu.cn",
+    "imageUrl": "https://picsum.photos/id/47/200/150",
+    "location": "Changsha, Hunan",
+    "lat": 28.1693,
+    "lng": 112.9388
+  },
+  {
+    "name": "South China University of Technology",
+    "domain": "scut.edu.cn",
+    "imageUrl": "https://picsum.photos/id/48/200/150",
+    "location": "Guangzhou, Guangdong",
+    "lat": 23.1549,
+    "lng": 113.3428
+  },
+  {
+    "name": "East China Normal University",
+    "domain": "ecnu.edu.cn",
+    "imageUrl": "https://picsum.photos/id/49/200/150",
+    "location": "Shanghai",
+    "lat": 31.2285,
+    "lng": 121.4074
+  },
+  {
+    "name": "Nanjing University of Science and Technology",
+    "domain": "njust.edu.cn",
+    "imageUrl": "https://picsum.photos/id/50/200/150",
+    "location": "Nanjing, Jiangsu",
+    "lat": 32.0237,
+    "lng": 118.8518
+  },
+  {
+    "name": "Southeast University",
+    "domain": "seu.edu.cn",
+    "imageUrl": "https://picsum.photos/id/51/200/150",
+    "location": "Nanjing, Jiangsu",
+    "lat": 32.0591,
+    "lng": 118.7884
+  },
+  {
+    "name": "Dalian University of Technology",
+    "domain": "dlut.edu.cn",
+    "imageUrl": "https://picsum.photos/id/52/200/150",
+    "location": "Dalian, Liaoning",
+    "lat": 38.8818,
+    "lng": 121.5291
+  },
+  {
+    "name": "Jilin University",
+    "domain": "jlu.edu.cn",
+    "imageUrl": "https://picsum.photos/id/53/200/150",
+    "location": "Changchun, Jilin",
+    "lat": 43.8689,
+    "lng": 125.3031
+  },
+  {
+    "name": "Shandong University",
+    "domain": "sdu.edu.cn",
+    "imageUrl": "https://picsum.photos/id/54/200/150",
+    "location": "Jinan, Shandong",
+    "lat": 36.6684,
+    "lng": 117.0201
+  },
+  {
+    "name": "Xiamen University",
+    "domain": "xmu.edu.cn",
+    "imageUrl": "https://picsum.photos/id/55/200/150",
+    "location": "Xiamen, Fujian",
+    "lat": 24.4367,
+    "lng": 118.0978
+  },
+  {
+    "name": "Lanzhou University",
+    "domain": "lzu.edu.cn",
+    "imageUrl": "https://picsum.photos/id/56/200/150",
+    "location": "Lanzhou, Gansu",
+    "lat": 36.0484,
+    "lng": 103.8565
+  },
+  {
+    "name": "Northwestern Polytechnical University",
+    "domain": "nwpu.edu.cn",
+    "imageUrl": "https://picsum.photos/id/57/200/150",
+    "location": "Xi'an, Shaanxi",
+    "lat": 34.2516,
+    "lng": 108.9249
+  },
+  {
+    "name": "Chongqing University",
+    "domain": "cqu.edu.cn",
+    "imageUrl": "https://picsum.photos/id/58/200/150",
+    "location": "Chongqing",
+    "lat": 29.5717,
+    "lng": 106.5747
+  },
+  {
+    "name": "University of Electronic Science and Technology of China",
+    "domain": "uestc.edu.cn",
+    "imageUrl": "https://picsum.photos/id/59/200/150",
+    "location": "Chengdu, Sichuan",
+    "lat": 30.6749,
+    "lng": 104.0616
+  },
+  {
+    "name": "Shanghai University",
+    "domain": "shu.edu.cn",
+    "imageUrl": "https://picsum.photos/id/60/200/150",
+    "location": "Shanghai",
+    "lat": 31.3168,
+    "lng": 121.3903
+  },
+  {
+    "name": "Shenzhen University",
+    "domain": "szu.edu.cn",
+    "imageUrl": "https://picsum.photos/id/61/200/150",
+    "location": "Shenzhen, Guangdong",
+    "lat": 22.5324,
+    "lng": 113.9389
+  }
+]

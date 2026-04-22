@@ -1,0 +1,152 @@
+[
+  {
+    "name": "laptop"
+  },
+  {
+    "name": "computer"
+  },
+  {
+    "name": "phone"
+  },
+  {
+    "name": "tablet"
+  },
+  {
+    "name": "charger"
+  },
+  {
+    "name": "headphones"
+  },
+  {
+    "name": "speaker"
+  },
+  {
+    "name": "keyboard"
+  },
+  {
+    "name": "mouse"
+  },
+  {
+    "name": "monitor"
+  },
+  {
+    "name": "desk"
+  },
+  {
+    "name": "chair"
+  },
+  {
+    "name": "shelf"
+  },
+  {
+    "name": "cabinet"
+  },
+  {
+    "name": "bed"
+  },
+  {
+    "name": "mattress"
+  },
+  {
+    "name": "pillow"
+  },
+  {
+    "name": "blanket"
+  },
+  {
+    "name": "textbook"
+  },
+  {
+    "name": "novel"
+  },
+  {
+    "name": "notebook"
+  },
+  {
+    "name": "stationery"
+  },
+  {
+    "name": "pen"
+  },
+  {
+    "name": "pencil"
+  },
+  {
+    "name": "backpack"
+  },
+  {
+    "name": "clothes"
+  },
+  {
+    "name": "jacket"
+  },
+  {
+    "name": "shoes"
+  },
+  {
+    "name": "microwave"
+  },
+  {
+    "name": "fridge"
+  },
+  {
+    "name": "kettle"
+  },
+  {
+    "name": "rice cooker"
+  },
+  {
+    "name": "pot"
+  },
+  {
+    "name": "pan"
+  },
+  {
+    "name": "bowl"
+  },
+  {
+    "name": "plate"
+  },
+  {
+    "name": "utensils"
+  },
+  {
+    "name": "bike"
+  },
+  {
+    "name": "sports"
+  },
+  {
+    "name": "football"
+  },
+  {
+    "name": "basketball"
+  },
+  {
+    "name": "tennis"
+  },
+  {
+    "name": "yoga"
+  },
+  {
+    "name": "dumbbell"
+  },
+  {
+    "name": "gaming"
+  },
+  {
+    "name": "console"
+  },
+  {
+    "name": "controller"
+  },
+  {
+    "name": "board game"
+  },
+  {
+    "name": "storage"
+  },
+  {
+    "name": "organizer"
+  }
+]

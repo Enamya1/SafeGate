@@ -2081,7 +2081,7 @@ class ProductController extends Controller
             $validated = $request->validate([
                 'lat' => 'required|numeric|between:-90,90',
                 'lng' => 'required|numeric|between:-180,180',
-                'distance_km' => 'nullable|numeric|min:0.1|max:500',
+                'distance_km' => 'nullable|numeric|min:0.1|max:2000',
                 'category_id' => 'nullable|integer|exists:categories,id',
                 'condition_level_id' => 'nullable|integer|exists:condition_levels,id',
                 'q' => 'nullable|string|max:255',
