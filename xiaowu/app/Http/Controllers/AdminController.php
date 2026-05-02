@@ -1326,7 +1326,7 @@ class AdminController extends Controller
                 'phone_number' => 'nullable|string|max:20',
                 'role' => 'sometimes|string|in:admin,user',
                 'gender' => 'sometimes|nullable|string|max:255',
-                'language' => 'sometimes|nullable|string|max:255',
+                'language' => 'sometimes|nullable|string|in:en,zh,ar,fr|max:255',
             ];
 
             $validatedData = $request->validate($rules);

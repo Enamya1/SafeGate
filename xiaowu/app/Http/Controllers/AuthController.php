@@ -190,7 +190,7 @@ class AuthController extends Controller
                 'bio' => 'nullable|string',
                 'date_of_birth' => 'nullable|date',
                 'gender' => 'nullable|string|max:255',
-                'language' => 'nullable|string|max:255',
+                'language' => 'nullable|string|in:en,zh,ar,fr|max:255',
                 'timezone' => 'nullable|string|max:255',
             ];
 
@@ -1549,6 +1549,9 @@ class AuthController extends Controller
         return response()->json([
             'message' => 'User language retrieved successfully',
             'language' => $user->language,
+            'supported_languages' => collect(config('languages'))->map(function ($name, $code) {
+                return ['code' => $code, 'name' => $name];
+            })->values()->all(),
         ], 200);
     }
 
